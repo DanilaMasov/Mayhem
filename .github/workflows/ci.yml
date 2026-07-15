@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run repository tests
+        run: node --test tests/*.test.mjs
+      - name: Verify bundled mobile content
+        run: node scripts/export_mobile_content.mjs --check
+      - name: Verify generated mobile migrations
+        run: node scripts/export_mobile_migrations.mjs --check
+      - name: Test mobile schema on SQLite
+        run: python3 scripts/test_mobile_migration.py
+      - name: Verify generated Supabase seed
+        run: node scripts/export_supabase_seed.mjs --check
+
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - name: Resolve locked Flutter dependencies
+        run: flutter pub get
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Analyze
+        run: flutter analyze --no-pub
+      - name: Test
+        run: flutter test --no-pub --no-test-assets -j 1

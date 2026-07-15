@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>QA Seed</title>
+  </head>
+  <body>
+    <script type="module">
+      import { BOSS_QUESTS, QUESTS } from "./src/data.js";
+      import { STORAGE_KEY, createDefaultState, refreshDailyQuests } from "./src/game.js";
+
+      const state = refreshDailyQuests(createDefaultState(), QUESTS, BOSS_QUESTS);
+      state.onboarding.notMedicalAcknowledged = true;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      location.replace("./?debug=1");
+    </script>
+  </body>
+</html>

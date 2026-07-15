@@ -1,0 +1,17 @@
+{
+  "name": "mayhem-legacy-web-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "content:export": "node scripts/export_mobile_content.mjs",
+    "content:check": "node scripts/export_mobile_content.mjs --check",
+    "mobile:migrations": "node scripts/export_mobile_migrations.mjs",
+    "mobile:migrations:check": "node scripts/export_mobile_migrations.mjs --check",
+    "mobile:migrations:test": "python3 scripts/test_mobile_migration.py",
+    "supabase:seed": "node scripts/export_supabase_seed.mjs",
+    "supabase:seed:check": "node scripts/export_supabase_seed.mjs --check"
+  }
+}

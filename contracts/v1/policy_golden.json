@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "revisions": {
+    "reward": "reward_policy_dev_v1",
+    "difficulty": "difficulty_model_dev_v1",
+    "rank": "rank_config_dev_v1",
+    "momentum": "momentum_policy_dev_v1"
+  },
+  "rewardCases": [
+    {
+      "id": "completed_base",
+      "baseXp": 100,
+      "outcome": "completed",
+      "route": "normal",
+      "advancedApproved": false,
+      "reflection": false,
+      "priorTerminalAttempts": 0,
+      "expectedXp": 100,
+      "expectedRepeatPercent": 100
+    },
+    {
+      "id": "attempted_base",
+      "baseXp": 100,
+      "outcome": "attempted",
+      "route": "normal",
+      "advancedApproved": false,
+      "reflection": false,
+      "priorTerminalAttempts": 0,
+      "expectedXp": 60,
+      "expectedRepeatPercent": 100
+    },
+    {
+      "id": "reflection_bonus",
+      "baseXp": 100,
+      "outcome": "completed",
+      "route": "normal",
+      "advancedApproved": false,
+      "reflection": true,
+      "priorTerminalAttempts": 0,
+      "expectedXp": 110,
+      "expectedRepeatPercent": 100
+    },
+    {
+      "id": "approved_advanced_bonus",
+      "baseXp": 100,
+      "outcome": "completed",
+      "route": "advanced",
+      "advancedApproved": true,
+      "reflection": false,
+      "priorTerminalAttempts": 0,
+      "expectedXp": 110,
+      "expectedRepeatPercent": 100
+    },
+    {
+      "id": "unapproved_advanced_no_bonus",
+      "baseXp": 100,
+      "outcome": "completed",
+      "route": "advanced",
+      "advancedApproved": false,
+      "reflection": false,
+      "priorTerminalAttempts": 0,
+      "expectedXp": 100,
+      "expectedRepeatPercent": 100
+    },
+    {
+      "id": "second_attempt_repeat",
+      "baseXp": 100,
+      "outcome": "completed",
+      "route": "normal",
+      "advancedApproved": false,
+      "reflection": false,
+      "priorTerminalAttempts": 1,
+      "expectedXp": 75,
+      "expectedRepeatPercent": 75
+    },
+    {
+      "id": "third_attempt_repeat",
+      "baseXp": 100,
+      "outcome": "attempted",
+      "route": "normal",
+      "advancedApproved": false,
+      "reflection": false,
+      "priorTerminalAttempts": 2,
+      "expectedXp": 30,
+      "expectedRepeatPercent": 50
+    },
+    {
+      "id": "integer_half_up",
+      "baseXp": 5,
+      "outcome": "completed",
+      "route": "normal",
+      "advancedApproved": false,
+      "reflection": false,
+      "priorTerminalAttempts": 2,
+      "expectedXp": 3,
+      "expectedRepeatPercent": 50
+    }
+  ],
+  "difficultyCases": [
+    { "outcome": "completed", "felt": "easierThanExpected", "delta": 0.30 },
+    { "outcome": "attempted", "felt": "easierThanExpected", "delta": 0.15 },
+    { "outcome": "completed", "felt": "aboutAsExpected", "delta": 0.15 },
+    { "outcome": "attempted", "felt": "aboutAsExpected", "delta": 0.05 },
+    { "outcome": "completed", "felt": "harderThanExpected", "delta": 0.05 },
+    { "outcome": "attempted", "felt": "harderThanExpected", "delta": -0.15 },
+    { "outcome": "completed", "felt": "stoppedEarly", "delta": -0.10 },
+    { "outcome": "attempted", "felt": "stoppedEarly", "delta": -0.30 },
+    { "skipReason": "tooEasy", "delta": 0.25 },
+    { "skipReason": "tooIntense", "delta": -0.40 },
+    { "skipReason": "notMySituation", "delta": 0.0 },
+    { "skipReason": "notInterested", "delta": 0.0 },
+    { "skipReason": "unsafeOrUncomfortable", "delta": 0.0 }
+  ],
+  "rankThresholds": [
+    ["SPARK I", 0, 0],
+    ["SPARK II", 250, 0],
+    ["SPARK III", 600, 0],
+    ["MOVER I", 1000, 100],
+    ["MOVER II", 1500, 150],
+    ["MOVER III", 2200, 200],
+    ["CATALYST I", 3000, 300],
+    ["CATALYST II", 4000, 400],
+    ["CATALYST III", 5200, 500],
+    ["MAVERICK I", 6700, 650],
+    ["MAVERICK II", 8500, 800],
+    ["MAVERICK III", 10500, 1000],
+    ["ICON I", 13000, 1200],
+    ["ICON II", 16000, 1500],
+    ["ICON III", 20000, 1800],
+    ["MAYHEM", 25000, 2200]
+  ],
+  "momentumCases": [
+    {
+      "id": "first_day",
+      "currentDays": 0,
+      "longestDays": 0,
+      "shields": 0,
+      "localDate": "2026-07-13",
+      "earnedAtUtc": "2026-07-13T09:00:00.000Z",
+      "timezoneId": "Europe/Moscow",
+      "expectedCurrentDays": 1,
+      "expectedLongestDays": 1,
+      "expectedShields": 0,
+      "expectedPending": false
+    },
+    {
+      "id": "timezone_guard_pending",
+      "currentDays": 3,
+      "longestDays": 3,
+      "shields": 0,
+      "lastLocalDate": "2026-07-13",
+      "lastEarnedAtUtc": "2026-07-13T20:00:00.000Z",
+      "lastTimezoneId": "Europe/Moscow",
+      "localDate": "2026-07-14",
+      "earnedAtUtc": "2026-07-14T15:59:00.000Z",
+      "timezoneId": "Asia/Tokyo",
+      "expectedCurrentDays": 3,
+      "expectedLongestDays": 3,
+      "expectedShields": 0,
+      "expectedPending": true
+    },
+    {
+      "id": "timezone_guard_boundary",
+      "currentDays": 3,
+      "longestDays": 3,
+      "shields": 0,
+      "lastLocalDate": "2026-07-13",
+      "lastEarnedAtUtc": "2026-07-13T20:00:00.000Z",
+      "lastTimezoneId": "Europe/Moscow",
+      "localDate": "2026-07-14",
+      "earnedAtUtc": "2026-07-14T16:00:00.000Z",
+      "timezoneId": "Asia/Tokyo",
+      "expectedCurrentDays": 4,
+      "expectedLongestDays": 4,
+      "expectedShields": 0,
+      "expectedPending": false
+    },
+    {
+      "id": "shield_consumed",
+      "currentDays": 8,
+      "longestDays": 8,
+      "shields": 1,
+      "lastLocalDate": "2026-07-11",
+      "localDate": "2026-07-13",
+      "earnedAtUtc": "2026-07-13T09:00:00.000Z",
+      "timezoneId": "Europe/Moscow",
+      "expectedCurrentDays": 9,
+      "expectedLongestDays": 9,
+      "expectedShields": 0,
+      "expectedPending": false
+    }
+  ]
+}
