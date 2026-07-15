@@ -35,32 +35,61 @@ class SqliteRemoteFeatureFlagCache implements RemoteFlagCache {
     });
   }
 
-  Future<FeatureFlagSnapshot> load({
+  @override
+  Future<CachedRemoteFlags?> load({
     required DateTime now,
     required CapabilityRevisionSet capabilities,
   }) {
     return context.database.read((db) async {
       final rows = await db.query('feature_flags_cache');
-      final records = <RemoteFlagRecord>[];
-      for (final row in rows) {
-        final expiresAt = row['expires_at'] as String?;
-        if (expiresAt == null ||
-            !DateTime.parse(expiresAt).toUtc().isAfter(now.toUtc())) {
-          continue;
-        }
-        try {
+      if (rows.length != MayhemFeatureFlag.values.length) return null;
+      try {
+        final records = <RemoteFlagRecord>[];
+        final seen = <MayhemFeatureFlag>{};
+        DateTime? fetchedAt;
+        DateTime? expiresAt;
+        for (final row in rows) {
+          final rowFetchedAt = DateTime.parse(
+            row['fetched_at'] as String,
+          ).toUtc();
+          final rowExpiresAt = DateTime.parse(
+            row['expires_at'] as String,
+          ).toUtc();
+          if ((fetchedAt != null && fetchedAt != rowFetchedAt) ||
+              (expiresAt != null && expiresAt != rowExpiresAt)) {
+            return null;
+          }
+          fetchedAt = rowFetchedAt;
+          expiresAt = rowExpiresAt;
           final decoded = jsonDecode(row['value_json'] as String);
-          if (decoded is! Map<String, dynamic>) continue;
+          if (decoded is! Map<String, dynamic>) return null;
           decoded['updatedAt'] ??= row['fetched_at'];
-          records.add(RemoteFlagRecord.fromJson(decoded));
-        } on FormatException {
-          // A corrupt cache row is equivalent to the false safe default.
+          final record = RemoteFlagRecord.fromJson(decoded);
+          if (row['flag_key'] != record.flag.wireName ||
+              !seen.add(record.flag)) {
+            return null;
+          }
+          records.add(record);
         }
+        if (fetchedAt == null ||
+            expiresAt == null ||
+            !expiresAt.isAfter(fetchedAt) ||
+            !expiresAt.isAfter(now.toUtc())) {
+          return null;
+        }
+        return CachedRemoteFlags(
+          snapshot: RemoteFeatureFlagResolver.resolve(
+            records: records,
+            capabilities: capabilities,
+          ),
+          fetchedAt: fetchedAt,
+          expiresAt: expiresAt,
+        );
+      } on FormatException {
+        return null;
+      } on TypeError {
+        return null;
       }
-      return RemoteFeatureFlagResolver.resolve(
-        records: records,
-        capabilities: capabilities,
-      );
     });
   }
 }

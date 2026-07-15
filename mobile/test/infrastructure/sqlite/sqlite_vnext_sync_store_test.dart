@@ -169,11 +169,16 @@ void main() {
     );
 
     expect(
-      unsupported.isEnabled(MayhemFeatureFlag.remoteContentEnabled),
+      unsupported?.snapshot.isEnabled(MayhemFeatureFlag.remoteContentEnabled),
       isFalse,
     );
-    expect(supported.isEnabled(MayhemFeatureFlag.remoteContentEnabled), isTrue);
-    expect(expired.isEnabled(MayhemFeatureFlag.remoteContentEnabled), isFalse);
+    expect(
+      supported?.snapshot.isEnabled(MayhemFeatureFlag.remoteContentEnabled),
+      isTrue,
+    );
+    expect(supported?.fetchedAt, DateTime.utc(2026, 7, 13, 12));
+    expect(supported?.expiresAt, DateTime.utc(2026, 7, 13, 18));
+    expect(expired, isNull);
     expect(
       jsonDecode(
         database.executor
@@ -184,6 +189,20 @@ void main() {
             as String,
       ),
       containsPair('enabled', false),
+    );
+
+    await database.executor.update(
+      'feature_flags_cache',
+      {'expires_at': 'not-a-date'},
+      where: 'flag_key = ?',
+      whereArgs: ['remote_content_enabled'],
+    );
+    expect(
+      await cache.load(
+        now: DateTime.utc(2026, 7, 13, 13),
+        capabilities: CapabilityRevisionSet(const {'remote_content': 2}),
+      ),
+      isNull,
     );
   });
 

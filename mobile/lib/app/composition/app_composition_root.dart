@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/widgets.dart';
 
 import '../../application/today_controller.dart';
+import '../../core/auth/secure_session_store.dart';
 import '../../core/feature_flags/feature_flag_runtime.dart';
 import '../mayhem_app.dart';
 import '../vnext/vnext_runtime.dart';
@@ -24,6 +25,7 @@ class AppCompositionRoot extends ChangeNotifier with WidgetsBindingObserver {
     required this.legacyController,
     required this.featureFlags,
     required this.vnextRuntime,
+    required this.secureSessions,
     required this.remote,
     required this.closeLocalStore,
     this.telemetry = const NoOpAppTelemetry(),
@@ -33,6 +35,7 @@ class AppCompositionRoot extends ChangeNotifier with WidgetsBindingObserver {
   final TodayController legacyController;
   final FeatureFlagRuntime featureFlags;
   final VNextRuntime? vnextRuntime;
+  final SecureSessionStore secureSessions;
   final AppRemoteOrchestrator remote;
   final Future<void> Function() closeLocalStore;
   final AppTelemetry telemetry;

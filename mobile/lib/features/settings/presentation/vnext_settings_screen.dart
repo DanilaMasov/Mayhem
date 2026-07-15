@@ -10,6 +10,8 @@ import '../../onboarding/domain/onboarding_models.dart';
 import '../../progress/domain/development_rank_config.dart';
 import '../../progress/domain/difficulty_update_policy.dart';
 import '../../streak/domain/momentum_policy.dart';
+import '../../sync/application/vnext_sync_coordinator.dart';
+import '../application/remote_account_controller.dart';
 import '../application/settings_controller.dart';
 
 abstract final class YouRoutes {
@@ -27,11 +29,13 @@ class VNextSettingsScreen extends StatefulWidget {
     required this.controller,
     required this.featureFlags,
     required this.onResetLocalData,
+    this.remoteAccount,
   });
 
   final SettingsController controller;
   final FeatureFlagRuntime featureFlags;
   final Future<void> Function() onResetLocalData;
+  final RemoteAccountController? remoteAccount;
 
   @override
   State<VNextSettingsScreen> createState() => _VNextSettingsScreenState();
@@ -53,7 +57,7 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
         ),
       ),
       body: AnimatedBuilder(
-        animation: widget.controller,
+        animation: Listenable.merge([widget.controller, ?widget.remoteAccount]),
         builder: (context, child) {
           final preferences = widget.controller.preferences;
           return ListView(
@@ -69,7 +73,9 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
               _StatusLine(
                 icon: Icons.person_outline,
                 title: strings.anonymousLocalProfile,
-                body: strings.localOnlyStatus,
+                body: widget.remoteAccount?.sessionAvailable == true
+                    ? strings.cloudSessionActive
+                    : strings.localOnlyStatus,
               ),
               const _SectionDivider(),
               _SectionTitle(strings.accessibility),
@@ -145,9 +151,20 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
               const _SectionDivider(),
               _SectionTitle(strings.dataAndSync),
               MayhemText(
-                strings.localOnlyStatus,
+                widget.remoteAccount?.sessionAvailable == true
+                    ? strings.cloudSessionActive
+                    : strings.localOnlyStatus,
                 variant: MayhemTextVariant.bodyMedium,
               ),
+              if (widget.remoteAccount case final account?) ...[
+                const SizedBox(height: MayhemSpacing.x3),
+                MayhemSecondaryButton(
+                  label: strings.retry,
+                  icon: MayhemGlyph.refresh,
+                  onPressed: account.busy ? null : _retryRemoteSync,
+                  loading: account.status == RemoteAccountStatus.syncing,
+                ),
+              ],
               const SizedBox(height: MayhemSpacing.x5),
               MayhemSecondaryButton(
                 label: strings.resetOnDevice,
@@ -163,12 +180,19 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
               const SizedBox(height: MayhemSpacing.x5),
               MayhemSecondaryButton(
                 label: strings.deleteEverywhere,
-                onPressed: null,
-                enabled: false,
+                onPressed: widget.remoteAccount?.canDeleteEverywhere == true
+                    ? _confirmDeleteEverywhere
+                    : null,
+                enabled: widget.remoteAccount?.canDeleteEverywhere == true,
+                loading:
+                    widget.remoteAccount?.status ==
+                    RemoteAccountStatus.deleting,
               ),
               const SizedBox(height: MayhemSpacing.x2),
               MayhemText(
-                strings.deleteEverywhereUnavailable,
+                widget.remoteAccount?.canDeleteEverywhere == true
+                    ? strings.deleteEverywhereAvailable
+                    : strings.deleteEverywhereUnavailable,
                 variant: MayhemTextVariant.bodySmall,
               ),
               const _SectionDivider(),
@@ -226,6 +250,43 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(strings.resetFailed)));
     }
+  }
+
+  Future<void> _retryRemoteSync() async {
+    final result = await widget.remoteAccount?.retrySync();
+    if (!mounted || result?.status != SyncRunStatus.failed) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.strings.remoteSyncFailed)));
+  }
+
+  Future<void> _confirmDeleteEverywhere() async {
+    final account = widget.remoteAccount;
+    if (account == null || !account.canDeleteEverywhere) return;
+    final strings = context.strings;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(strings.confirmDeleteEverywhereTitle),
+        content: Text(strings.confirmDeleteEverywhereBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(strings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(strings.deleteEverywhereConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final deleted = await account.deleteEverywhere();
+    if (!mounted || deleted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(strings.deleteEverywhereFailed)));
   }
 }
 

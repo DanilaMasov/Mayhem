@@ -373,6 +373,15 @@ class RemoteFeedBatch {
     if (assignments.length > 20) {
       throw const FormatException('Remote Feed batch exceeds the item limit');
     }
+    final assignmentIds = <String>{};
+    final positions = <int>{};
+    if (assignments.any(
+      (item) =>
+          !assignmentIds.add(item.assignmentId) ||
+          !positions.add(item.position),
+    )) {
+      throw const FormatException('Remote Feed batch contains duplicates');
+    }
   }
 
   factory RemoteFeedBatch.fromJson(Map<String, dynamic> json) =>

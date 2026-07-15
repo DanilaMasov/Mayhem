@@ -3,7 +3,7 @@
 **Status date:** 2026-07-15
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/runtime-orchestration`
+**Current branch:** `codex/secure-session`
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -21,22 +21,25 @@
   validation through remote bootstrap, and live legacy/vNext UI switching.
 - App-level composition owner for local runtimes, feature flags, lifecycle,
   cancellable remote orchestration, bounded diagnostics, and store shutdown.
+- Environment-namespaced Keychain/Android Keystore session storage with a
+  single atomic payload, strict decoding, and corrupted-entry recovery.
+- Production Supabase composition for anonymous auth, installation bootstrap,
+  exact-ACK sync, cached/server flags, remote content, remote Feed, Season
+  activation, reconciliation, manual retry, and confirmed global deletion.
 
 ## Active work item
 
-Baseline pull request #1 and mutable-flag pull request
-[#2](https://github.com/DanilaMasov/Mayhem/pull/2) are merged into `main`; PR #2
-landed as `7825c8d`. Phase R1 continues in
-[#3](https://github.com/DanilaMasov/Mayhem/pull/3) on
-`codex/runtime-orchestration`. Commit `6708701` moves startup and lifecycle
-ownership into `AppCompositionRoot` while deliberately keeping production
-remote operations disabled until secure session storage exists.
+Baseline pull request #1, mutable-flag pull request
+[#2](https://github.com/DanilaMasov/Mayhem/pull/2), and composition-owner pull
+request [#3](https://github.com/DanilaMasov/Mayhem/pull/3) are merged into
+`main`; PR #3 landed as `9cfec4e`. Pull request
+[#4](https://github.com/DanilaMasov/Mayhem/pull/4) on `codex/secure-session`
+contains the complete R1 software implementation. Remote operations activate
+only when both Supabase compile-time values are configured; local startup and
+safe release defaults remain independent of that configuration.
 
 ## Open software gates
 
-- R1 secure session adapter, concrete Supabase composition, cached-flag startup,
-  bounded network timeouts/retries, terminal-action sync triggers, remote Feed,
-  and real account actions.
 - R3 complete user-visible Season/Boss state machine and recovery UX.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
@@ -55,8 +58,8 @@ remote operations disabled until secure session storage exists.
 
 ## Known release blockers
 
-- Production remote auth/sync remains disabled because no Keychain/Keystore
-  session adapter is composed yet.
+- Production remote auth/sync has not passed the R2 live-backend gate and is
+  unavailable in builds without `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
 - `new_feed_enabled` and all dependent release capabilities remain false.
 - No live-backend acceptance, physical-device acceptance, release signing,
   final application IDs, production assets, or store configuration.
@@ -87,14 +90,50 @@ flutter pub get --offline
 # locked dependencies restored from the existing local package cache
 
 dart format --output=none --set-exit-if-changed lib test
-# 229 files, 0 changed
+# 237 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 190 passed
+# 204 passed
 ```
+
+R1 final composition local evidence:
+
+- valid cached flags are restored and capability-checked before `runApp`;
+- anonymous auth, secure-session restore/refresh, installation registration,
+  bootstrap, exact-ACK event sync, reconciliation, remote content, Season
+  activation, and remote Feed are composed without global singletons;
+- bootstrap uses three bounded attempts, foreground uses two, event retries are
+  durable with exponential backoff and jitter, and HTTP stages have timeouts
+  plus a 1 MiB response limit;
+- remote Feed preserves server order, excludes accepted/completed/skipped
+  assignments, persists stable identities, and cannot replace local fallback
+  when invalid, expired, unavailable, or disabled;
+- Feed results and Season/Boss terminal commits trigger sync only after local
+  writes, while foreground and explicit retry use coalesced orchestration;
+- Delete Everywhere is enabled only for a usable secure session, attempts sync,
+  requires destructive confirmation, and clears session/local state only after
+  a matching server receipt;
+- account linking and notifications remain unavailable because no tested
+  provider or notification implementation is configured;
+- access/refresh tokens remain confined to secure storage and authenticated
+  request headers; error diagnostics redact token echoes and remain bounded.
+
+R1 secure-session slice local evidence:
+
+- `flutter_secure_storage 10.3.1` is the only new direct dependency and exists
+  solely to back sessions with iOS Keychain and Android encrypted storage;
+- session access, refresh tokens, and identity metadata are written as one
+  namespaced JSON payload and never enter SQLite or logs;
+- invalid JSON, schema, field types, UTC expiry, and oversized payloads are
+  treated as corruption and remove only the affected environment entry;
+- real platform read/write/delete failures remain observable and are not
+  misreported as sign-out;
+- Android API 23, backup exclusion, and iOS Keychain entitlements are declared;
+- adapter and platform configuration contracts pass without requiring an SDK,
+  simulator, emulator, or physical device.
 
 R1 mutable-flag slice local evidence:
 
@@ -151,11 +190,10 @@ not affect the current green software gate.
 
 ## Next authorized slice
 
-Continue Phase R1 with the platform-protected session adapter and concrete
-Supabase composition, then load valid cached flags before non-blocking remote
-refresh. Keep every release flag false until its live-backend and device
-prerequisites are satisfied. R2-R6 remain gated by the specification
-prerequisites.
+After PR #4 is merged, continue with Phase R2 on
+`codex/live-supabase-gate`: run the committed migrations and contracts against a
+disposable real Supabase/PostgreSQL environment. Keep every release flag false;
+R3-R6 remain gated by the specification prerequisites.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

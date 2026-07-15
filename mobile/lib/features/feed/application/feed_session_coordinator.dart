@@ -47,6 +47,8 @@ class FeedSessionCoordinator {
     required this.attempts,
     required this.identity,
     required this.idGenerator,
+    this.remoteFeedEnabled = _disabled,
+    this.remoteContentEnabled = _disabled,
     this.batchPolicy = const LocalFeedBatchPolicy(),
   });
 
@@ -55,6 +57,8 @@ class FeedSessionCoordinator {
   final ChallengeAttemptRepository attempts;
   final LocalIdentityRepository identity;
   final String Function() idGenerator;
+  final bool Function() remoteFeedEnabled;
+  final bool Function() remoteContentEnabled;
   final LocalFeedBatchPolicy batchPolicy;
 
   Future<FeedSessionSnapshot> initialize({
@@ -63,12 +67,22 @@ class FeedSessionCoordinator {
   }) async {
     final now = nowUtc.toUtc();
     await content.saveValidatedRevisions(bundled.revisions);
-    await content.activateBundledCatalog(bundled.revisions);
-    final activeRevisions = await content.activeRevisions(
+    var activeRevisions = await content.activeRevisions(
       locale: BundledVNextContentAdapter.locale,
       atUtc: now,
     );
-    var batch = await feed.latestUsableBatch(now);
+    if (!remoteContentEnabled() || activeRevisions.isEmpty) {
+      await content.activateBundledCatalog(bundled.revisions);
+      activeRevisions = await content.activeRevisions(
+        locale: BundledVNextContentAdapter.locale,
+        atUtc: now,
+      );
+    }
+    final useRemoteFeed = remoteFeedEnabled();
+    var batch = await feed.latestUsableBatch(now, preferRemote: useRemoteFeed);
+    if (batch?.source == FeedBatchSource.remote && !useRemoteFeed) {
+      batch = null;
+    }
     var generatedLocally = false;
     List<FeedAssignment> assignments;
     if (batch == null) {
@@ -171,4 +185,6 @@ class FeedSessionCoordinator {
       idGenerator: idGenerator,
     );
   }
+
+  static bool _disabled() => false;
 }

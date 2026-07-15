@@ -6,6 +6,8 @@ import 'package:mayhem_mobile/app/composition/app_composition_root.dart';
 import 'package:mayhem_mobile/app/composition/app_remote_orchestrator.dart';
 import 'package:mayhem_mobile/app/composition/app_telemetry.dart';
 import 'package:mayhem_mobile/application/today_controller.dart';
+import 'package:mayhem_mobile/core/auth/remote_auth_session.dart';
+import 'package:mayhem_mobile/core/auth/secure_session_store.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flag_runtime.dart';
 import 'package:mayhem_mobile/domain/models/game_state.dart';
 import 'package:mayhem_mobile/domain/services/game_engine.dart';
@@ -153,6 +155,7 @@ Future<_Harness> _buildHarness(
     legacyController: controller,
     featureFlags: FeatureFlagRuntime.safe(),
     vnextRuntime: null,
+    secureSessions: _SessionStore(),
     remote: remote,
     telemetry: telemetry,
     closeLocalStore: () async {
@@ -162,6 +165,17 @@ Future<_Harness> _buildHarness(
   );
   harness = _Harness(root);
   return harness;
+}
+
+class _SessionStore implements SecureSessionStore {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<RemoteAuthSession?> read() async => null;
+
+  @override
+  Future<void> write(RemoteAuthSession session) async {}
 }
 
 class _Harness {
