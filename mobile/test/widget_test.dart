@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/app/mayhem_app.dart';
 import 'package:mayhem_mobile/application/today_controller.dart';
+import 'package:mayhem_mobile/core/feature_flags/feature_flag_runtime.dart';
+import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
 import 'package:mayhem_mobile/domain/models/game_event.dart';
 import 'package:mayhem_mobile/domain/models/game_state.dart';
 import 'package:mayhem_mobile/domain/services/game_engine.dart';
 
 import 'support/fakes.dart';
+import 'support/vnext_runtime_harness.dart';
 
 void main() {
   testWidgets('mobile daily flow opens and starts the main challenge', (
@@ -143,6 +146,61 @@ void main() {
     expect(store.clearCount, 1);
     expect(store.events, isEmpty);
     expect(store.reflections, isEmpty);
+  });
+
+  testWidgets('valid runtime flag switches legacy Today and vNext live', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final store = MemoryGameStore();
+    store.state = GameState.initial(DateTime(2026, 7, 15, 13)).copyWith(
+      completedCount: 3,
+      onboarding: const OnboardingState(boundariesAcknowledged: true),
+    );
+    final legacy = TodayController(
+      store,
+      buildTestCatalog(),
+      buildTestGuideCatalog(),
+      buildTestDialogCatalog(),
+      buildTestModifierCatalog(),
+      GameEngine(() => 'runtime_flag_event'),
+      clock: () => DateTime(2026, 7, 15, 13),
+    );
+    await legacy.initialize();
+    final flags = FeatureFlagRuntime.safe();
+    final vnext = (await tester.runAsync(
+      () =>
+          buildVNextTestRuntime(featureFlags: flags, debugOverrides: const {}),
+    ))!;
+    addTearDown(vnext.dispose);
+    final now = DateTime.utc(2026, 7, 15, 10);
+
+    await tester.pumpWidget(
+      MayhemApp(controller: legacy, featureFlags: flags, vnextRuntime: vnext),
+    );
+    expect(find.text('ВЫЗОВ ДНЯ'), findsOneWidget);
+
+    flags.applySnapshot(
+      snapshot: FeatureFlagSnapshot(
+        values: const {MayhemFeatureFlag.newFeedEnabled: true},
+      ),
+      source: FeatureFlagSnapshotSource.server,
+      fetchedAt: now,
+      expiresAt: now.add(const Duration(hours: 1)),
+      now: now,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Лента'), findsOneWidget);
+    expect(find.text('ВЫЗОВ ДНЯ'), findsNothing);
+
+    await tester.pump(const Duration(hours: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('ВЫЗОВ ДНЯ'), findsOneWidget);
+    expect(find.text('Лента'), findsNothing);
   });
 }
 

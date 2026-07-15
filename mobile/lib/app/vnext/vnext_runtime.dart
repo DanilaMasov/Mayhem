@@ -96,6 +96,7 @@ class VNextRuntime extends ChangeNotifier {
       settings: settings,
       artifacts: artifacts,
     );
+    featureFlags.addListener(runtime._handleFeatureFlagsChanged);
     return runtime;
   }
 
@@ -208,5 +209,13 @@ class VNextRuntime extends ChangeNotifier {
       ),
     ]);
     notifyListeners();
+  }
+
+  void _handleFeatureFlagsChanged() => notifyListeners();
+
+  @override
+  void dispose() {
+    featureFlags.removeListener(_handleFeatureFlagsChanged);
+    super.dispose();
   }
 }

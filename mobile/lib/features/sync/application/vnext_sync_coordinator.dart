@@ -4,6 +4,7 @@ import 'dart:math';
 
 import '../../../content/domain/content_repository.dart';
 import '../../../core/auth/anonymous_session_coordinator.dart';
+import '../../../core/feature_flags/feature_flag_runtime.dart';
 import '../../../core/feature_flags/feature_flags.dart';
 import '../../../core/feature_flags/remote_feature_flag_resolver.dart';
 import '../../../core/identity/local_identity_repository.dart';
@@ -23,6 +24,10 @@ abstract final class MayhemRemoteCapabilities {
     'event_contract': 2,
     'remote_content': 1,
     'feed_batch': 1,
+    'season_zero': 1,
+    'boss_raid': 1,
+    'artifact_ownership': 1,
+    'social_proof': 1,
     'projection_reconciliation': 1,
     'reward_policy_dev_v1': 1,
     'difficulty_model_dev_v1': 1,
@@ -62,6 +67,7 @@ class VNextSyncCoordinator {
     required this.content,
     required this.contentRefresh,
     required this.flagCache,
+    required this.featureFlags,
     required this.platform,
     required this.appVersion,
     required this.clock,
@@ -86,6 +92,7 @@ class VNextSyncCoordinator {
   final ContentRepository content;
   final RemoteContentRefresher contentRefresh;
   final RemoteFlagCache flagCache;
+  final FeatureFlagRuntime featureFlags;
   final SeasonBootstrapActivation? seasonActivation;
   final Future<void> Function()? onProjectionCommitted;
   final String platform;
@@ -179,12 +186,28 @@ class VNextSyncCoordinator {
         records: bootstrap.flags,
         capabilities: capabilities,
       );
+      final flagsExpireAt = bootstrap.serverTime.add(const Duration(hours: 6));
+      await flagCache.save(
+        records: bootstrap.flags,
+        fetchedAt: bootstrap.serverTime,
+        expiresAt: flagsExpireAt,
+      );
+      final flagsApplied = featureFlags.applySnapshot(
+        snapshot: resolvedFlags,
+        source: FeatureFlagSnapshotSource.server,
+        fetchedAt: bootstrap.serverTime,
+        expiresAt: flagsExpireAt,
+        now: now,
+      );
+      final effectiveFlags = flagsApplied
+          ? featureFlags.snapshot
+          : FeatureFlagSnapshot.safeDefaults();
       final activation = seasonActivation;
       if (activation != null) {
         try {
           await activation.apply(
             snapshot: bootstrap.activeSeason,
-            flags: resolvedFlags,
+            flags: effectiveFlags,
           );
         } catch (error, stackTrace) {
           developer.log(
@@ -195,11 +218,6 @@ class VNextSyncCoordinator {
           );
         }
       }
-      await flagCache.save(
-        records: bootstrap.flags,
-        fetchedAt: bootstrap.serverTime,
-        expiresAt: bootstrap.serverTime.add(const Duration(hours: 6)),
-      );
 
       var authoritative = bootstrap.projection;
       var uploadedCount = 0;
@@ -237,7 +255,7 @@ class VNextSyncCoordinator {
       await reconciliationStore.commit(reconciled);
       if (reconciled.applied) await onProjectionCommitted?.call();
 
-      if (resolvedFlags.isEnabled(MayhemFeatureFlag.remoteContentEnabled)) {
+      if (effectiveFlags.isEnabled(MayhemFeatureFlag.remoteContentEnabled)) {
         await contentRefresh.refresh(locale: locale);
       }
       developer.log(
