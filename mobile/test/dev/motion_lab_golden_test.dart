@@ -3,13 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/core/design_system/mayhem_theme.dart';
 import 'package:mayhem_mobile/dev/motion_lab/motion_lab.dart';
 
+import '../support/golden_test_fonts.dart';
+
 void main() {
+  setUpAll(loadGoldenTestFonts);
+
   testWidgets('Motion Lab foundation mobile golden', (tester) async {
     await _setViewport(tester);
     await _pumpLab(tester);
     await expectLater(
       find.byType(MotionLab),
-      matchesGoldenFile('goldens/motion_lab_foundation_390x844.png'),
+      matchesGoldenFile(goldenTestPath('motion_lab_foundation_390x844.png')),
     );
   });
 
@@ -20,7 +24,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(MotionLab),
-      matchesGoldenFile('goldens/motion_lab_objects_390x844.png'),
+      matchesGoldenFile(goldenTestPath('motion_lab_objects_390x844.png')),
     );
   });
 }

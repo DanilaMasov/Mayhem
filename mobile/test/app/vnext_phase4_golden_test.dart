@@ -49,21 +49,21 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(VNextShell),
-      matchesGoldenFile('goldens/phase4_feed_390x844.png'),
+      matchesGoldenFile(goldenTestPath('phase4_feed_390x844.png')),
     );
 
     await tester.tap(find.text('Путь'));
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(VNextShell),
-      matchesGoldenFile('goldens/phase4_journey_390x844.png'),
+      matchesGoldenFile(goldenTestPath('phase4_journey_390x844.png')),
     );
 
     await tester.tap(find.text('Ты'));
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(VNextShell),
-      matchesGoldenFile('goldens/phase4_you_390x844.png'),
+      matchesGoldenFile(goldenTestPath('phase4_you_390x844.png')),
     );
   });
 
@@ -85,21 +85,21 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(VNextShell),
-      matchesGoldenFile('goldens/phase6_feed_active_390x844.png'),
+      matchesGoldenFile(goldenTestPath('phase6_feed_active_390x844.png')),
     );
 
     await tester.tap(find.text('ЗАПИСАТЬ РЕЗУЛЬТАТ'));
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(MayhemSheet),
-      matchesGoldenFile('goldens/phase6_result_sheet_390x844.png'),
+      matchesGoldenFile(goldenTestPath('phase6_result_sheet_390x844.png')),
     );
 
     await tester.tap(find.text('ЗАСЧИТАТЬ'));
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(RewardStage),
-      matchesGoldenFile('goldens/phase6_reward_390x844.png'),
+      matchesGoldenFile(goldenTestPath('phase6_reward_390x844.png')),
     );
   });
 
@@ -121,7 +121,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(MayhemSheet),
-      matchesGoldenFile('goldens/feed_preparation_sheet_390x844.png'),
+      matchesGoldenFile(goldenTestPath('feed_preparation_sheet_390x844.png')),
     );
 
     Navigator.of(tester.element(find.byType(MayhemSheet))).pop();
@@ -130,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(MayhemSheet),
-      matchesGoldenFile('goldens/feed_skip_sheet_390x844.png'),
+      matchesGoldenFile(goldenTestPath('feed_skip_sheet_390x844.png')),
     );
   });
 }

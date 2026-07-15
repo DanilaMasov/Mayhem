@@ -2,6 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+String goldenTestPath(String fileName) {
+  if (Platform.isLinux) {
+    return 'goldens/linux/$fileName';
+  }
+  return 'goldens/$fileName';
+}
+
 Future<void> loadGoldenTestFonts() async {
   final materialFonts = _findMaterialFontsDirectory();
 
