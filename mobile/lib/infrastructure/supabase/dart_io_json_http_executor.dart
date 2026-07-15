@@ -6,6 +6,8 @@ import 'supabase_event_sync_transport.dart';
 class DartIoJsonHttpExecutor implements JsonHttpExecutor {
   const DartIoJsonHttpExecutor();
 
+  static const int maximumResponseBytes = 1024 * 1024;
+
   @override
   Future<JsonHttpResponse> post(
     Uri uri, {
@@ -23,7 +25,14 @@ class DartIoJsonHttpExecutor implements JsonHttpExecutor {
       final response = await request.close().timeout(
         const Duration(seconds: 30),
       );
-      final responseBody = await response.transform(utf8.decoder).join();
+      final bytes = <int>[];
+      await for (final chunk in response.timeout(const Duration(seconds: 30))) {
+        if (bytes.length + chunk.length > maximumResponseBytes) {
+          throw const FormatException('Remote response is too large');
+        }
+        bytes.addAll(chunk);
+      }
+      final responseBody = utf8.decode(bytes);
       return JsonHttpResponse(
         statusCode: response.statusCode,
         body: responseBody,

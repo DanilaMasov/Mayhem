@@ -37,14 +37,19 @@ class SqliteFeedRepository
   }
 
   @override
-  Future<FeedBatch?> latestUsableBatch(DateTime atUtc) {
+  Future<FeedBatch?> latestUsableBatch(
+    DateTime atUtc, {
+    bool preferRemote = false,
+  }) {
     final time = atUtc.toUtc().toIso8601String();
     return context.database.read((db) async {
       final rows = await db.query(
         'feed_batches',
         where: 'expires_at IS NULL OR expires_at > ?',
         whereArgs: [time],
-        orderBy: 'created_at DESC',
+        orderBy: preferRemote
+            ? "CASE WHEN source = 'remote' THEN 0 ELSE 1 END, created_at DESC"
+            : 'created_at DESC',
         limit: 1,
       );
       return rows.isEmpty ? null : SqliteFeedMapper.batchFromRow(rows.single);
@@ -78,6 +83,20 @@ class SqliteFeedRepository
             ),
           )
           .toList(growable: false);
+    });
+  }
+
+  @override
+  Future<bool> wasSkipped(String assignmentId) {
+    return context.database.read((db) async {
+      final rows = await db.query(
+        'feed_assignments',
+        columns: ['skipped_at'],
+        where: 'assignment_id = ?',
+        whereArgs: [assignmentId],
+        limit: 1,
+      );
+      return rows.isNotEmpty && rows.single['skipped_at'] != null;
     });
   }
 

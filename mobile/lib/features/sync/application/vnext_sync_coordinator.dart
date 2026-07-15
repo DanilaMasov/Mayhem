@@ -10,6 +10,7 @@ import '../../../core/feature_flags/remote_feature_flag_resolver.dart';
 import '../../../core/identity/local_identity_repository.dart';
 import '../../../core/sync/event_envelope_v2.dart';
 import '../../progress/domain/progress_repository.dart';
+import '../../feed/application/remote_feed_refresh_service.dart';
 import '../../season/application/season_bootstrap_activator.dart';
 import '../domain/backend_models.dart';
 import '../domain/event_sync_store_v2.dart';
@@ -54,7 +55,11 @@ class SyncRunResult {
   final int retriedCount;
 }
 
-class VNextSyncCoordinator {
+abstract interface class RemoteSynchronizer {
+  Future<SyncRunResult> synchronize({SyncTrigger trigger = SyncTrigger.manual});
+}
+
+class VNextSyncCoordinator implements RemoteSynchronizer {
   VNextSyncCoordinator({
     required this.remoteOperationsEnabled,
     required this.sessions,
@@ -74,7 +79,9 @@ class VNextSyncCoordinator {
     this.locale = 'ru',
     this.environment = 'production',
     this.seasonActivation,
+    this.remoteFeed,
     this.onProjectionCommitted,
+    this.onRemoteFeedCommitted,
     CapabilityRevisionSet? capabilities,
     this.reconciler = const ProjectionReconciler(),
     Random? random,
@@ -94,7 +101,9 @@ class VNextSyncCoordinator {
   final RemoteFlagCache flagCache;
   final FeatureFlagRuntime featureFlags;
   final SeasonBootstrapActivation? seasonActivation;
+  final RemoteFeedRefresher? remoteFeed;
   final Future<void> Function()? onProjectionCommitted;
+  final Future<void> Function()? onRemoteFeedCommitted;
   final String platform;
   final String appVersion;
   final DateTime Function() clock;
@@ -122,6 +131,7 @@ class VNextSyncCoordinator {
     unawaited(synchronize(trigger: trigger));
   }
 
+  @override
   Future<SyncRunResult> synchronize({
     SyncTrigger trigger = SyncTrigger.manual,
   }) {
@@ -257,6 +267,21 @@ class VNextSyncCoordinator {
 
       if (effectiveFlags.isEnabled(MayhemFeatureFlag.remoteContentEnabled)) {
         await contentRefresh.refresh(locale: locale);
+      }
+      final feedRefresher = remoteFeed;
+      if (feedRefresher != null &&
+          effectiveFlags.isEnabled(MayhemFeatureFlag.newFeedEnabled)) {
+        try {
+          final result = await feedRefresher.refresh(locale: locale);
+          if (result.committed) await onRemoteFeedCommitted?.call();
+        } catch (error, stackTrace) {
+          developer.log(
+            'Remote Feed refresh failed; local Feed remains active',
+            name: 'mayhem.feed.remote',
+            error: error.runtimeType,
+            stackTrace: stackTrace,
+          );
+        }
       }
       developer.log(
         'V2 sync completed: uploaded=$uploadedCount pending=${pending.length}',

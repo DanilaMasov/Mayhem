@@ -125,6 +125,13 @@ abstract interface class MayhemStrings {
   String get resetOnDeviceBody;
   String get deleteEverywhere;
   String get deleteEverywhereUnavailable;
+  String get deleteEverywhereAvailable;
+  String get cloudSessionActive;
+  String get remoteSyncFailed;
+  String get confirmDeleteEverywhereTitle;
+  String get confirmDeleteEverywhereBody;
+  String get deleteEverywhereConfirm;
+  String get deleteEverywhereFailed;
   String get confirmResetTitle;
   String get confirmResetBody;
   String get cancel;
@@ -466,6 +473,25 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get deleteEverywhereUnavailable =>
       'Недоступно без сети и подтверждённой облачной сессии.';
+  @override
+  String get deleteEverywhereAvailable =>
+      'Удалит облачный аккаунт и все локальные данные после подтверждения сервера.';
+  @override
+  String get cloudSessionActive =>
+      'Защищённая анонимная сессия активна. Прогресс синхронизируется после завершённых действий.';
+  @override
+  String get remoteSyncFailed =>
+      'Синхронизация не удалась. Локальные данные сохранены.';
+  @override
+  String get confirmDeleteEverywhereTitle => 'Удалить аккаунт и данные везде?';
+  @override
+  String get confirmDeleteEverywhereBody =>
+      'Серверные и локальные данные будут удалены без возможности восстановления. При ошибке ничего локально не удалится.';
+  @override
+  String get deleteEverywhereConfirm => 'УДАЛИТЬ ВЕЗДЕ';
+  @override
+  String get deleteEverywhereFailed =>
+      'Сервер не подтвердил удаление. Данные и сессия сохранены.';
   @override
   String get confirmResetTitle => 'Сбросить данные на устройстве?';
   @override

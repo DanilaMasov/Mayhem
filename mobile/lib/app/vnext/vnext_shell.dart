@@ -92,6 +92,7 @@ class _VNextShellState extends State<VNextShell> {
       (VNextTab.you, YouRoutes.account) => VNextSettingsScreen(
         controller: widget.runtime.settings,
         featureFlags: widget.runtime.featureFlags,
+        remoteAccount: widget.runtime.remoteAccount,
         onResetLocalData: widget.onResetLocalData,
       ),
       (VNextTab.you, YouRoutes.diagnostics) => VNextDiagnosticsScreen(

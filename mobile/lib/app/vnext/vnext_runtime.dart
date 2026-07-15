@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../content/data/bundled_vnext_content_adapter.dart';
 import '../../core/clock/mayhem_clock.dart';
 import '../../core/feature_flags/feature_flag_runtime.dart';
+import '../../core/feature_flags/feature_flags.dart';
 import '../../core/identity/local_identity_repository.dart';
 import '../../features/challenge/application/challenge_flow_coordinator.dart';
 import '../../features/challenge/domain/reward_policy.dart';
@@ -15,6 +16,8 @@ import '../../features/onboarding/data/local_onboarding_repository.dart';
 import '../../features/progress/application/journey_controller.dart';
 import '../../features/progress/domain/development_rank_config.dart';
 import '../../features/season/application/artifact_ownership_controller.dart';
+import '../../features/season/application/season_participation_coordinator.dart';
+import '../../features/settings/application/remote_account_controller.dart';
 import '../../features/settings/application/settings_controller.dart';
 import '../../features/settings/data/local_user_preferences_repository.dart';
 import '../../infrastructure/sqlite/sqlite_vnext_store.dart';
@@ -42,6 +45,10 @@ class VNextRuntime extends ChangeNotifier {
         attempts: store.challenge,
         identity: store.identity,
         idGenerator: idGenerator,
+        remoteFeedEnabled: () =>
+            featureFlags.isEnabled(MayhemFeatureFlag.newFeedEnabled),
+        remoteContentEnabled: () =>
+            featureFlags.isEnabled(MayhemFeatureFlag.remoteContentEnabled),
       ),
       bundled: bundled,
       metadata: store.metadata,
@@ -70,6 +77,17 @@ class VNextRuntime extends ChangeNotifier {
       clock: currentTime,
     );
     late final VNextRuntime runtime;
+    final seasonParticipation = SeasonParticipationCoordinator(
+      packages: store.season,
+      participation: store.seasonParticipation,
+      eventIdGenerator: idGenerator,
+      clock: clock.utcNow,
+      timezoneId: clock.timezoneId,
+      timezoneOffsetMinutes:
+          timezoneOffsetMinutes?.call() ??
+          clock.localNow().timeZoneOffset.inMinutes,
+      onTerminalAction: () => runtime._terminalSyncTrigger?.call(),
+    );
     final feedChallenge = FeedChallengeController(
       flow: ChallengeFlowCoordinator(
         attempts: store.challenge,
@@ -95,6 +113,7 @@ class VNextRuntime extends ChangeNotifier {
       journey: journey,
       settings: settings,
       artifacts: artifacts,
+      seasonParticipation: seasonParticipation,
     );
     featureFlags.addListener(runtime._handleFeatureFlagsChanged);
     return runtime;
@@ -110,6 +129,7 @@ class VNextRuntime extends ChangeNotifier {
     required this.journey,
     required this.settings,
     required this.artifacts,
+    required this.seasonParticipation,
   });
 
   final SqliteVNextStore store;
@@ -121,9 +141,14 @@ class VNextRuntime extends ChangeNotifier {
   final JourneyController journey;
   final SettingsController settings;
   final ArtifactOwnershipController artifacts;
+  final SeasonParticipationCoordinator seasonParticipation;
 
   LocalIdentity? _identity;
   String? _pendingRankUp;
+  RemoteAccountController? _remoteAccount;
+  void Function()? _terminalSyncTrigger;
+
+  RemoteAccountController? get remoteAccount => _remoteAccount;
 
   LocalIdentity get identity =>
       _identity ?? (throw StateError('vNext identity is not initialized'));
@@ -169,11 +194,29 @@ class VNextRuntime extends ChangeNotifier {
   Future<void> refreshAfterChallengeAction() async {
     await journey.initialize();
     await _detectRankUp();
+    _terminalSyncTrigger?.call();
   }
 
   Future<void> refreshAfterRemoteSync() async {
     await Future.wait([journey.initialize(), artifacts.initialize()]);
     await _detectRankUp();
+  }
+
+  Future<void> refreshAfterRemoteFeed() async {
+    await feed.initialize();
+    final snapshot = feed.snapshot;
+    if (snapshot != null) feedChallenge.initialize(snapshot);
+  }
+
+  void attachRemote({
+    required RemoteAccountController account,
+    required void Function() onTerminalSync,
+  }) {
+    if (_remoteAccount != null) {
+      throw StateError('Remote runtime is already attached');
+    }
+    _remoteAccount = account;
+    _terminalSyncTrigger = onTerminalSync;
   }
 
   Future<void> _detectRankUp() async {
@@ -216,6 +259,7 @@ class VNextRuntime extends ChangeNotifier {
   @override
   void dispose() {
     featureFlags.removeListener(_handleFeatureFlagsChanged);
+    _remoteAccount?.dispose();
     super.dispose();
   }
 }

@@ -73,9 +73,10 @@ class SupabaseRpcClient {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final error = decoded is Map<String, dynamic> ? decoded : null;
       final message = error?['message'] ?? error?['code'] ?? 'request failed';
+      final redacted = '$message'.replaceAll(token, '<redacted>');
       throw SupabaseRpcException(
         response.statusCode,
-        '$message'.substring(0, ('$message').length.clamp(0, 240)),
+        redacted.substring(0, redacted.length.clamp(0, 240)),
       );
     }
     if (decoded == null) {

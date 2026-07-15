@@ -47,6 +47,7 @@ void main() {
       ]);
       expect(events.map((row) => row['client_sequence']), [1, 2, 3]);
       expect(events.last['content_id'], 'boss_social_reset_content');
+      expect(harness.terminalActions, 3);
     },
   );
 
@@ -178,6 +179,7 @@ class _Harness {
       clock: () => harness.now,
       timezoneId: 'Europe/Moscow',
       timezoneOffsetMinutes: 180,
+      onTerminalAction: () => harness.terminalActions += 1,
     );
     harness = _Harness._(
       database: database,
@@ -194,6 +196,7 @@ class _Harness {
   final SqliteSeasonParticipationRepository participation;
   final SeasonParticipationCoordinator coordinator;
   DateTime now;
+  int terminalActions = 0;
 }
 
 RemoteSeasonSnapshot _snapshot({int revision = 1}) => RemoteSeasonSnapshot(

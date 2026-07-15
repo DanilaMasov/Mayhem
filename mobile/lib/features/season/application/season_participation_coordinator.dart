@@ -12,6 +12,7 @@ class SeasonParticipationCoordinator {
     required this.clock,
     required this.timezoneId,
     required this.timezoneOffsetMinutes,
+    this.onTerminalAction,
   });
 
   final SeasonPackageStore packages;
@@ -20,6 +21,7 @@ class SeasonParticipationCoordinator {
   final DateTime Function() clock;
   final String timezoneId;
   final int timezoneOffsetMinutes;
+  final void Function()? onTerminalAction;
 
   Future<bool> join() async {
     final now = clock().toUtc();
@@ -38,7 +40,7 @@ class SeasonParticipationCoordinator {
       joinedAt: now,
       completedDays: const {},
     );
-    return participation.commit(
+    final committed = await participation.commit(
       state: state,
       event: _event(
         type: CanonicalEventTypeV2.seasonJoined,
@@ -49,6 +51,8 @@ class SeasonParticipationCoordinator {
         },
       ),
     );
+    if (committed) onTerminalAction?.call();
+    return committed;
   }
 
   Future<bool> completeDay(int day) async {
@@ -71,7 +75,7 @@ class SeasonParticipationCoordinator {
     final next = current.copyWith(
       completedDays: {...current.completedDays, day},
     );
-    return participation.commit(
+    final committed = await participation.commit(
       state: next,
       event: _event(
         type: CanonicalEventTypeV2.seasonDayCompleted,
@@ -83,6 +87,8 @@ class SeasonParticipationCoordinator {
         },
       ),
     );
+    if (committed) onTerminalAction?.call();
+    return committed;
   }
 
   Future<bool> participateBoss(ChallengeRouteType route) async {
@@ -102,7 +108,7 @@ class SeasonParticipationCoordinator {
       throw const FormatException('Boss route is not available');
     }
     final next = current.copyWith(bossParticipatedAt: now);
-    return participation.commit(
+    final committed = await participation.commit(
       state: next,
       event: _event(
         type: CanonicalEventTypeV2.bossParticipated,
@@ -117,6 +123,8 @@ class SeasonParticipationCoordinator {
         },
       ),
     );
+    if (committed) onTerminalAction?.call();
+    return committed;
   }
 
   EventDraftV2 _event({

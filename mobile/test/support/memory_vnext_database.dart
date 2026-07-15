@@ -169,6 +169,7 @@ class MemoryDatabaseExecutor implements DatabaseExecutor {
             row['locale'] == args[2],
       'locale = ? AND source = ?' =>
         row['locale'] == args[0] && row['source'] == args[1],
+      'flag_key = ?' => row['flag_key'] == args[0],
       'content_id = ? AND revision = ? AND locale = ? AND source = ?' =>
         row['content_id'] == args[0] &&
             row['revision'] == args[1] &&

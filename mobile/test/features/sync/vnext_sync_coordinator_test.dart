@@ -15,6 +15,7 @@ import 'package:mayhem_mobile/core/sync/event_envelope_v2.dart';
 import 'package:mayhem_mobile/features/progress/domain/development_rank_config.dart';
 import 'package:mayhem_mobile/features/progress/domain/progress_models.dart';
 import 'package:mayhem_mobile/features/progress/domain/progress_repository.dart';
+import 'package:mayhem_mobile/features/feed/application/remote_feed_refresh_service.dart';
 import 'package:mayhem_mobile/features/season/application/season_bootstrap_activator.dart';
 import 'package:mayhem_mobile/features/streak/domain/momentum_state.dart';
 import 'package:mayhem_mobile/features/sync/application/remote_content_refresh_service.dart';
@@ -135,6 +136,13 @@ void main() {
           requiredCapabilityRevision: 1,
           updatedAt: DateTime.utc(2026, 7, 13, 12),
         ),
+        RemoteFlagRecord(
+          flag: MayhemFeatureFlag.newFeedEnabled,
+          enabled: true,
+          requiredCapabilityKey: 'feed_batch',
+          requiredCapabilityRevision: 1,
+          updatedAt: DateTime.utc(2026, 7, 13, 12),
+        ),
       ],
     );
 
@@ -147,6 +155,8 @@ void main() {
       isTrue,
     );
     expect(harness.remoteContent.refreshCalls, 1);
+    expect(harness.remoteFeed.refreshCalls, 1);
+    expect(harness.remoteFeedRefreshes, 1);
   });
 }
 
@@ -165,6 +175,7 @@ class _Harness {
        reconciliation = _Reconciliation(),
        content = _Content(),
        remoteContent = _RemoteContent(),
+       remoteFeed = _RemoteFeed(),
        flags = _Flags(),
        effectiveFlags = FeatureFlagRuntime.safe(),
        backend = _Backend(
@@ -184,6 +195,7 @@ class _Harness {
       reconciliationStore: reconciliation,
       content: content,
       contentRefresh: remoteContent,
+      remoteFeed: remoteFeed,
       flagCache: flags,
       featureFlags: effectiveFlags,
       platform: 'test',
@@ -192,10 +204,12 @@ class _Harness {
       random: Random(1),
       seasonActivation: seasonActivation,
       onProjectionCommitted: () async => projectionRefreshes += 1,
+      onRemoteFeedCommitted: () async => remoteFeedRefreshes += 1,
     );
   }
 
   int projectionRefreshes = 0;
+  int remoteFeedRefreshes = 0;
 
   final _AuthGateway auth;
   final _SessionStore sessions;
@@ -205,6 +219,7 @@ class _Harness {
   final _Reconciliation reconciliation;
   final _Content content;
   final _RemoteContent remoteContent;
+  final _RemoteFeed remoteFeed;
   final _Flags flags;
   final FeatureFlagRuntime effectiveFlags;
   final _Backend backend;
@@ -377,8 +392,28 @@ class _RemoteContent implements RemoteContentRefresher {
   }
 }
 
+class _RemoteFeed implements RemoteFeedRefresher {
+  int refreshCalls = 0;
+
+  @override
+  Future<RemoteFeedRefreshResult> refresh({String locale = 'ru'}) async {
+    refreshCalls += 1;
+    return const RemoteFeedRefreshResult(
+      receivedCount: 1,
+      savedCount: 1,
+      committed: true,
+    );
+  }
+}
+
 class _Flags implements RemoteFlagCache {
   int saved = 0;
+
+  @override
+  Future<CachedRemoteFlags?> load({
+    required DateTime now,
+    required CapabilityRevisionSet capabilities,
+  }) async => null;
 
   @override
   Future<void> save({

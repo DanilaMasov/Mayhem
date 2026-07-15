@@ -85,7 +85,7 @@ void main() {
   });
 
   test('RPC errors expose bounded server detail and never the token', () async {
-    final longMessage = 'x' * 400;
+    final longMessage = 'private-access-token${'x' * 400}';
     final http = FakeJsonHttpExecutor(
       response: JsonHttpResponse(
         statusCode: 422,
