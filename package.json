@@ -12,6 +12,7 @@
     "mobile:migrations:check": "node scripts/export_mobile_migrations.mjs --check",
     "mobile:migrations:test": "python3 scripts/test_mobile_migration.py",
     "supabase:seed": "node scripts/export_supabase_seed.mjs",
-    "supabase:seed:check": "node scripts/export_supabase_seed.mjs --check"
+    "supabase:seed:check": "node scripts/export_supabase_seed.mjs --check",
+    "supabase:live": "node scripts/run_live_supabase_acceptance.mjs"
   }
 }

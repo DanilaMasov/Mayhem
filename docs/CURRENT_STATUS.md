@@ -3,8 +3,8 @@
 **Status date:** 2026-07-15
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r1-corrections`
-**Current main checkpoint:** `96e1f7d` (merge commit for PR #4)
+**Current branch:** `codex/live-supabase-gate`
+**Current main checkpoint:** `73b61c3` (merge commit for PR #5)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -35,11 +35,14 @@ Baseline pull request #1 and R1 pull requests
 [#3](https://github.com/DanilaMasov/Mayhem/pull/3), and
 [#4](https://github.com/DanilaMasov/Mayhem/pull/4) are merged into `main`.
 PR #4 landed as merge commit `96e1f7d`; R1 software implementation is merged.
-The bounded post-R1 correction pass is active in pull request
-[#5](https://github.com/DanilaMasov/Mayhem/pull/5) on
-`codex/r1-corrections` and does not include Phase R2. Remote operations activate
-only with a valid environment-specific Supabase configuration; local startup
-and safe release defaults remain independent of that configuration.
+The bounded post-R1 correction pass in pull request
+[#5](https://github.com/DanilaMasov/Mayhem/pull/5) is merged into `main` as
+`73b61c3`. Phase R2 is active on `codex/live-supabase-gate`. Its guarded core
+acceptance runner is prepared in draft pull request
+[#6](https://github.com/DanilaMasov/Mayhem/pull/6), but no disposable live
+environment or credentials are available, so the live-backend gate remains
+open. Remote operations activate only with a valid environment-specific
+Supabase configuration.
 
 ## Open software gates
 
@@ -74,7 +77,7 @@ results:
 
 ```sh
 node --test tests/*.test.mjs
-# 22 passed
+# 28 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -118,6 +121,22 @@ Post-R1 correction local evidence:
 - authenticated RPC performs at most one forced refresh and one retry after
   `401`; refresh failure and a second `401` are explicit bounded auth errors;
 - HTTPS is mandatory outside development localhost/loopback configurations.
+
+R2 harness evidence:
+
+- requires an explicit non-production identifier and destructive-test
+  confirmation before reading the database target;
+- keeps DB URL, anon key, access tokens, refresh tokens, and server bodies out
+  of argv, logs, diagnostics, and reports;
+- refuses a target containing existing Mayhem tables and applies six migrations
+  from zero in deterministic order through `psql`;
+- prepares two-user auth/refresh, ownership/RLS, direct-write denial,
+  exact/duplicate/partial ACK, private-note rejection, auth recovery, and
+  Delete Everywhere probes;
+- dry contract tests pass, but the runner has not reached PostgreSQL or Supabase
+  because credentials and `psql` are unavailable;
+- `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command and
+  remaining Season/Boss, social-proof, client, and live evidence.
 
 R1 final composition local evidence:
 
@@ -211,13 +230,22 @@ The final R1 software slice is commit `8da8174` in merged pull request
 - [pull-request CI run 29421314120](https://github.com/DanilaMasov/Mayhem/actions/runs/29421314120):
   repository contracts and Flutter format/analyze/test passed.
 
-The post-R1 correction implementation is commit `49a5ab6` in pull request
-[#5](https://github.com/DanilaMasov/Mayhem/pull/5):
+The post-R1 correction implementation is commit `49a5ab6` in merged pull request
+[#5](https://github.com/DanilaMasov/Mayhem/pull/5), checkpoint `73b61c3`:
 
 - [push CI run 29435408678](https://github.com/DanilaMasov/Mayhem/actions/runs/29435408678):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29435443641](https://github.com/DanilaMasov/Mayhem/actions/runs/29435443641):
   repository contracts and Flutter format/analyze/test passed.
+
+The guarded R2 live-acceptance preparation is commit `f48d57c` in draft pull
+request [#6](https://github.com/DanilaMasov/Mayhem/pull/6):
+
+- [push CI run 29437633828](https://github.com/DanilaMasov/Mayhem/actions/runs/29437633828):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29437656421](https://github.com/DanilaMasov/Mayhem/actions/runs/29437656421):
+  repository contracts and Flutter format/analyze/test passed;
+- these source and dry-contract checks do not close the R2 live-backend gate.
 
 Live-backend, simulator/emulator, and physical-device tests were not run and
 their gates remain open. GitHub Actions also emits a non-blocking Node 20
@@ -226,10 +254,11 @@ not affect the current green software gate.
 
 ## Next authorized slice
 
-After the post-R1 correction pull request is green and merged, continue with
-Phase R2 on `codex/live-supabase-gate`: run the committed migrations and
-contracts against a disposable real Supabase/PostgreSQL environment. Keep every
-release flag false; R3-R6 remain gated by the specification prerequisites.
+Continue Phase R2 only on `codex/live-supabase-gate`: provide an isolated
+Supabase/PostgreSQL environment, run the prepared core acceptance command, then
+add Season/Boss concurrency and social-proof probes against the same target.
+Keep every release flag false; R3-R6 remain gated by R2 and their own
+specification prerequisites.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.
