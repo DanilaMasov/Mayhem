@@ -132,6 +132,7 @@ abstract interface class MayhemStrings {
   String get confirmDeleteEverywhereBody;
   String get deleteEverywhereConfirm;
   String get deleteEverywhereFailed;
+  String get deleteEverywhereRecoveryRequired;
   String get confirmResetTitle;
   String get confirmResetBody;
   String get cancel;
@@ -492,6 +493,9 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get deleteEverywhereFailed =>
       'Сервер не подтвердил удаление. Данные и сессия сохранены.';
+  @override
+  String get deleteEverywhereRecoveryRequired =>
+      'Облачное удаление подтверждено. Локальная очистка не завершена; повторите действие.';
   @override
   String get confirmResetTitle => 'Сбросить данные на устройстве?';
   @override

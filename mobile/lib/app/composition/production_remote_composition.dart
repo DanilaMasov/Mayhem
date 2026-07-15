@@ -4,6 +4,7 @@ import '../../core/feature_flags/feature_flag_runtime.dart';
 import '../../features/feed/application/remote_feed_refresh_service.dart';
 import '../../features/season/application/season_bootstrap_activator.dart';
 import '../../features/settings/application/delete_everywhere_coordinator.dart';
+import '../../features/settings/application/delete_everywhere_recovery_store.dart';
 import '../../features/settings/application/remote_account_controller.dart';
 import '../../features/sync/application/remote_content_refresh_service.dart';
 import '../../features/sync/application/vnext_sync_coordinator.dart';
@@ -25,6 +26,7 @@ class ProductionRemoteComposition {
   factory ProductionRemoteComposition.build({
     required SupabaseRuntimeConfig config,
     required SecureSessionStore secureSessions,
+    required DeleteEverywhereRecoveryStore deletionRecovery,
     required SqliteVNextStore store,
     required FeatureFlagRuntime featureFlags,
     required String platform,
@@ -50,6 +52,9 @@ class ProductionRemoteComposition {
       accessTokenProvider: () async =>
           (await secureSessions.read())?.accessToken,
       http: http,
+      refreshSession: () async {
+        await sessions.refreshSession();
+      },
     );
     final backend = SupabaseVNextBackendGateway(rpc);
     final sync = VNextSyncCoordinator(
@@ -90,6 +95,7 @@ class ProductionRemoteComposition {
     final deletion = DeleteEverywhereCoordinator(
       backend: backend,
       sessions: secureSessions,
+      recovery: deletionRecovery,
       clearLocalData: clearLocalData,
     );
     final account = RemoteAccountController(

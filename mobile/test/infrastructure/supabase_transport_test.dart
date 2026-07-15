@@ -84,6 +84,132 @@ void main() {
     expect(http.calls, 0);
   });
 
+  test('revoked token refreshes once and retries with the new token', () async {
+    var token = 'revoked-access-token';
+    var refreshCalls = 0;
+    final http = FakeJsonHttpExecutor(
+      responses: const [
+        JsonHttpResponse(statusCode: 401, body: '{"message":"expired"}'),
+        JsonHttpResponse(statusCode: 200, body: '{}'),
+      ],
+    );
+    final rpc = SupabaseRpcClient(
+      config: config,
+      accessTokenProvider: () async => token,
+      refreshSession: () async {
+        refreshCalls += 1;
+        token = 'fresh-access-token';
+      },
+      http: http,
+    );
+
+    expect(await rpc.invoke('get_bootstrap_payload', const {}), isEmpty);
+    expect(refreshCalls, 1);
+    expect(http.calls, 2);
+    expect(http.authorizationHeaders, [
+      'Bearer revoked-access-token',
+      'Bearer fresh-access-token',
+    ]);
+  });
+
+  test('revoked token refresh failure is explicit and bounded', () async {
+    final http = FakeJsonHttpExecutor(
+      response: const JsonHttpResponse(
+        statusCode: 401,
+        body: '{"message":"full private server response"}',
+      ),
+    );
+    final rpc = SupabaseRpcClient(
+      config: config,
+      accessTokenProvider: () async => 'revoked-access-token',
+      refreshSession: () async => throw StateError('refresh-secret'),
+      http: http,
+    );
+
+    await expectLater(
+      () => rpc.invoke('get_bootstrap_payload', const {}),
+      throwsA(
+        isA<SupabaseRpcAuthRecoveryException>()
+            .having(
+              (error) => error.message,
+              'message',
+              'session_refresh_failed',
+            )
+            .having(
+              (error) => error.toString(),
+              'safe output',
+              isNot(contains('refresh-secret')),
+            )
+            .having(
+              (error) => error.toString(),
+              'bounded output',
+              isNot(contains('private server response')),
+            ),
+      ),
+    );
+    expect(http.calls, 1);
+  });
+
+  test('second 401 stops after one refresh and one retry', () async {
+    var token = 'revoked-token';
+    final http = FakeJsonHttpExecutor(
+      responses: const [
+        JsonHttpResponse(statusCode: 401, body: '{}'),
+        JsonHttpResponse(statusCode: 401, body: '{"message":"secret"}'),
+      ],
+    );
+    final rpc = SupabaseRpcClient(
+      config: config,
+      accessTokenProvider: () async => token,
+      refreshSession: () async => token = 'refreshed-token',
+      http: http,
+    );
+
+    await expectLater(
+      () => rpc.invoke('get_bootstrap_payload', const {}),
+      throwsA(
+        isA<SupabaseRpcAuthRecoveryException>().having(
+          (error) => error.message,
+          'message',
+          'session_rejected_after_refresh',
+        ),
+      ),
+    );
+    expect(http.calls, 2);
+  });
+
+  test('non-development Supabase URL requires HTTPS', () {
+    const secure = SupabaseRuntimeConfig(
+      projectUrl: 'https://project.supabase.co',
+      anonKey: 'anon',
+      runtimeEnvironment: 'production',
+    );
+    const localDevelopment = SupabaseRuntimeConfig(
+      projectUrl: 'http://localhost:54321',
+      anonKey: 'anon',
+      runtimeEnvironment: 'development',
+    );
+    const insecureProduction = SupabaseRuntimeConfig(
+      projectUrl: 'http://localhost:54321',
+      anonKey: 'anon',
+      runtimeEnvironment: 'production',
+    );
+    const insecureRemoteDevelopment = SupabaseRuntimeConfig(
+      projectUrl: 'http://project.example.com',
+      anonKey: 'anon',
+      runtimeEnvironment: 'development',
+    );
+
+    expect(secure.isUsable, isTrue);
+    expect(localDevelopment.isUsable, isTrue);
+    expect(insecureProduction.isUsable, isFalse);
+    expect(insecureRemoteDevelopment.isUsable, isFalse);
+    expect(
+      () => insecureProduction.rpcUri('get_bootstrap_payload'),
+      throwsFormatException,
+    );
+  });
+
   test('RPC errors expose bounded server detail and never the token', () async {
     final longMessage = 'private-access-token${'x' * 400}';
     final http = FakeJsonHttpExecutor(
@@ -394,13 +520,16 @@ Map<String, Object?> _projectionJson() => {
 };
 
 class FakeJsonHttpExecutor implements JsonHttpExecutor {
-  FakeJsonHttpExecutor({required this.response});
+  FakeJsonHttpExecutor({this.response, List<JsonHttpResponse>? responses})
+    : responses = responses ?? const [];
 
-  final JsonHttpResponse response;
+  final JsonHttpResponse? response;
+  final List<JsonHttpResponse> responses;
   int calls = 0;
   Uri? uri;
   Map<String, String>? headers;
   String? body;
+  final List<String?> authorizationHeaders = [];
 
   @override
   Future<JsonHttpResponse> post(
@@ -412,6 +541,10 @@ class FakeJsonHttpExecutor implements JsonHttpExecutor {
     this.uri = uri;
     this.headers = Map.unmodifiable(headers);
     this.body = body;
-    return response;
+    authorizationHeaders.add(headers['authorization']);
+    if (responses.isNotEmpty) {
+      return responses[(calls - 1).clamp(0, responses.length - 1)];
+    }
+    return response!;
   }
 }

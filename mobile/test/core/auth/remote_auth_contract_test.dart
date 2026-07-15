@@ -6,6 +6,7 @@ import 'package:mayhem_mobile/core/auth/remote_auth_session.dart';
 import 'package:mayhem_mobile/core/auth/secure_session_store.dart';
 import 'package:mayhem_mobile/core/identity/local_identity_repository.dart';
 import 'package:mayhem_mobile/features/settings/application/delete_everywhere_coordinator.dart';
+import 'package:mayhem_mobile/features/settings/application/delete_everywhere_recovery_store.dart';
 import 'package:mayhem_mobile/features/sync/domain/backend_models.dart';
 
 void main() {
@@ -97,6 +98,7 @@ void main() {
       final coordinator = DeleteEverywhereCoordinator(
         backend: backend,
         sessions: sessions,
+        recovery: _RecoveryStore(),
         clearLocalData: () async => order.add('local'),
       );
 
@@ -116,10 +118,14 @@ void main() {
       final coordinator = DeleteEverywhereCoordinator(
         backend: _DeletionBackend(order: order, failure: StateError('offline')),
         sessions: sessions,
+        recovery: _RecoveryStore(),
         clearLocalData: () async => order.add('local'),
       );
 
-      await expectLater(coordinator.delete, throwsStateError);
+      await expectLater(
+        coordinator.delete,
+        throwsA(isA<DeleteEverywhereFailure>()),
+      );
 
       expect(order, ['remote']);
       expect(sessions.value, isNotNull);
@@ -159,6 +165,19 @@ class _SessionStore implements SecureSessionStore {
     writeCount += 1;
     value = session;
   }
+}
+
+class _RecoveryStore implements DeleteEverywhereRecoveryStore {
+  DataDeletionRecoveryMarker? value;
+
+  @override
+  Future<void> clear() async => value = null;
+
+  @override
+  Future<DataDeletionRecoveryMarker?> read() async => value;
+
+  @override
+  Future<void> write(DataDeletionRecoveryMarker marker) async => value = marker;
 }
 
 class _AuthGateway implements RemoteAuthGateway {

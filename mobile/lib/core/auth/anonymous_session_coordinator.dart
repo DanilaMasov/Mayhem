@@ -22,6 +22,14 @@ class AnonymousSessionCoordinator {
       return created;
     }
     if (stored.isUsableAt(now)) return stored;
+    return refreshSession();
+  }
+
+  Future<RemoteAuthSession> refreshSession() async {
+    final stored = await store.read();
+    if (stored == null) {
+      throw StateError('Remote session is unavailable for refresh');
+    }
     final refreshed = await gateway.refresh(stored);
     if (refreshed.remoteUserId != stored.remoteUserId) {
       throw StateError('Session refresh changed the remote user');

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/app/composition/app_composition_root.dart';
 import 'package:mayhem_mobile/app/composition/app_remote_orchestrator.dart';
 import 'package:mayhem_mobile/app/composition/app_telemetry.dart';
+import 'package:mayhem_mobile/app/composition/remote_runtime_diagnostics.dart';
 import 'package:mayhem_mobile/application/today_controller.dart';
 import 'package:mayhem_mobile/core/auth/remote_auth_session.dart';
 import 'package:mayhem_mobile/core/auth/secure_session_store.dart';
@@ -79,6 +80,30 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(remote.foregroundCalls, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await harness.root.shutdown();
+  });
+
+  testWidgets('successful foreground refresh recovers degraded bootstrap', (
+    tester,
+  ) async {
+    final remote = _RemoteOrchestrator(bootstrapError: StateError('offline'));
+    final harness = await _buildHarness(remote);
+    await tester.pumpWidget(harness.root.buildApp());
+
+    expect(
+      await harness.root.startRemoteBootstrap(),
+      AppRemoteRuntimeStatus.degraded,
+    );
+    expect(harness.root.remoteErrorCode, isNotNull);
+    remote.bootstrapError = null;
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(harness.root.remoteStatus, AppRemoteRuntimeStatus.ready);
+    expect(harness.root.remoteErrorCode, isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await harness.root.shutdown();
@@ -193,7 +218,7 @@ class _RemoteOrchestrator implements AppRemoteOrchestrator {
   });
 
   final Completer<void>? bootstrapGate;
-  final Object? bootstrapError;
+  Object? bootstrapError;
   final bool completeBootstrapOnClose;
   AppCancellationSignal? cancellation;
   int bootstrapCalls = 0;
