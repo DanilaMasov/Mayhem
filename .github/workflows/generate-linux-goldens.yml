@@ -2,6 +2,9 @@ name: Generate Linux Goldens
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/current-baseline
 
 permissions:
   contents: read
