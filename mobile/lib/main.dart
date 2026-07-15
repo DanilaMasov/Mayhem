@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
-import 'app/mayhem_app.dart';
+import 'app/composition/app_composition_root.dart';
+import 'app/composition/app_remote_orchestrator.dart';
 import 'app/vnext/vnext_runtime.dart';
 import 'application/today_controller.dart';
 import 'data/catalog/bundled_quest_catalog.dart';
@@ -14,7 +18,6 @@ import 'content/data/bundled_vnext_content_adapter.dart';
 import 'core/clock/mayhem_clock.dart';
 import 'core/clock/platform_timezone_id.dart';
 import 'core/feature_flags/feature_flag_runtime.dart';
-import 'core/feature_flags/feature_flags.dart';
 import 'infrastructure/sqlite/sqflite_game_store.dart';
 import 'presentation/theme/mayhem_theme.dart';
 
@@ -49,31 +52,40 @@ Future<void> main() async {
     );
     await controller.initialize();
     final featureFlags = FeatureFlagRuntime.fromEnvironment();
-    final newFeedEnabled = featureFlags.isEnabled(
-      MayhemFeatureFlag.newFeedEnabled,
-    );
-    final timezoneId = newFeedEnabled ? await PlatformTimezoneId.load() : null;
-    final vnextRuntime = newFeedEnabled
-        ? VNextRuntime(
-            store: store.createVNextStore(),
-            bundled: const BundledVNextContentAdapter().adapt(
-              catalog,
-              publishedAt: DateTime.utc(2026, 7, 1),
-              guides: guides,
-              dialogs: dialogs,
-            ),
-            featureFlags: featureFlags,
-            idGenerator: const Uuid().v4,
-            clock: SystemMayhemClock(timezoneIdProvider: () => timezoneId!),
-          )
-        : null;
-    runApp(
-      MayhemApp(
-        controller: controller,
+    VNextRuntime? vnextRuntime;
+    try {
+      final timezoneId = await PlatformTimezoneId.load();
+      vnextRuntime = VNextRuntime(
+        store: store.createVNextStore(),
+        bundled: const BundledVNextContentAdapter().adapt(
+          catalog,
+          publishedAt: DateTime.utc(2026, 7, 1),
+          guides: guides,
+          dialogs: dialogs,
+        ),
         featureFlags: featureFlags,
-        vnextRuntime: vnextRuntime,
+        idGenerator: const Uuid().v4,
+        clock: SystemMayhemClock(timezoneIdProvider: () => timezoneId),
+      );
+    } catch (error, stackTrace) {
+      developer.log(
+        'vNext local runtime unavailable; legacy Today remains active',
+        name: 'mayhem.composition',
+        error: error.runtimeType,
+        stackTrace: stackTrace,
+      );
+    }
+    final composition = AppCompositionRoot(
+      legacyController: controller,
+      featureFlags: featureFlags,
+      vnextRuntime: vnextRuntime,
+      remote: const DisabledAppRemoteOrchestrator(
+        'secure_session_store_unavailable',
       ),
+      closeLocalStore: store.close,
     );
+    runApp(composition.buildApp());
+    unawaited(composition.startRemoteBootstrap());
   } catch (error, stackTrace) {
     FlutterError.reportError(
       FlutterErrorDetails(
