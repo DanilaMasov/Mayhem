@@ -48,3 +48,16 @@ Boss completions are accepted only after a trusted server task has populated `da
 ## Verification boundary
 
 Static contract tests verify schema invariants, event-name parity, generated seed parity, RLS and RPC safeguards. PostgreSQL/Supabase CLI is not installed in this workspace, so these migrations still require compilation against a disposable Supabase project before deployment.
+
+## Guarded live acceptance
+
+`npm run supabase:live` runs the first R2 live vertical slice without additional
+Node dependencies. It requires an explicitly confirmed disposable environment,
+an HTTPS Supabase URL (localhost HTTP is the only exception), the public anon
+key, a PostgreSQL connection URL, and an available `psql` executable.
+
+The runner refuses targets that already contain Mayhem tables. Credentials are
+read only from environment variables; URLs, keys, refresh tokens, and access
+tokens are excluded from reports and error messages. See
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` for the exact variables, prepared probes,
+and still-open R2 gates.
