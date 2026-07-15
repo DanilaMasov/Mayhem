@@ -1,86 +1,50 @@
-# MAYHEM — Social Challenge
+# Mayhem
 
-## Mobile target
+Mayhem is a local-first Flutter mobile application for structured social
+challenges. The production application lives in [`mobile/`](mobile/). Root web
+files are frozen legacy/reference material and must not receive new product
+functionality.
 
-Основная разработка теперь ведётся в `mobile/`: это официальный Flutter-проект с iOS/Android runners, чистым domain layer, SQLite repository и первым рабочим Today/Daily Drop vertical slice. Web-приложение ниже сохраняется как reference prototype и больше не считается production target.
+## Start here
+
+- [Current specification](docs/MAYHEM_CURRENT_SPEC_v1.2.md) - authoritative
+  product, recovery, gate, and execution contract.
+- [Current status](docs/CURRENT_STATUS.md) - implemented capabilities, open
+  gates, latest evidence, and next authorized slice.
+- [Agent contract](AGENTS.md) - mandatory boundaries for future Codex sessions.
+- [Mobile documentation](mobile/README.md) - Flutter project details.
+
+Kira and `.hatch-pets/` are not part of Mayhem. They must remain untracked and
+must never be imported into the product or used as product/design requirements.
+
+## Local verification
+
+Repository contracts and deterministic generation:
+
+```sh
+node --test tests/*.test.mjs
+node scripts/export_mobile_content.mjs --check
+node scripts/export_mobile_migrations.mjs --check
+python3 scripts/test_mobile_migration.py
+node scripts/export_supabase_seed.mjs --check
+```
+
+Flutter verification with locked dependencies:
 
 ```sh
 cd mobile
+dart format --output=none --set-exit-if-changed lib test
 flutter analyze --no-pub
 flutter test --no-pub --no-test-assets -j 1
 ```
 
-Подробности: `mobile/README.md`.
+The app must continue to open from local SQLite and bundled content when every
+remote service is unavailable. Production flags remain fail-closed until their
+software, live-backend, and physical-device gates have evidence.
 
-## Legacy web reference
+## Historical material
 
-Корневое web-приложение заморожено как reference implementation для проверки
-старых UX и игровых правил. Это не production MVP и не источник архитектуры для
-нового Feed. Production target по мастер-ТЗ: Flutter + SQLite + Supabase в
-`mobile/`. Web-прототип запускается локально без установки зависимостей и без
-сетевых запросов.
-
-План контролируемой feed-first миграции:
-`docs/feed-vnext-execution-plan.md`. Первое архитектурное решение:
-`docs/adr/0001-feed-first-migration.md`.
-
-## Что реализовано
-
-- дневной core loop: 1 общий `Daily Drop` по UTC + 2 локальных `Backup Runs` с обновлением в 12:00 local;
-- жёсткая визуальная система MAYHEM: общий вызов первым, горизонтальные challenge rows, чёрно-белая база, signal red и safety yellow;
-- энергия, XP, уровни, три стата: Charisma, Boldness, Networking;
-- Safe Defer: квест можно отложить без списания энергии и cooldown; подготовка сохраняется, попытку можно сразу начать снова;
-- статус "Затворник" при низкой энергии и Shadow-квесты для восстановления;
-- условия попытки: 1 бесплатный бросок в день, PRO-лимиты 3/день + 1 reroll на вызов;
-- разбор вызова: отдельное открытие с `guide_opened`, 3 шага, фразы, выход, другой маршрут и усложнение;
-- репетиция для средних и главных вызовов: node/options диалог вместо one-click мока, успешное окончание даёт +10% XP;
-- Daily Drop без видео-пруфа и давления на посторонних, с двумя равнозначными маршрутами и одинаковым XP;
-- Reflection: страх 1-10, состояние 1-10, "хочу повторить", заметка и пропуск без потери XP;
-- профиль, история выполнений, повторное открытие reflection;
-- локальный append-only event log с canonical event names, client sequence, проверкой порядка событий, наград и переходов энергии, а также дедупликацией для прототипа;
-- event sync с хронологической обработкой и индексом prior events вместо квадратичного поиска по журналу;
-- заменяемый state repository: versioned envelope, backup предыдущего состояния, восстановление при повреждённом JSON и storage diagnostics;
-- runtime-валидация quest catalog и индексированный lookup по ID до запуска UI;
-- post-first-quest экран границ продукта: not medical advice, право на отказ, удаление данных;
-- локальный paywall-мок для проверки PRO-логики в debug-режиме.
-
-## Запуск
-
-```powershell
-npm start
-```
-
-Открыть: http://localhost:4173
-
-Обычный режим скрывает внутренние sync/PRO-моки. Для разработки и QA они доступны по адресу `http://localhost:4173/?debug=1`.
-
-## Проверка
-
-```powershell
-npm test
-```
-
-Тесты покрывают правила энергии, defer-модель и миграцию legacy cooldown, reset-квесты, Daily Drop XP, лимиты условий, canonical event names, skip reflection, разбор / rehearsal events, подготовку без неявного старта, локальную sync-валидацию, catalog validation, backup recovery и нагрузочный sync 10 000 событий.
-
-Для визуальной проверки есть локальный QA-вход:
-
-```text
-http://localhost:4173/qa-seed.html
-```
-
-Он отмечает onboarding как принятый, включает debug-режим и открывает главный экран. Финальные screenshots лежат в `artifacts/`.
-
-## Что осталось для production
-
-- заменить localStorage на SQLite;
-- перенести UI на Flutter;
-- подключить Supabase Auth/Storage/Edge Functions;
-- добавить StoreKit 2 и Google Play Billing;
-- заменить встроенный пул на xlsx/JSON-поставку как единственный источник контента;
-- добавить Amplitude и production sync engine.
-
-## Логи и аудит
-
-- `DEVELOPMENT_LOG.md` — журнал решений и проверок текущей разработки.
-- `mayhem_audit_and_fix_plan.md` — структурный аудит соответствия PRD и план миграции к production MVP.
-- `mayhem_architecture_review_v2.md` — актуальный архитектурный аудит, нагрузочные границы и приоритет следующей разработки.
+Older PRDs, audits, development logs, execution plans, ADRs, phase reports, and
+the root web prototype are retained as historical evidence. They are
+non-authoritative when they conflict with
+[`docs/MAYHEM_CURRENT_SPEC_v1.2.md`](docs/MAYHEM_CURRENT_SPEC_v1.2.md).

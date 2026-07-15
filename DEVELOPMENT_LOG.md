@@ -1,3 +1,6 @@
+> **Historical, non-authoritative evidence.** Current execution authority and
+> status: `docs/MAYHEM_CURRENT_SPEC_v1.2.md` and `docs/CURRENT_STATUS.md`.
+
 # Development Log
 
 ## 2026-07-09 - Stage 1 prototype hardening

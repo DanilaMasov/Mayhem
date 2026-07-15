@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 ## Phase completed
 
 Phase 5 - Backend vNext, anonymous auth, sync and remote content. Branch:

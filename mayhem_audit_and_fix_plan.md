@@ -1,3 +1,6 @@
+> **Historical, non-authoritative audit.** Use
+> `docs/MAYHEM_CURRENT_SPEC_v1.2.md` and `docs/CURRENT_STATUS.md`.
+
 # Mayhem / Confidence Quest - аудит соответствия PRD v3.2 и план исправления
 
 > Исторический аудит от 2026-07-09/10. Часть перечисленных ниже разрывов уже исправлена. Текущий источник архитектурного статуса и дальнейшего плана: `mayhem_architecture_review_v2.md`.

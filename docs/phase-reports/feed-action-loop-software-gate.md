@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 ## Phase completed
 
 Cross-phase P0 - complete local vNext Feed action loop. This closes the

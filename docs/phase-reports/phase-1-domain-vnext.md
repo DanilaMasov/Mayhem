@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 # Phase completed
 
 Phase 1 - Domain vNext and safe local migration.

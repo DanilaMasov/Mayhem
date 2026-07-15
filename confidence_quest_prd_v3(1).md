@@ -1,3 +1,6 @@
+> **Historical, non-authoritative specification.** Superseded by
+> `docs/MAYHEM_CURRENT_SPEC_v1.2.md`.
+
 # Confidence Quest — Техническое задание (PRD) v3.2
 
 > **Платформа:** iOS / Android

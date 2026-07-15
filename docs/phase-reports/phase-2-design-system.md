@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 # Phase 2 report: design system and Motion Lab
 
 Date: 2026-07-13

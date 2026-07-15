@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 # Phases 0-3 v1.1 delta software gate
 
 ## Phase completed

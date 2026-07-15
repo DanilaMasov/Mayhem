@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 ## Phase completed
 
 Phase 6 is not complete. This report closes the bounded Phase 6B iteration:

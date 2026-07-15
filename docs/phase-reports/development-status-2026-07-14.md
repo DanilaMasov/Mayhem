@@ -1,10 +1,14 @@
+> **Historical, non-authoritative report.** Current status is maintained in
+> `../CURRENT_STATUS.md` under `../MAYHEM_CURRENT_SPEC_v1.2.md`.
+
 # Mayhem: consolidated development report
 
 Date: 2026-07-14
 
 Production target: `mobile/`
 
-Current branch: `codex/phase-6c-season-participation`
+Historical snapshot branch: `codex/phase-6c-season-participation`. Phase 6C was
+later committed and the imported source checkpoint advanced to `9a61caa`.
 
 Specification source: `MAYHEM_MASTER_PRODUCT_DESIGN_TECH_SPEC_v1.1.md`.
 Phases 0-3 were retained and delta-audited against v1.1; they were not rebuilt.
@@ -495,8 +499,11 @@ Committed milestones:
 - `d6f978f` / `74efc4b` - Phase 4 and its software gate;
 - `049c8f1` / `52582b2` / `dabfab8` - Phase 5 backend, sync and gate;
 - `c7adc9d` - Phase 6A;
-- `1097988` - Phase 6B.
+- `1097988` - Phase 6B;
+- `e3f6b6a` - Phase 6C;
+- `d2cbd1b` - Phase 6D;
+- `9a61caa` - Phase 6E audited source checkpoint.
 
-Uncommitted Phase 6C files are intentionally listed by `git status`; none were
-discarded during cleanup. The next development iteration should begin by
-reviewing that exact diff and creating its checkpoint before adding Phase 6D.
+The earlier uncommitted Phase 6C note is obsolete. Current work and next
+authorization are defined only by `../CURRENT_STATUS.md` and specification
+v1.2.

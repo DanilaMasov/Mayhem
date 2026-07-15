@@ -1,3 +1,6 @@
+> **Historical, non-authoritative direction.** Superseded where conflicting by
+> `docs/MAYHEM_CURRENT_SPEC_v1.2.md`.
+
 # MAYHEM - brand and challenge direction v1
 
 Дата: 2026-07-11  
@@ -237,4 +240,3 @@ Kill conditions:
 5. `Основной / Другой маршрут` вместо `Normal / Low-pressure`.
 6. Более интенсивный, но safety-reviewed Boss pool.
 7. Никаких UGC, proof-video, leaderboard или сексуальных shock-prompts.
-

@@ -1,3 +1,6 @@
+> **Historical, non-authoritative audit.** Use
+> `docs/MAYHEM_CURRENT_SPEC_v1.2.md` and `docs/CURRENT_STATUS.md`.
+
 # MAYHEM — архитектурный и продуктовый аудит v2
 
 Дата: 2026-07-11  

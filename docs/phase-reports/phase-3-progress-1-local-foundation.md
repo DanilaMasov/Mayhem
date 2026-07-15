@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 # Phase 3 progress 1: local-first Feed foundation
 
 Date: 2026-07-13

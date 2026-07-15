@@ -1,3 +1,5 @@
+> **Historical, non-authoritative phase evidence.** See `../CURRENT_STATUS.md`.
+
 ## Phase completed
 
 Phase 4 - Onboarding, Journey and You. Branch: `codex/phase-4-v1-1`.

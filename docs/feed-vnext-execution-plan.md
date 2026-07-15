@@ -1,3 +1,6 @@
+> **Historical, non-authoritative plan.** Use `MAYHEM_CURRENT_SPEC_v1.2.md` and
+> `CURRENT_STATUS.md` for current work.
+
 # MAYHEM Feed vNext execution plan
 
 This plan implements the July 2026 master specification in phases. The reviewed
