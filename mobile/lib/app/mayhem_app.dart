@@ -29,23 +29,32 @@ class MayhemApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final flags = featureFlags ?? FeatureFlagRuntime.safe();
-    final newFeedEnabled = flags.isEnabled(MayhemFeatureFlag.newFeedEnabled);
-    assert(!newFeedEnabled || vnextRuntime != null);
-    return MaterialApp(
-      title: 'MAYHEM',
-      debugShowCheckedModeBanner: false,
-      theme: MayhemTheme.dark,
-      builder: (context, child) => MayhemStringsScope(
-        strings: const MayhemStringsRu(),
-        child: MayhemAccessibility(
-          preferences: const MayhemMotionPreferences(),
-          child: child ?? const SizedBox.shrink(),
-        ),
-      ),
-      routes: mayhemInternalRoutes(debug: kDebugMode),
-      home: newFeedEnabled && vnextRuntime != null
-          ? VNextAppRoot(runtime: vnextRuntime!, legacyController: controller)
-          : _MayhemRoot(controller: controller),
+    return AnimatedBuilder(
+      animation: flags,
+      builder: (context, child) {
+        final newFeedEnabled =
+            flags.isEnabled(MayhemFeatureFlag.newFeedEnabled) &&
+            vnextRuntime != null;
+        return MaterialApp(
+          title: 'MAYHEM',
+          debugShowCheckedModeBanner: false,
+          theme: MayhemTheme.dark,
+          builder: (context, child) => MayhemStringsScope(
+            strings: const MayhemStringsRu(),
+            child: MayhemAccessibility(
+              preferences: const MayhemMotionPreferences(),
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
+          routes: mayhemInternalRoutes(debug: kDebugMode),
+          home: newFeedEnabled
+              ? VNextAppRoot(
+                  runtime: vnextRuntime!,
+                  legacyController: controller,
+                )
+              : _MayhemRoot(controller: controller),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
 import 'package:mayhem_mobile/core/feature_flags/remote_feature_flag_resolver.dart';
+import 'package:mayhem_mobile/features/sync/application/vnext_sync_coordinator.dart';
 import 'package:mayhem_mobile/features/sync/domain/backend_models.dart';
 
 void main() {
@@ -96,6 +97,24 @@ void main() {
 
     expect(parsed.flags, isEmpty);
   });
+
+  test(
+    'production capability set covers every remotely gated product area',
+    () {
+      final capabilities = MayhemRemoteCapabilities.current;
+
+      for (final key in const {
+        'remote_content',
+        'feed_batch',
+        'season_zero',
+        'boss_raid',
+        'artifact_ownership',
+        'social_proof',
+      }) {
+        expect(capabilities.supports(key, 1), isTrue, reason: key);
+      }
+    },
+  );
 }
 
 Map<String, dynamic> _bootstrapJson() => {

@@ -8,6 +8,7 @@ import 'package:mayhem_mobile/core/auth/anonymous_session_coordinator.dart';
 import 'package:mayhem_mobile/core/auth/remote_auth_gateway.dart';
 import 'package:mayhem_mobile/core/auth/remote_auth_session.dart';
 import 'package:mayhem_mobile/core/auth/secure_session_store.dart';
+import 'package:mayhem_mobile/core/feature_flags/feature_flag_runtime.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
 import 'package:mayhem_mobile/core/identity/local_identity_repository.dart';
 import 'package:mayhem_mobile/core/sync/event_envelope_v2.dart';
@@ -122,6 +123,31 @@ void main() {
     expect(result.status, SyncRunStatus.synchronized);
     expect(activation.calls, 1);
   });
+
+  test('validated bootstrap flags update the effective runtime', () async {
+    final harness = _Harness(
+      remoteOperationsEnabled: true,
+      bootstrapFlags: [
+        RemoteFlagRecord(
+          flag: MayhemFeatureFlag.remoteContentEnabled,
+          enabled: true,
+          requiredCapabilityKey: 'remote_content',
+          requiredCapabilityRevision: 1,
+          updatedAt: DateTime.utc(2026, 7, 13, 12),
+        ),
+      ],
+    );
+
+    final result = await harness.coordinator.synchronize();
+
+    expect(result.status, SyncRunStatus.synchronized);
+    expect(harness.effectiveFlags.source, FeatureFlagSnapshotSource.server);
+    expect(
+      harness.effectiveFlags.isEnabled(MayhemFeatureFlag.remoteContentEnabled),
+      isTrue,
+    );
+    expect(harness.remoteContent.refreshCalls, 1);
+  });
 }
 
 class _Harness {
@@ -130,6 +156,7 @@ class _Harness {
     Object? ingestFailure,
     Future<void>? registrationGate,
     SeasonBootstrapActivation? seasonActivation,
+    List<RemoteFlagRecord> bootstrapFlags = const [],
   }) : auth = _AuthGateway(),
        sessions = _SessionStore(),
        identity = _Identity(),
@@ -139,10 +166,13 @@ class _Harness {
        content = _Content(),
        remoteContent = _RemoteContent(),
        flags = _Flags(),
+       effectiveFlags = FeatureFlagRuntime.safe(),
        backend = _Backend(
          ingestFailure: ingestFailure,
          registrationGate: registrationGate,
+         bootstrapFlags: bootstrapFlags,
        ) {
+    addTearDown(effectiveFlags.dispose);
     coordinator = VNextSyncCoordinator(
       remoteOperationsEnabled: remoteOperationsEnabled,
       sessions: AnonymousSessionCoordinator(gateway: auth, store: sessions),
@@ -155,6 +185,7 @@ class _Harness {
       content: content,
       contentRefresh: remoteContent,
       flagCache: flags,
+      featureFlags: effectiveFlags,
       platform: 'test',
       appVersion: '1.0.0+1',
       clock: () => DateTime.utc(2026, 7, 13, 12),
@@ -175,6 +206,7 @@ class _Harness {
   final _Content content;
   final _RemoteContent remoteContent;
   final _Flags flags;
+  final FeatureFlagRuntime effectiveFlags;
   final _Backend backend;
   late final VNextSyncCoordinator coordinator;
 }
@@ -359,10 +391,15 @@ class _Flags implements RemoteFlagCache {
 }
 
 class _Backend implements VNextBackendGateway {
-  _Backend({this.ingestFailure, this.registrationGate});
+  _Backend({
+    this.ingestFailure,
+    this.registrationGate,
+    this.bootstrapFlags = const [],
+  });
 
   final Object? ingestFailure;
   final Future<void>? registrationGate;
+  final List<RemoteFlagRecord> bootstrapFlags;
   int registerCalls = 0;
   int bootstrapCalls = 0;
   int ingestCalls = 0;
@@ -395,7 +432,7 @@ class _Backend implements VNextBackendGateway {
       remoteUserId: 'remote-user',
       localUserId: 'local-user',
       installationId: installationId,
-      flags: const [],
+      flags: bootstrapFlags,
       projection: _serverProjection(0, 0),
       contentManifest: RemoteContentManifest(
         revision: 0,

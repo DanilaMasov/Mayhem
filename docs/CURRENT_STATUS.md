@@ -3,7 +3,7 @@
 **Status date:** 2026-07-15
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/current-baseline`
+**Current branch:** `codex/runtime-composition`
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -17,19 +17,22 @@
   Season, Boss, artifact, reconciliation, and privacy-threshold contracts.
 - Server-owned artifact persistence and gated active-Season presentation.
 - Clean Git baseline imported without old Kira or `.hatch-pets/` history.
+- Mutable effective feature-flag runtime with strict TTL expiry, capability
+  validation through remote bootstrap, and live legacy/vNext UI switching.
 
 ## Active work item
 
-Repository Recovery and Documentation Consolidation from specification
-sections 3, 4, and 14 are complete on `codex/current-baseline`. Pull request
-[#1](https://github.com/DanilaMasov/Mayhem/pull/1) is open for review and merge.
-Production Composition Root and all later phases are intentionally not started
-on this branch.
+Baseline pull request
+[#1](https://github.com/DanilaMasov/Mayhem/pull/1) was merged into `main` as
+`15c6397`. Phase R1 is in progress on `codex/runtime-composition`. The first
+vertical slice publishes validated server flags into a mutable runtime and
+proves live fail-closed UI behavior without enabling release defaults.
 
 ## Open software gates
 
-- R1 production composition root, secure session adapter, mutable effective
-  flags, lifecycle sync, remote Feed, and real account actions.
+- R1 production composition root, secure session adapter, cached-flag startup,
+  non-blocking remote orchestration, lifecycle sync, remote Feed, and real
+  account actions.
 - R3 complete user-visible Season/Boss state machine and recovery UX.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
@@ -85,8 +88,18 @@ flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 179 passed
+# 185 passed
 ```
+
+R1 mutable-flag slice local evidence:
+
+- release defaults remain false and debug overrides remain debug-only;
+- cached/server snapshots require a valid lifetime and expire automatically;
+- server records pass capability-revision validation before publication;
+- remote bootstrap updates the effective runtime and gates remote content;
+- widget coverage proves legacy Today to vNext and automatic TTL fallback
+  without restarting the app;
+- no package, lockfile, SDK, secret, or release-default change was introduced.
 
 The first complete green GitHub baseline was commit `d7b33ce`:
 
@@ -97,18 +110,25 @@ The first complete green GitHub baseline was commit `d7b33ce`:
 - Linux and macOS visual tests use strict platform-specific PNG baselines;
   no tolerance or automatic golden update is enabled in ordinary CI.
 
-The latest branch head remains mergeable only while the live checks on PR #1
-are green. `git diff --check`, clean-tree/Kira-history checks, branch upstream,
-and merge-base checks passed. Live-backend, simulator/emulator, and
-physical-device tests were not run and their gates remain open. GitHub Actions
-also emits a non-blocking Node 20 action-runtime deprecation warning for the v4
-checkout/setup actions; it does not affect the current green gate.
+Baseline PR #1 is merged. The first R1 slice is commit `85a91e4` in pull request
+[#2](https://github.com/DanilaMasov/Mayhem/pull/2):
+
+- [push CI run 29410905633](https://github.com/DanilaMasov/Mayhem/actions/runs/29410905633):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29410929122](https://github.com/DanilaMasov/Mayhem/actions/runs/29410929122):
+  repository contracts and Flutter format/analyze/test passed.
+
+Live-backend, simulator/emulator, and physical-device tests were not run and
+their gates remain open. GitHub Actions also emits a non-blocking Node 20
+action-runtime deprecation warning for the v4 checkout/setup actions; it does
+not affect the current green software gate.
 
 ## Next authorized slice
 
-Review and merge the clean baseline pull request without force-push. After that,
-a new `codex/runtime-composition` branch may begin Phase R1. R2-R6 remain
-unauthorized until their prerequisites in the specification are satisfied.
+Continue Phase R1 with the production composition owner, platform-protected
+session adapter, cached-flag bootstrap, and non-blocking remote orchestration.
+Keep every release flag false until its live-backend and device prerequisites
+are satisfied. R2-R6 remain gated by the specification prerequisites.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

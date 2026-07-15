@@ -17,6 +17,7 @@ import 'memory_vnext_database.dart';
 
 Future<VNextRuntime> buildVNextTestRuntime({
   MemoryVNextDatabase? database,
+  FeatureFlagRuntime? featureFlags,
   Map<MayhemFeatureFlag, bool> debugOverrides = const {
     MayhemFeatureFlag.newFeedEnabled: true,
   },
@@ -46,10 +47,12 @@ Future<VNextRuntime> buildVNextTestRuntime({
       guides: guides,
       dialogs: dialogs,
     ),
-    featureFlags: FeatureFlagRuntime.resolve(
-      debugBuild: true,
-      requestedDebugOverrides: debugOverrides,
-    ),
+    featureFlags:
+        featureFlags ??
+        FeatureFlagRuntime.resolve(
+          debugBuild: true,
+          requestedDebugOverrides: debugOverrides,
+        ),
     idGenerator: () => 'phase4-${++id}',
     clock: FixedMayhemClock(
       now: DateTime.utc(2026, 7, 13, 9),
