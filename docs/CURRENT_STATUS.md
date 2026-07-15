@@ -35,10 +35,11 @@ Baseline pull request #1 and R1 pull requests
 [#3](https://github.com/DanilaMasov/Mayhem/pull/3), and
 [#4](https://github.com/DanilaMasov/Mayhem/pull/4) are merged into `main`.
 PR #4 landed as merge commit `96e1f7d`; R1 software implementation is merged.
-The bounded post-R1 correction pass is active on `codex/r1-corrections` and
-does not include Phase R2. Remote operations activate only with a valid
-environment-specific Supabase configuration; local startup and safe release
-defaults remain independent of that configuration.
+The bounded post-R1 correction pass is active in pull request
+[#5](https://github.com/DanilaMasov/Mayhem/pull/5) on
+`codex/r1-corrections` and does not include Phase R2. Remote operations activate
+only with a valid environment-specific Supabase configuration; local startup
+and safe release defaults remain independent of that configuration.
 
 ## Open software gates
 
@@ -208,6 +209,14 @@ The final R1 software slice is commit `8da8174` in merged pull request
 - [push CI run 29421312228](https://github.com/DanilaMasov/Mayhem/actions/runs/29421312228):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29421314120](https://github.com/DanilaMasov/Mayhem/actions/runs/29421314120):
+  repository contracts and Flutter format/analyze/test passed.
+
+The post-R1 correction implementation is commit `49a5ab6` in pull request
+[#5](https://github.com/DanilaMasov/Mayhem/pull/5):
+
+- [push CI run 29435408678](https://github.com/DanilaMasov/Mayhem/actions/runs/29435408678):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29435443641](https://github.com/DanilaMasov/Mayhem/actions/runs/29435443641):
   repository contracts and Flutter format/analyze/test passed.
 
 Live-backend, simulator/emulator, and physical-device tests were not run and
