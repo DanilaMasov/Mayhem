@@ -110,11 +110,18 @@ The first complete green GitHub baseline was commit `d7b33ce`:
 - Linux and macOS visual tests use strict platform-specific PNG baselines;
   no tolerance or automatic golden update is enabled in ordinary CI.
 
-Baseline PR #1 is merged. CI for the current R1 slice is pending its commit,
-push, and pull request. Live-backend, simulator/emulator, and physical-device
-tests were not run and their gates remain open. GitHub Actions also emits a
-non-blocking Node 20 action-runtime deprecation warning for the v4
-checkout/setup actions; it does not affect the current baseline gate.
+Baseline PR #1 is merged. The first R1 slice is commit `85a91e4` in pull request
+[#2](https://github.com/DanilaMasov/Mayhem/pull/2):
+
+- [push CI run 29410905633](https://github.com/DanilaMasov/Mayhem/actions/runs/29410905633):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29410929122](https://github.com/DanilaMasov/Mayhem/actions/runs/29410929122):
+  repository contracts and Flutter format/analyze/test passed.
+
+Live-backend, simulator/emulator, and physical-device tests were not run and
+their gates remain open. GitHub Actions also emits a non-blocking Node 20
+action-runtime deprecation warning for the v4 checkout/setup actions; it does
+not affect the current green software gate.
 
 ## Next authorized slice
 
