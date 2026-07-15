@@ -19,6 +19,7 @@ import 'core/clock/mayhem_clock.dart';
 import 'core/clock/platform_timezone_id.dart';
 import 'core/feature_flags/feature_flag_runtime.dart';
 import 'infrastructure/sqlite/sqflite_game_store.dart';
+import 'infrastructure/security/flutter_secure_session_store.dart';
 import 'presentation/theme/mayhem_theme.dart';
 
 Future<void> main() async {
@@ -52,6 +53,13 @@ Future<void> main() async {
     );
     await controller.initialize();
     final featureFlags = FeatureFlagRuntime.fromEnvironment();
+    final secureSessions = FlutterSecureSessionStore(
+      storage: FlutterSecureKeyValueStore(),
+      environment: const String.fromEnvironment(
+        'MAYHEM_ENVIRONMENT',
+        defaultValue: 'development',
+      ),
+    );
     VNextRuntime? vnextRuntime;
     try {
       final timezoneId = await PlatformTimezoneId.load();
@@ -79,8 +87,9 @@ Future<void> main() async {
       legacyController: controller,
       featureFlags: featureFlags,
       vnextRuntime: vnextRuntime,
+      secureSessions: secureSessions,
       remote: const DisabledAppRemoteOrchestrator(
-        'secure_session_store_unavailable',
+        'supabase_remote_not_composed',
       ),
       closeLocalStore: store.close,
     );
