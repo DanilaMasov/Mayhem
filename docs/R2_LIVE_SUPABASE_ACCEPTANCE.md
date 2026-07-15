@@ -3,6 +3,7 @@
 **Status:** PREPARED, NOT RUN
 **Main checkpoint:** `73b61c3` (merge commit for PR #5)
 **Branch:** `codex/live-supabase-gate`
+**Draft pull request:** [#6](https://github.com/DanilaMasov/Mayhem/pull/6)
 **Specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`, section 6
 
 ## Current Environment Evidence

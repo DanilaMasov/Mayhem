@@ -38,9 +38,11 @@ PR #4 landed as merge commit `96e1f7d`; R1 software implementation is merged.
 The bounded post-R1 correction pass in pull request
 [#5](https://github.com/DanilaMasov/Mayhem/pull/5) is merged into `main` as
 `73b61c3`. Phase R2 is active on `codex/live-supabase-gate`. Its guarded core
-acceptance runner is prepared, but no disposable live environment or credentials
-are available, so the live-backend gate remains open. Remote operations activate
-only with a valid environment-specific Supabase configuration.
+acceptance runner is prepared in draft pull request
+[#6](https://github.com/DanilaMasov/Mayhem/pull/6), but no disposable live
+environment or credentials are available, so the live-backend gate remains
+open. Remote operations activate only with a valid environment-specific
+Supabase configuration.
 
 ## Open software gates
 
@@ -235,6 +237,15 @@ The post-R1 correction implementation is commit `49a5ab6` in merged pull request
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29435443641](https://github.com/DanilaMasov/Mayhem/actions/runs/29435443641):
   repository contracts and Flutter format/analyze/test passed.
+
+The guarded R2 live-acceptance preparation is commit `f48d57c` in draft pull
+request [#6](https://github.com/DanilaMasov/Mayhem/pull/6):
+
+- [push CI run 29437633828](https://github.com/DanilaMasov/Mayhem/actions/runs/29437633828):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29437656421](https://github.com/DanilaMasov/Mayhem/actions/runs/29437656421):
+  repository contracts and Flutter format/analyze/test passed;
+- these source and dry-contract checks do not close the R2 live-backend gate.
 
 Live-backend, simulator/emulator, and physical-device tests were not run and
 their gates remain open. GitHub Actions also emits a non-blocking Node 20
