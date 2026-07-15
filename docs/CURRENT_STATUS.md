@@ -3,7 +3,7 @@
 **Status date:** 2026-07-15
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/runtime-composition`
+**Current branch:** `codex/runtime-orchestration`
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -19,20 +19,23 @@
 - Clean Git baseline imported without old Kira or `.hatch-pets/` history.
 - Mutable effective feature-flag runtime with strict TTL expiry, capability
   validation through remote bootstrap, and live legacy/vNext UI switching.
+- App-level composition owner for local runtimes, feature flags, lifecycle,
+  cancellable remote orchestration, bounded diagnostics, and store shutdown.
 
 ## Active work item
 
-Baseline pull request
-[#1](https://github.com/DanilaMasov/Mayhem/pull/1) was merged into `main` as
-`15c6397`. Phase R1 is in progress on `codex/runtime-composition`. The first
-vertical slice publishes validated server flags into a mutable runtime and
-proves live fail-closed UI behavior without enabling release defaults.
+Baseline pull request #1 and mutable-flag pull request
+[#2](https://github.com/DanilaMasov/Mayhem/pull/2) are merged into `main`; PR #2
+landed as `7825c8d`. Phase R1 continues on `codex/runtime-orchestration`. The
+current slice moves startup and lifecycle ownership into `AppCompositionRoot`
+while deliberately keeping production remote operations disabled until secure
+session storage exists.
 
 ## Open software gates
 
-- R1 production composition root, secure session adapter, cached-flag startup,
-  non-blocking remote orchestration, lifecycle sync, remote Feed, and real
-  account actions.
+- R1 secure session adapter, concrete Supabase composition, cached-flag startup,
+  bounded network timeouts/retries, terminal-action sync triggers, remote Feed,
+  and real account actions.
 - R3 complete user-visible Season/Boss state machine and recovery UX.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
@@ -51,7 +54,8 @@ proves live fail-closed UI behavior without enabling release defaults.
 
 ## Known release blockers
 
-- No production auth/sync composition or Keychain/Keystore session adapter.
+- Production remote auth/sync remains disabled because no Keychain/Keystore
+  session adapter is composed yet.
 - `new_feed_enabled` and all dependent release capabilities remain false.
 - No live-backend acceptance, physical-device acceptance, release signing,
   final application IDs, production assets, or store configuration.
@@ -82,13 +86,13 @@ flutter pub get --offline
 # locked dependencies restored from the existing local package cache
 
 dart format --output=none --set-exit-if-changed lib test
-# 225 files, 0 changed
+# 229 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 185 passed
+# 190 passed
 ```
 
 R1 mutable-flag slice local evidence:
@@ -100,6 +104,19 @@ R1 mutable-flag slice local evidence:
 - widget coverage proves legacy Today to vNext and automatic TTL fallback
   without restarting the app;
 - no package, lockfile, SDK, secret, or release-default change was introduced.
+
+R1 composition-owner slice local evidence:
+
+- local Today renders while remote bootstrap is still pending;
+- remote bootstrap failure degrades only remote state and cannot replace the
+  local UI;
+- app foreground calls orchestration only on lifecycle resume;
+- shutdown cooperatively cancels pending bootstrap and closes local storage;
+- disabled production remote bootstrap is explicit and idempotent;
+- telemetry and logs expose bounded error type codes, not exception messages or
+  tokens;
+- vNext is prepared independently of the release flag when a valid platform
+  timezone exists, and fails closed to legacy Today otherwise.
 
 The first complete green GitHub baseline was commit `d7b33ce`:
 
@@ -125,10 +142,11 @@ not affect the current green software gate.
 
 ## Next authorized slice
 
-Continue Phase R1 with the production composition owner, platform-protected
-session adapter, cached-flag bootstrap, and non-blocking remote orchestration.
-Keep every release flag false until its live-backend and device prerequisites
-are satisfied. R2-R6 remain gated by the specification prerequisites.
+Continue Phase R1 with the platform-protected session adapter and concrete
+Supabase composition, then load valid cached flags before non-blocking remote
+refresh. Keep every release flag false until its live-backend and device
+prerequisites are satisfied. R2-R6 remain gated by the specification
+prerequisites.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.
