@@ -26,10 +26,11 @@
 
 Baseline pull request #1 and mutable-flag pull request
 [#2](https://github.com/DanilaMasov/Mayhem/pull/2) are merged into `main`; PR #2
-landed as `7825c8d`. Phase R1 continues on `codex/runtime-orchestration`. The
-current slice moves startup and lifecycle ownership into `AppCompositionRoot`
-while deliberately keeping production remote operations disabled until secure
-session storage exists.
+landed as `7825c8d`. Phase R1 continues in
+[#3](https://github.com/DanilaMasov/Mayhem/pull/3) on
+`codex/runtime-orchestration`. Commit `6708701` moves startup and lifecycle
+ownership into `AppCompositionRoot` while deliberately keeping production
+remote operations disabled until secure session storage exists.
 
 ## Open software gates
 
@@ -133,6 +134,14 @@ Baseline PR #1 is merged. The first R1 slice is commit `85a91e4` in pull request
 - [push CI run 29410905633](https://github.com/DanilaMasov/Mayhem/actions/runs/29410905633):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29410929122](https://github.com/DanilaMasov/Mayhem/actions/runs/29410929122):
+  repository contracts and Flutter format/analyze/test passed.
+
+The R1 composition-owner slice is commit `6708701` in pull request
+[#3](https://github.com/DanilaMasov/Mayhem/pull/3):
+
+- [push CI run 29413237254](https://github.com/DanilaMasov/Mayhem/actions/runs/29413237254):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29413260609](https://github.com/DanilaMasov/Mayhem/actions/runs/29413260609):
   repository contracts and Flutter format/analyze/test passed.
 
 Live-backend, simulator/emulator, and physical-device tests were not run and
