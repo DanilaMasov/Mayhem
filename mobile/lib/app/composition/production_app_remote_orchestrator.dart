@@ -30,6 +30,8 @@ class ProductionAppRemoteOrchestrator implements AppRemoteOrchestrator {
 
   @override
   Future<void> bootstrap(AppCancellationSignal cancellation) async {
+    await account.recoverPendingDeletion();
+    cancellation.throwIfCancelled();
     await _run(
       trigger: SyncTrigger.coldStart,
       maximumAttempts: 3,

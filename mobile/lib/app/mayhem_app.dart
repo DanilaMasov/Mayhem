@@ -13,6 +13,7 @@ import '../presentation/theme/mayhem_theme.dart';
 import '../presentation/today/today_screen.dart';
 import 'vnext/vnext_app_root.dart';
 import 'vnext/vnext_runtime.dart';
+import 'composition/remote_runtime_diagnostics.dart';
 
 class MayhemApp extends StatelessWidget {
   const MayhemApp({
@@ -20,11 +21,13 @@ class MayhemApp extends StatelessWidget {
     required this.controller,
     this.featureFlags,
     this.vnextRuntime,
+    this.remoteDiagnostics,
   });
 
   final TodayController controller;
   final FeatureFlagRuntime? featureFlags;
   final VNextRuntime? vnextRuntime;
+  final RemoteRuntimeDiagnostics? remoteDiagnostics;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +54,7 @@ class MayhemApp extends StatelessWidget {
               ? VNextAppRoot(
                   runtime: vnextRuntime!,
                   legacyController: controller,
+                  remoteDiagnostics: remoteDiagnostics,
                 )
               : _MayhemRoot(controller: controller),
         );

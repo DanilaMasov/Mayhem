@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/core/auth/remote_auth_session.dart';
+import 'package:mayhem_mobile/features/settings/application/delete_everywhere_recovery_store.dart';
 import 'package:mayhem_mobile/infrastructure/security/flutter_secure_session_store.dart';
 
 void main() {
@@ -42,6 +43,38 @@ void main() {
 
     expect((await development.read())?.remoteUserId, 'development-user');
     expect((await production.read())?.remoteUserId, 'production-user');
+  });
+
+  test('deletion recovery marker survives session clear', () async {
+    final storage = _MemorySecureStore();
+    final sessions = FlutterSecureSessionStore(
+      storage: storage,
+      environment: 'production',
+    );
+    final recovery = SecureDeleteEverywhereRecoveryStore(
+      storage: storage,
+      environment: 'production',
+    );
+    await sessions.write(_session());
+    await recovery.write(
+      DataDeletionRecoveryMarker(
+        receiptId: 'receipt-1',
+        remoteUserId: 'remote-user',
+        deletedAt: DateTime.utc(2026, 7, 16),
+        stage: DataDeletionStage.secureSessionCleared,
+      ),
+    );
+
+    await sessions.clear();
+
+    expect(await sessions.read(), isNull);
+    expect(
+      (await recovery.read())?.stage,
+      DataDeletionStage.secureSessionCleared,
+    );
+    expect(storage.values.keys, [
+      'mayhem.production.delete_everywhere_recovery.v1',
+    ]);
   });
 
   test('corrupted entry is deleted and treated as signed out', () async {

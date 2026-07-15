@@ -10,17 +10,11 @@ import '../mayhem_app.dart';
 import '../vnext/vnext_runtime.dart';
 import 'app_remote_orchestrator.dart';
 import 'app_telemetry.dart';
+import 'remote_runtime_diagnostics.dart';
 
-enum AppRemoteRuntimeStatus {
-  idle,
-  disabled,
-  bootstrapping,
-  ready,
-  degraded,
-  disposed,
-}
-
-class AppCompositionRoot extends ChangeNotifier with WidgetsBindingObserver {
+class AppCompositionRoot extends ChangeNotifier
+    with WidgetsBindingObserver
+    implements RemoteRuntimeDiagnostics {
   AppCompositionRoot({
     required this.legacyController,
     required this.featureFlags,
@@ -48,8 +42,13 @@ class AppCompositionRoot extends ChangeNotifier with WidgetsBindingObserver {
   bool _observingLifecycle = false;
   bool _shutdown = false;
 
+  @override
   AppRemoteRuntimeStatus get remoteStatus => _remoteStatus;
 
+  @override
+  bool get remoteConfigured => remote.enabled;
+
+  @override
   String? get remoteErrorCode => _remoteErrorCode;
 
   Widget buildApp() {
@@ -58,6 +57,7 @@ class AppCompositionRoot extends ChangeNotifier with WidgetsBindingObserver {
       controller: legacyController,
       featureFlags: featureFlags,
       vnextRuntime: vnextRuntime,
+      remoteDiagnostics: this,
     );
   }
 
@@ -132,6 +132,9 @@ class AppCompositionRoot extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _runForeground() async {
     try {
       await remote.onForeground(_cancellation);
+      if (_shutdown || _cancellation.isCancelled) return;
+      _setRemoteState(AppRemoteRuntimeStatus.ready);
+      telemetry.record('remote_foreground_ready');
     } on AppOperationCancelled {
       return;
     } catch (error, stackTrace) {

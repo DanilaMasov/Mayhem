@@ -30,16 +30,22 @@ class SupabaseRpcException implements Exception {
   String toString() => 'Supabase RPC failed ($statusCode): $message';
 }
 
+class SupabaseRpcAuthRecoveryException extends SupabaseRpcException {
+  const SupabaseRpcAuthRecoveryException(String code) : super(401, code);
+}
+
 class SupabaseRpcClient {
   const SupabaseRpcClient({
     required this.config,
     required this.accessTokenProvider,
     required this.http,
+    this.refreshSession,
   });
 
   final SupabaseRuntimeConfig config;
   final Future<String?> Function() accessTokenProvider;
   final JsonHttpExecutor http;
+  final Future<void> Function()? refreshSession;
 
   Future<Map<String, dynamic>> invoke(
     String functionName,
@@ -56,19 +62,22 @@ class SupabaseRpcClient {
     String functionName,
     Map<String, Object?> arguments,
   ) async {
-    final token = (await accessTokenProvider())?.trim() ?? '';
-    if (token.isEmpty) {
-      throw const SupabaseRpcException(401, 'authenticated session is missing');
+    var token = await _accessToken();
+    var response = await _post(functionName, arguments, token);
+    if (response.statusCode == 401 && refreshSession != null) {
+      try {
+        await refreshSession!();
+      } catch (_) {
+        throw const SupabaseRpcAuthRecoveryException('session_refresh_failed');
+      }
+      token = await _accessToken(missingCode: 'session_missing_after_refresh');
+      response = await _post(functionName, arguments, token);
+      if (response.statusCode == 401) {
+        throw const SupabaseRpcAuthRecoveryException(
+          'session_rejected_after_refresh',
+        );
+      }
     }
-    final response = await http.post(
-      config.rpcUri(functionName),
-      headers: {
-        'apikey': config.anonKey,
-        'authorization': 'Bearer $token',
-        'content-type': 'application/json',
-      },
-      body: jsonEncode(arguments),
-    );
     final decoded = _decodeValue(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final error = decoded is Map<String, dynamic> ? decoded : null;
@@ -83,6 +92,32 @@ class SupabaseRpcClient {
       throw const FormatException('Supabase RPC response is empty');
     }
     return decoded;
+  }
+
+  Future<String> _accessToken({
+    String missingCode = 'authenticated_session_missing',
+  }) async {
+    final token = (await accessTokenProvider())?.trim() ?? '';
+    if (token.isEmpty) {
+      throw SupabaseRpcAuthRecoveryException(missingCode);
+    }
+    return token;
+  }
+
+  Future<JsonHttpResponse> _post(
+    String functionName,
+    Map<String, Object?> arguments,
+    String token,
+  ) {
+    return http.post(
+      config.rpcUri(functionName),
+      headers: {
+        'apikey': config.anonKey,
+        'authorization': 'Bearer $token',
+        'content-type': 'application/json',
+      },
+      body: jsonEncode(arguments),
+    );
   }
 
   Object? _decodeValue(String body) {

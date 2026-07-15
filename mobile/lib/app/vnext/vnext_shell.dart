@@ -8,6 +8,7 @@ import '../../features/profile/presentation/vnext_you_screen.dart';
 import '../../features/progress/presentation/vnext_journey_screen.dart';
 import '../../features/settings/presentation/vnext_settings_screen.dart';
 import 'vnext_runtime.dart';
+import '../composition/remote_runtime_diagnostics.dart';
 
 enum VNextTab { feed, journey, you }
 
@@ -16,10 +17,12 @@ class VNextShell extends StatefulWidget {
     super.key,
     required this.runtime,
     required this.onResetLocalData,
+    this.remoteDiagnostics,
   });
 
   final VNextRuntime runtime;
   final Future<void> Function() onResetLocalData;
+  final RemoteRuntimeDiagnostics? remoteDiagnostics;
 
   @override
   State<VNextShell> createState() => _VNextShellState();
@@ -97,6 +100,8 @@ class _VNextShellState extends State<VNextShell> {
       ),
       (VNextTab.you, YouRoutes.diagnostics) => VNextDiagnosticsScreen(
         featureFlags: widget.runtime.featureFlags,
+        remoteDiagnostics: widget.remoteDiagnostics,
+        remoteAccount: widget.runtime.remoteAccount,
       ),
       (VNextTab.you, _) => VNextYouScreen(
         anonymousHandle: widget.runtime.anonymousHandle,

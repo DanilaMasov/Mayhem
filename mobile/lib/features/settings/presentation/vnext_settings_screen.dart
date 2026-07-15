@@ -5,6 +5,7 @@ import '../../../core/design_system/tokens/tokens.dart';
 import '../../../core/feature_flags/feature_flag_runtime.dart';
 import '../../../core/feature_flags/feature_flags.dart';
 import '../../../core/localization/mayhem_strings.dart';
+import '../../../app/composition/remote_runtime_diagnostics.dart';
 import '../../challenge/domain/reward_policy.dart';
 import '../../onboarding/domain/onboarding_models.dart';
 import '../../progress/domain/development_rank_config.dart';
@@ -245,10 +246,11 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
       await widget.onResetLocalData();
     } catch (_) {
       if (!mounted) return;
-      setState(() => _resetting = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(strings.resetFailed)));
+    } finally {
+      if (mounted) setState(() => _resetting = false);
     }
   }
 
@@ -284,83 +286,123 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
     if (confirmed != true) return;
     final deleted = await account.deleteEverywhere();
     if (!mounted || deleted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(strings.deleteEverywhereFailed)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          account.deletionRecoveryPending
+              ? strings.deleteEverywhereRecoveryRequired
+              : strings.deleteEverywhereFailed,
+        ),
+      ),
+    );
   }
 }
 
 class VNextDiagnosticsScreen extends StatelessWidget {
-  const VNextDiagnosticsScreen({super.key, required this.featureFlags});
+  const VNextDiagnosticsScreen({
+    super.key,
+    required this.featureFlags,
+    this.remoteDiagnostics,
+    this.remoteAccount,
+  });
 
   final FeatureFlagRuntime featureFlags;
+  final RemoteRuntimeDiagnostics? remoteDiagnostics;
+  final RemoteAccountDiagnostics? remoteAccount;
 
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
     const reward = RewardPolicyConfig();
     const difficulty = DifficultyUpdatePolicy();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(strings.diagnosticsTitle),
-        leading: IconButton(
-          tooltip: strings.back,
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back),
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        featureFlags,
+        ?remoteDiagnostics,
+        ?remoteAccount,
+      ]),
+      builder: (context, child) => Scaffold(
+        appBar: AppBar(
+          title: Text(strings.diagnosticsTitle),
+          leading: IconButton(
+            tooltip: strings.back,
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back),
+          ),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(MayhemSpacing.x5),
-        children: [
-          _SectionTitle(strings.featureFlags),
-          const SizedBox(height: MayhemSpacing.x3),
-          for (final flag in MayhemFeatureFlag.values)
-            _DiagnosticRow(
-              label: flag.wireName,
-              value: featureFlags.isEnabled(flag)
-                  ? strings.enabled
-                  : strings.disabled,
-              detail: featureFlags.isDebugOverride(flag)
-                  ? strings.debugOverride
-                  : strings.productionDefault,
+        body: ListView(
+          padding: const EdgeInsets.all(MayhemSpacing.x5),
+          children: [
+            _SectionTitle(strings.featureFlags),
+            const SizedBox(height: MayhemSpacing.x3),
+            for (final flag in MayhemFeatureFlag.values)
+              _DiagnosticRow(
+                label: flag.wireName,
+                value: featureFlags.isEnabled(flag)
+                    ? strings.enabled
+                    : strings.disabled,
+                detail: featureFlags.isDebugOverride(flag)
+                    ? strings.debugOverride
+                    : strings.productionDefault,
+              ),
+            const _SectionDivider(),
+            _SectionTitle(strings.capabilityRevisions),
+            const SizedBox(height: MayhemSpacing.x3),
+            const _DiagnosticRow(
+              label: 'calibration',
+              value: CalibrationPolicy.revision,
             ),
-          const _SectionDivider(),
-          _SectionTitle(strings.capabilityRevisions),
-          const SizedBox(height: MayhemSpacing.x3),
-          const _DiagnosticRow(
-            label: 'calibration',
-            value: CalibrationPolicy.revision,
-          ),
-          const _DiagnosticRow(label: 'safety', value: 'safety_revision_1'),
-          _DiagnosticRow(label: 'reward', value: reward.revision),
-          _DiagnosticRow(
-            label: 'difficulty',
-            value: difficulty.algorithmRevision,
-          ),
-          const _DiagnosticRow(
-            label: 'rank',
-            value: DevelopmentRankConfig.revision,
-          ),
-          const _DiagnosticRow(
-            label: 'momentum',
-            value: MomentumPolicy.revision,
-          ),
-          const _SectionDivider(),
-          _SectionTitle(strings.environment),
-          const SizedBox(height: MayhemSpacing.x3),
-          _DiagnosticRow(
-            label: strings.localIdentityOnly,
-            value: strings.enabled,
-          ),
-          _DiagnosticRow(
-            label: strings.remoteSessionUnavailable,
-            value: strings.disabled,
-          ),
-          _DiagnosticRow(
-            label: strings.devicePerformanceOpen,
-            value: strings.disabled,
-          ),
-        ],
+            const _DiagnosticRow(label: 'safety', value: 'safety_revision_1'),
+            _DiagnosticRow(label: 'reward', value: reward.revision),
+            _DiagnosticRow(
+              label: 'difficulty',
+              value: difficulty.algorithmRevision,
+            ),
+            const _DiagnosticRow(
+              label: 'rank',
+              value: DevelopmentRankConfig.revision,
+            ),
+            const _DiagnosticRow(
+              label: 'momentum',
+              value: MomentumPolicy.revision,
+            ),
+            const _SectionDivider(),
+            _SectionTitle(strings.environment),
+            const SizedBox(height: MayhemSpacing.x3),
+            _DiagnosticRow(
+              label: 'remote.config',
+              value: remoteDiagnostics?.remoteConfigured == true
+                  ? 'configured'
+                  : 'disabled',
+            ),
+            _DiagnosticRow(
+              label: 'remote.runtime',
+              value:
+                  remoteDiagnostics?.remoteStatus.name ??
+                  AppRemoteRuntimeStatus.disabled.name,
+            ),
+            _DiagnosticRow(
+              label: 'remote.account',
+              value:
+                  remoteAccount?.status.name ??
+                  RemoteAccountStatus.unavailable.name,
+            ),
+            _DiagnosticRow(
+              label: 'remote.session',
+              value: remoteAccount?.sessionAvailable == true
+                  ? 'available'
+                  : 'unavailable',
+            ),
+            if (remoteDiagnostics?.remoteErrorCode case final errorCode?)
+              _DiagnosticRow(label: 'remote.error', value: errorCode),
+            if (remoteAccount?.errorCode case final accountErrorCode?)
+              _DiagnosticRow(
+                label: 'remote.account_error',
+                value: accountErrorCode,
+              ),
+            _DiagnosticRow(label: strings.devicePerformanceOpen, value: 'open'),
+          ],
+        ),
       ),
     );
   }

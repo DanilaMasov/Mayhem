@@ -22,6 +22,7 @@ import 'core/clock/mayhem_clock.dart';
 import 'core/clock/platform_timezone_id.dart';
 import 'core/feature_flags/feature_flag_runtime.dart';
 import 'features/sync/application/vnext_sync_coordinator.dart';
+import 'features/settings/application/delete_everywhere_recovery_store.dart';
 import 'infrastructure/sqlite/sqflite_game_store.dart';
 import 'infrastructure/security/flutter_secure_session_store.dart';
 import 'infrastructure/supabase/supabase_runtime_config.dart';
@@ -64,8 +65,13 @@ Future<void> main() async {
         : kReleaseMode
         ? 'production'
         : 'development';
+    final secureStorage = FlutterSecureKeyValueStore();
     final secureSessions = FlutterSecureSessionStore(
-      storage: FlutterSecureKeyValueStore(),
+      storage: secureStorage,
+      environment: environment,
+    );
+    final deletionRecovery = SecureDeleteEverywhereRecoveryStore(
+      storage: secureStorage,
       environment: environment,
     );
     VNextRuntime? vnextRuntime;
@@ -117,15 +123,20 @@ Future<void> main() async {
         stackTrace: stackTrace,
       );
     }
-    AppRemoteOrchestrator remote = const DisabledAppRemoteOrchestrator(
-      'supabase_runtime_unconfigured',
+    final config = SupabaseRuntimeConfig.environment.forEnvironment(
+      environment,
     );
-    final config = SupabaseRuntimeConfig.environment;
-    if (config.isConfigured && vnextRuntime != null) {
+    AppRemoteOrchestrator remote = DisabledAppRemoteOrchestrator(
+      config.isConfigured
+          ? 'supabase_runtime_invalid'
+          : 'supabase_runtime_unconfigured',
+    );
+    if (config.isUsable && vnextRuntime != null) {
       final runtime = vnextRuntime;
       final remoteComposition = ProductionRemoteComposition.build(
         config: config,
         secureSessions: secureSessions,
+        deletionRecovery: deletionRecovery,
         store: vnextStore,
         featureFlags: featureFlags,
         platform: Platform.operatingSystem,

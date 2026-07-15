@@ -12,16 +12,19 @@ import '../../features/onboarding/presentation/vnext_onboarding_flow.dart';
 import '../../features/progress/domain/progress_models.dart';
 import 'vnext_runtime.dart';
 import 'vnext_shell.dart';
+import '../composition/remote_runtime_diagnostics.dart';
 
 class VNextAppRoot extends StatefulWidget {
   const VNextAppRoot({
     super.key,
     required this.runtime,
     required this.legacyController,
+    this.remoteDiagnostics,
   });
 
   final VNextRuntime runtime;
   final TodayController legacyController;
+  final RemoteRuntimeDiagnostics? remoteDiagnostics;
 
   @override
   State<VNextAppRoot> createState() => _VNextAppRootState();
@@ -75,6 +78,7 @@ class _VNextAppRootState extends State<VNextAppRoot> {
                 VNextShell(
                   runtime: widget.runtime,
                   onResetLocalData: _resetLocalData,
+                  remoteDiagnostics: widget.remoteDiagnostics,
                 ),
                 if (widget.runtime.pendingRankUp case final rankLabel?)
                   _RankUpOverlay(

@@ -3,7 +3,8 @@
 **Status date:** 2026-07-15
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/secure-session`
+**Current branch:** `codex/r1-corrections`
+**Current main checkpoint:** `96e1f7d` (merge commit for PR #4)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -29,14 +30,15 @@
 
 ## Active work item
 
-Baseline pull request #1, mutable-flag pull request
-[#2](https://github.com/DanilaMasov/Mayhem/pull/2), and composition-owner pull
-request [#3](https://github.com/DanilaMasov/Mayhem/pull/3) are merged into
-`main`; PR #3 landed as `9cfec4e`. Pull request
-[#4](https://github.com/DanilaMasov/Mayhem/pull/4) on `codex/secure-session`
-contains the complete R1 software implementation. Remote operations activate
-only when both Supabase compile-time values are configured; local startup and
-safe release defaults remain independent of that configuration.
+Baseline pull request #1 and R1 pull requests
+[#2](https://github.com/DanilaMasov/Mayhem/pull/2),
+[#3](https://github.com/DanilaMasov/Mayhem/pull/3), and
+[#4](https://github.com/DanilaMasov/Mayhem/pull/4) are merged into `main`.
+PR #4 landed as merge commit `96e1f7d`; R1 software implementation is merged.
+The bounded post-R1 correction pass is active on `codex/r1-corrections` and
+does not include Phase R2. Remote operations activate only with a valid
+environment-specific Supabase configuration; local startup and safe release
+defaults remain independent of that configuration.
 
 ## Open software gates
 
@@ -90,14 +92,31 @@ flutter pub get --offline
 # locked dependencies restored from the existing local package cache
 
 dart format --output=none --set-exit-if-changed lib test
-# 237 files, 0 changed
+# 240 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 204 passed
+# 217 passed
 ```
+
+Post-R1 correction local evidence:
+
+- Delete Everywhere models server deletion, cloud confirmation, secure-session
+  clear, local-data clear, and completion as distinct stages;
+- an environment-scoped secure recovery marker survives session and SQLite
+  clearing, resumes before cold-start sync, and prevents repeated cloud delete;
+- server failure and receipt mismatch preserve session/local state, while
+  secure-session, local-clear, and marker-cleanup failures remain explicitly
+  recoverable;
+- successful device-only reset deterministically leaves its loading state;
+- Diagnostics renders live configured/disabled, runtime, account, session, and
+  bounded error-code state without secrets;
+- successful foreground refresh restores `ready` and clears stale errors;
+- authenticated RPC performs at most one forced refresh and one retry after
+  `401`; refresh failure and a second `401` are explicit bounded auth errors;
+- HTTPS is mandatory outside development localhost/loopback configurations.
 
 R1 final composition local evidence:
 
@@ -183,6 +202,14 @@ The R1 composition-owner slice is commit `6708701` in pull request
 - [pull-request CI run 29413260609](https://github.com/DanilaMasov/Mayhem/actions/runs/29413260609):
   repository contracts and Flutter format/analyze/test passed.
 
+The final R1 software slice is commit `8da8174` in merged pull request
+[#4](https://github.com/DanilaMasov/Mayhem/pull/4), checkpoint `96e1f7d`:
+
+- [push CI run 29421312228](https://github.com/DanilaMasov/Mayhem/actions/runs/29421312228):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29421314120](https://github.com/DanilaMasov/Mayhem/actions/runs/29421314120):
+  repository contracts and Flutter format/analyze/test passed.
+
 Live-backend, simulator/emulator, and physical-device tests were not run and
 their gates remain open. GitHub Actions also emits a non-blocking Node 20
 action-runtime deprecation warning for the v4 checkout/setup actions; it does
@@ -190,10 +217,10 @@ not affect the current green software gate.
 
 ## Next authorized slice
 
-After PR #4 is merged, continue with Phase R2 on
-`codex/live-supabase-gate`: run the committed migrations and contracts against a
-disposable real Supabase/PostgreSQL environment. Keep every release flag false;
-R3-R6 remain gated by the specification prerequisites.
+After the post-R1 correction pull request is green and merged, continue with
+Phase R2 on `codex/live-supabase-gate`: run the committed migrations and
+contracts against a disposable real Supabase/PostgreSQL environment. Keep every
+release flag false; R3-R6 remain gated by the specification prerequisites.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.
