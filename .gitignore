@@ -1,0 +1,39 @@
+# OS and editor state
+.DS_Store
+**/.DS_Store
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+
+# JavaScript tooling
+node_modules/
+npm-debug.log*
+
+# Flutter and Dart outputs
+mobile/.dart_tool/
+mobile/.pub/
+mobile/build/
+mobile/coverage/
+mobile/.flutter-plugins-dependencies
+mobile/ios/Flutter/.last_build_id
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
+
+# Local generated artwork and pet authoring runs
+.hatch-pets/
+
+# Local Supabase state
+supabase/.branches/
+supabase/.temp/
+
