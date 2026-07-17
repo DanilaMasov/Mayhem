@@ -1,10 +1,10 @@
 # Mayhem Current Status
 
-**Status date:** 2026-07-15
+**Status date:** 2026-07-17
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/live-supabase-gate`
-**Current main checkpoint:** `73b61c3` (merge commit for PR #5)
+**Current branch:** `codex/r2-live-acceptance-completion`
+**Current main checkpoint:** `b50f36f` (merge commit for PR #6)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -37,12 +37,14 @@ Baseline pull request #1 and R1 pull requests
 PR #4 landed as merge commit `96e1f7d`; R1 software implementation is merged.
 The bounded post-R1 correction pass in pull request
 [#5](https://github.com/DanilaMasov/Mayhem/pull/5) is merged into `main` as
-`73b61c3`. Phase R2 is active on `codex/live-supabase-gate`. Its guarded core
-acceptance runner is prepared in draft pull request
-[#6](https://github.com/DanilaMasov/Mayhem/pull/6), but no disposable live
-environment or credentials are available, so the live-backend gate remains
-open. Remote operations activate only with a valid environment-specific
-Supabase configuration.
+`73b61c3`. The guarded R2 acceptance preparation in pull request
+[#6](https://github.com/DanilaMasov/Mayhem/pull/6) is merged into `main` as
+`b50f36f`. Phase R2 live acceptance is active on
+`codex/r2-live-acceptance-completion`. The complete guarded runner and two
+forward-only R2 fixes are implemented locally, but no disposable live
+environment, credentials, or `psql` are available, so the live-backend gate
+remains open. Remote operations activate only with a valid
+environment-specific Supabase configuration.
 
 ## Open software gates
 
@@ -54,7 +56,8 @@ Supabase configuration.
 
 - R2 disposable Supabase/PostgreSQL migration, RLS, grants, RPC, concurrency,
   deletion, auth, sync, Season/Boss, artifact, and social-proof acceptance.
-- Current SQL evidence is source-contract coverage only.
+- Current evidence is source/runner contracts and headless Flutter client
+  compilation only; no request reached PostgreSQL or Supabase.
 
 ## Open device gates
 
@@ -72,12 +75,12 @@ Supabase configuration.
 
 ## Verification
 
-Clean-clone local verification completed on 2026-07-15. Commands and local
+Clean-clone local verification completed on 2026-07-17. Commands and local
 results:
 
 ```sh
 node --test tests/*.test.mjs
-# 28 passed
+# 33 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -92,17 +95,14 @@ node scripts/export_supabase_seed.mjs --check
 # 50 quests and 5 bosses verified
 
 cd mobile
-flutter pub get --offline
-# locked dependencies restored from the existing local package cache
-
-dart format --output=none --set-exit-if-changed lib test
-# 240 files, 0 changed
+dart format --output=none --set-exit-if-changed lib test tool
+# 242 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 217 passed
+# 217 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 Post-R1 correction local evidence:
@@ -128,15 +128,22 @@ R2 harness evidence:
   confirmation before reading the database target;
 - keeps DB URL, anon key, access tokens, refresh tokens, and server bodies out
   of argv, logs, diagnostics, and reports;
-- refuses a target containing existing Mayhem tables and applies six migrations
+- refuses a target containing existing Mayhem tables and applies eight migrations
   from zero in deterministic order through `psql`;
-- prepares two-user auth/refresh, ownership/RLS, direct-write denial,
-  exact/duplicate/partial ACK, private-note rejection, auth recovery, and
-  Delete Everywhere probes;
+- prepares two-user auth/refresh, ownership/RLS, grants, direct-write denial,
+  exact/duplicate/partial ACK, private-note rejection, and auth recovery;
+- covers Season join/day/closed-window rules, concurrent Boss submission,
+  duplicate participation, advisory-lock effects, server-owned artifacts,
+  thresholded social proof, identity/privacy isolation, and deletion cleanup;
+- invokes production Flutter auth/backend/content/Feed/Season/reconciliation
+  and Delete Everywhere adapters in a headless opt-in live test;
+- adds migration `007` to close legacy security-definer search paths and
+  decrement social proof during deletion, plus migration `008` to advance the
+  projection revision only for newly issued artifacts;
 - dry contract tests pass, but the runner has not reached PostgreSQL or Supabase
   because credentials and `psql` are unavailable;
 - `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command and
-  remaining Season/Boss, social-proof, client, and live evidence.
+  exact blocked and not-run live evidence.
 
 R1 final composition local evidence:
 
@@ -254,11 +261,12 @@ not affect the current green software gate.
 
 ## Next authorized slice
 
-Continue Phase R2 only on `codex/live-supabase-gate`: provide an isolated
-Supabase/PostgreSQL environment, run the prepared core acceptance command, then
-add Season/Boss concurrency and social-proof probes against the same target.
-Keep every release flag false; R3-R6 remain gated by R2 and their own
-specification prerequisites.
+Continue Phase R2 only on `codex/r2-live-acceptance-completion`: provide one
+isolated Supabase/PostgreSQL target with `psql`, execute `npm run
+supabase:live`, and commit its secret-free report. Any discovered SQL defect
+must use another forward-only migration followed by a clean rerun. Keep every
+release flag false; R3-R6 remain gated by R2 and their own specification
+prerequisites.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

@@ -167,6 +167,81 @@ export class PsqlRunner {
   }
 }
 
+export class FlutterLiveClientRunner {
+  constructor({
+    config,
+    executable = "flutter",
+    spawnProcess = spawn,
+    baseEnvironment = process.env
+  }) {
+    this.config = config;
+    this.executable = executable;
+    this.spawnProcess = spawnProcess;
+    this.baseEnvironment = baseEnvironment;
+  }
+
+  run(mobileRoot) {
+    return new Promise((resolve, reject) => {
+      const child = this.spawnProcess(
+        this.executable,
+        [
+          "test",
+          "--no-pub",
+          "--no-test-assets",
+          "-j",
+          "1",
+          "test/live/r2_live_supabase_test.dart"
+        ],
+        {
+          cwd: mobileRoot,
+          env: {
+            ...flutterProcessEnvironment(this.baseEnvironment),
+            MAYHEM_R2_ENVIRONMENT_ID: this.config.environmentId,
+            MAYHEM_R2_CONFIRM_DISPOSABLE: disposableConfirmation,
+            MAYHEM_R2_RUN_LIVE: "true",
+            SUPABASE_URL: this.config.supabaseUrl,
+            SUPABASE_ANON_KEY: this.config.anonKey
+          },
+          stdio: ["ignore", "pipe", "pipe"]
+        }
+      );
+      let stdout = "";
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr.on("data", () => {});
+      child.on("error", () => {
+        reject(new Error("R2 requires an available flutter executable"));
+      });
+      child.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`R2 Flutter client probe failed (${code})`));
+          return;
+        }
+        try {
+          const marker = stdout.match(
+            /MAYHEM_R2_CLIENT_REPORT:([A-Za-z0-9_-]+=*)/
+          );
+          if (!marker) throw new Error("missing report marker");
+          const report = JSON.parse(
+            Buffer.from(marker[1], "base64url").toString("utf8")
+          );
+          if (
+            report?.result !== "passed" ||
+            report.environmentId !== this.config.environmentId ||
+            !Array.isArray(report.checks)
+          ) {
+            throw new Error("invalid report");
+          }
+          resolve(report);
+        } catch {
+          reject(new Error("R2 Flutter client probe returned an invalid report"));
+        }
+      });
+    });
+  }
+}
+
 function psqlProcessEnvironment(environment) {
   const allowed = [
     "PATH",
@@ -180,6 +255,15 @@ function psqlProcessEnvironment(environment) {
     "PGSSLROOTCERT",
     "PGSSLCRL"
   ];
+  return Object.fromEntries(
+    allowed
+      .filter((name) => environment[name] !== undefined)
+      .map((name) => [name, environment[name]])
+  );
+}
+
+function flutterProcessEnvironment(environment) {
+  const allowed = ["PATH", "HOME", "LANG", "LC_ALL", "TMPDIR"];
   return Object.fromEntries(
     allowed
       .filter((name) => environment[name] !== undefined)
@@ -256,7 +340,10 @@ export function canonicalEvent({
   installationId,
   clientSequence,
   eventType,
-  payload = {}
+  payload = {},
+  occurredAtUtc = new Date().toISOString(),
+  contentId = null,
+  contentRevision = null
 }) {
   return {
     eventId,
@@ -266,9 +353,9 @@ export function canonicalEvent({
     eventType,
     assignmentId: null,
     attemptId: null,
-    contentId: null,
-    contentRevision: null,
-    occurredAtUtc: new Date().toISOString(),
+    contentId,
+    contentRevision,
+    occurredAtUtc,
     timezoneId: "Etc/UTC",
     timezoneOffsetMinutes: 0,
     payload
