@@ -41,10 +41,11 @@ The bounded post-R1 correction pass in pull request
 [#6](https://github.com/DanilaMasov/Mayhem/pull/6) is merged into `main` as
 `b50f36f`. Phase R2 live acceptance is active on
 `codex/r2-live-acceptance-completion`. The complete guarded runner and two
-forward-only R2 fixes are implemented locally, but no disposable live
-environment, credentials, or `psql` are available, so the live-backend gate
-remains open. Remote operations activate only with a valid
-environment-specific Supabase configuration.
+forward-only R2 fixes are implemented in commit `2b0d7f9` and draft pull
+request [#7](https://github.com/DanilaMasov/Mayhem/pull/7). Its software CI is
+green, but no disposable live environment, credentials, or `psql` are
+available, so the live-backend gate remains open. Remote operations activate
+only with a valid environment-specific Supabase configuration.
 
 ## Open software gates
 
@@ -245,14 +246,24 @@ The post-R1 correction implementation is commit `49a5ab6` in merged pull request
 - [pull-request CI run 29435443641](https://github.com/DanilaMasov/Mayhem/actions/runs/29435443641):
   repository contracts and Flutter format/analyze/test passed.
 
-The guarded R2 live-acceptance preparation is commit `f48d57c` in draft pull
-request [#6](https://github.com/DanilaMasov/Mayhem/pull/6):
+The guarded R2 live-acceptance preparation is final branch commit `95cb456` in
+merged pull request [#6](https://github.com/DanilaMasov/Mayhem/pull/6),
+checkpoint `b50f36f`:
 
-- [push CI run 29437633828](https://github.com/DanilaMasov/Mayhem/actions/runs/29437633828):
+- [push CI run 29437932969](https://github.com/DanilaMasov/Mayhem/actions/runs/29437932969):
   repository contracts and Flutter format/analyze/test passed;
-- [pull-request CI run 29437656421](https://github.com/DanilaMasov/Mayhem/actions/runs/29437656421):
+- [pull-request CI run 29437940068](https://github.com/DanilaMasov/Mayhem/actions/runs/29437940068):
   repository contracts and Flutter format/analyze/test passed;
 - these source and dry-contract checks do not close the R2 live-backend gate.
+
+The complete R2 harness implementation is commit `2b0d7f9` in draft pull
+request [#7](https://github.com/DanilaMasov/Mayhem/pull/7):
+
+- [push CI run 29596288252](https://github.com/DanilaMasov/Mayhem/actions/runs/29596288252):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29596307195](https://github.com/DanilaMasov/Mayhem/actions/runs/29596307195):
+  repository contracts and Flutter format/analyze/test passed;
+- PR #7 remains draft because neither CI run had a disposable live backend.
 
 Live-backend, simulator/emulator, and physical-device tests were not run and
 their gates remain open. GitHub Actions also emits a non-blocking Node 20

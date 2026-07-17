@@ -4,6 +4,7 @@
 **Main checkpoint:** `b50f36f` (merge commit for PR #6)
 **Branch:** `codex/r2-live-acceptance-completion`
 **Preparation:** merged through [PR #6](https://github.com/DanilaMasov/Mayhem/pull/6)
+**Completion PR:** [draft PR #7](https://github.com/DanilaMasov/Mayhem/pull/7)
 **Specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`, section 6
 
 ## Current Environment Evidence
@@ -92,3 +93,13 @@ URLs, keys, tokens, or server response bodies.
 - rerun from a new clean target after any forward-only SQL fix.
 
 Source and dry-run tests do not close the live-backend gate.
+
+## Software CI Evidence
+
+- [push run 29596288252](https://github.com/DanilaMasov/Mayhem/actions/runs/29596288252):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request run 29596307195](https://github.com/DanilaMasov/Mayhem/actions/runs/29596307195):
+  repository contracts and Flutter format/analyze/test passed.
+
+These runs did not have R2 secrets or a PostgreSQL target and therefore did not
+execute the opt-in live probe.
