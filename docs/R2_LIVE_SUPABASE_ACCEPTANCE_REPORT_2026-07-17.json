@@ -1,0 +1,101 @@
+{
+  "environment": {
+    "environmentId": "sgabxgyrvtwasjwenxyu",
+    "supabaseHost": "sgabxgyrvtwasjwenxyu.supabase.co",
+    "transport": "https",
+    "databaseConfigured": true,
+    "anonKeyConfigured": true
+  },
+  "migrationVersions": [
+    "202607120001",
+    "202607120002",
+    "202607120003",
+    "202607120004",
+    "202607130005",
+    "202607130006",
+    "202607170007",
+    "202607170008",
+    "202607170009"
+  ],
+  "startedAt": "2026-07-17T17:44:08.007Z",
+  "completedAt": "2026-07-17T17:45:12.533Z",
+  "durationMs": 64526,
+  "probes": [
+    {
+      "name": "migrations_from_zero",
+      "status": "passed",
+      "durationMs": 42668
+    },
+    {
+      "name": "authentication_and_session_refresh",
+      "status": "passed",
+      "durationMs": 1201
+    },
+    {
+      "name": "installation_ownership_and_rls",
+      "status": "passed",
+      "durationMs": 1385
+    },
+    {
+      "name": "direct_write_and_grant_security",
+      "status": "passed",
+      "durationMs": 1312
+    },
+    {
+      "name": "exact_duplicate_partial_ack_and_auth_recovery",
+      "status": "passed",
+      "durationMs": 1082
+    },
+    {
+      "name": "season_join_day_and_window_rules",
+      "status": "passed",
+      "durationMs": 3533
+    },
+    {
+      "name": "concurrent_boss_artifact_and_social_proof",
+      "status": "passed",
+      "durationMs": 2288
+    },
+    {
+      "name": "flutter_client_contract",
+      "status": "passed",
+      "durationMs": 8236
+    },
+    {
+      "name": "delete_everywhere_and_cross_user_survival",
+      "status": "passed",
+      "durationMs": 2820
+    }
+  ],
+  "passed": [
+    "migrations_from_zero",
+    "authentication_and_session_refresh",
+    "installation_ownership_and_rls",
+    "direct_write_and_grant_security",
+    "exact_duplicate_partial_ack_and_auth_recovery",
+    "season_join_day_and_window_rules",
+    "concurrent_boss_artifact_and_social_proof",
+    "flutter_client_contract",
+    "delete_everywhere_and_cross_user_survival"
+  ],
+  "failed": [],
+  "blocked": [],
+  "notRun": [],
+  "result": "passed",
+  "commands": {
+    "acceptance": "npm run supabase:live",
+    "migrations": "psql --single-transaction --file=<versioned migration>",
+    "fixture": "runner-managed deterministic R2 fixture via psql --file=-",
+    "flutterClient": "flutter test --no-pub --no-test-assets -j 1 test/live/r2_live_supabase_test.dart"
+  },
+  "clientChecks": [
+    "anonymous_bootstrap_secure_restore_and_refresh",
+    "installation_bootstrap_and_safe_flags",
+    "remote_content_validation_and_feed_parsing",
+    "remote_content_and_feed_local_persistence",
+    "exact_and_partial_ack_through_production_gateway",
+    "season_bootstrap_persistence_and_artifact_reconciliation",
+    "delete_everywhere_interruption_and_recovery",
+    "backend_absence_fails_closed"
+  ]
+}

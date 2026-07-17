@@ -39,13 +39,14 @@ The bounded post-R1 correction pass in pull request
 [#5](https://github.com/DanilaMasov/Mayhem/pull/5) is merged into `main` as
 `73b61c3`. The guarded R2 acceptance preparation in pull request
 [#6](https://github.com/DanilaMasov/Mayhem/pull/6) is merged into `main` as
-`b50f36f`. Phase R2 live acceptance is active on
-`codex/r2-live-acceptance-completion`. The complete guarded runner and two
-forward-only R2 fixes are implemented in commit `2b0d7f9` and draft pull
-request [#7](https://github.com/DanilaMasov/Mayhem/pull/7). Its software CI is
-green, but no disposable live environment, credentials, or `psql` are
-available, so the live-backend gate remains open. Remote operations activate
-only with a valid environment-specific Supabase configuration.
+`b50f36f`. Phase R2 live acceptance is implemented on
+`codex/r2-live-acceptance-completion` in pull request
+[#7](https://github.com/DanilaMasov/Mayhem/pull/7). The final disposable
+Supabase run applied nine migrations from zero and passed all nine backend
+probes plus eight production Flutter client checks. Its secret-free report is
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Final branch CI and
+merge remain before R3. Remote operations still activate only with a valid
+environment-specific Supabase configuration.
 
 ## Open software gates
 
@@ -53,12 +54,12 @@ only with a valid environment-specific Supabase configuration.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
-## Open live-backend gates
+## Live-backend gates
 
 - R2 disposable Supabase/PostgreSQL migration, RLS, grants, RPC, concurrency,
-  deletion, auth, sync, Season/Boss, artifact, and social-proof acceptance.
-- Current evidence is source/runner contracts and headless Flutter client
-  compilation only; no request reached PostgreSQL or Supabase.
+  deletion, auth, sync, Season/Boss, artifact, social-proof, and production
+  Flutter client acceptance is closed by the 2026-07-17 live report.
+- No production Supabase environment has been configured or authorized.
 
 ## Open device gates
 
@@ -68,11 +69,12 @@ only with a valid environment-specific Supabase configuration.
 
 ## Known release blockers
 
-- Production remote auth/sync has not passed the R2 live-backend gate and is
-  unavailable in builds without `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+- Production remote auth/sync remains unavailable in builds without
+  `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- No live-backend acceptance, physical-device acceptance, release signing,
-  final application IDs, production assets, or store configuration.
+- R3 user-visible Season/Boss recovery UX, physical-device acceptance,
+  release signing, final application IDs, production assets, and store
+  configuration remain incomplete.
 
 ## Verification
 
@@ -81,7 +83,7 @@ results:
 
 ```sh
 node --test tests/*.test.mjs
-# 33 passed
+# 34 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -129,8 +131,8 @@ R2 harness evidence:
   confirmation before reading the database target;
 - keeps DB URL, anon key, access tokens, refresh tokens, and server bodies out
   of argv, logs, diagnostics, and reports;
-- refuses a target containing existing Mayhem tables and applies eight migrations
-  from zero in deterministic order through `psql`;
+- refuses a target containing existing Mayhem tables and applies nine
+  migrations from zero in deterministic order through `psql`;
 - prepares two-user auth/refresh, ownership/RLS, grants, direct-write denial,
   exact/duplicate/partial ACK, private-note rejection, and auth recovery;
 - covers Season join/day/closed-window rules, concurrent Boss submission,
@@ -140,11 +142,14 @@ R2 harness evidence:
   and Delete Everywhere adapters in a headless opt-in live test;
 - adds migration `007` to close legacy security-definer search paths and
   decrement social proof during deletion, plus migration `008` to advance the
-  projection revision only for newly issued artifacts;
-- dry contract tests pass, but the runner has not reached PostgreSQL or Supabase
-  because credentials and `psql` are unavailable;
-- `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command and
-  exact blocked and not-run live evidence.
+  projection revision only for newly issued artifacts, and migration `009` to
+  repair recursive private-note validation found by the live run;
+- decomposes PostgreSQL credentials into libpq environment fields and sends
+  parameterized verification SQL through stdin instead of argv;
+- the final disposable run passed all nine probes in 64,526 ms with no failed,
+  blocked, or not-run checks;
+- `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command,
+  attempt history, cleanup contract, and final secret-free evidence.
 
 R1 final composition local evidence:
 
@@ -263,21 +268,20 @@ request [#7](https://github.com/DanilaMasov/Mayhem/pull/7):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29596307195](https://github.com/DanilaMasov/Mayhem/actions/runs/29596307195):
   repository contracts and Flutter format/analyze/test passed;
-- PR #7 remains draft because neither CI run had a disposable live backend.
+- those CI runs cover the original harness commit; final live-fix CI is pending.
 
-Live-backend, simulator/emulator, and physical-device tests were not run and
-their gates remain open. GitHub Actions also emits a non-blocking Node 20
-action-runtime deprecation warning for the v4 checkout/setup actions; it does
-not affect the current green software gate.
+The R2 live-backend gate is closed by
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Simulator/emulator
+and physical-device gates remain open. GitHub Actions also emits a non-blocking
+Node 20 action-runtime deprecation warning for the v4 checkout/setup actions;
+it does not affect the current green software gate.
 
 ## Next authorized slice
 
-Continue Phase R2 only on `codex/r2-live-acceptance-completion`: provide one
-isolated Supabase/PostgreSQL target with `psql`, execute `npm run
-supabase:live`, and commit its secret-free report. Any discovered SQL defect
-must use another forward-only migration followed by a clean rerun. Keep every
-release flag false; R3-R6 remain gated by R2 and their own specification
-prerequisites.
+Finish final CI and merge for pull request #7, then begin R3 live-backed
+Season/Boss UX and recovery work in a new branch. Keep every release flag false
+until its own specification gate is closed. R4 physical-device acceptance and
+R5-R6 release work remain separately gated.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

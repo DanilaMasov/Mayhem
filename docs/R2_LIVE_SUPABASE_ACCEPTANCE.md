@@ -1,105 +1,117 @@
 # R2 Live Supabase Acceptance
 
-**Status:** IMPLEMENTED, LIVE RUN BLOCKED
+**Status:** ACCEPTED ON DISPOSABLE LIVE BACKEND
 **Main checkpoint:** `b50f36f` (merge commit for PR #6)
 **Branch:** `codex/r2-live-acceptance-completion`
-**Preparation:** merged through [PR #6](https://github.com/DanilaMasov/Mayhem/pull/6)
-**Completion PR:** [draft PR #7](https://github.com/DanilaMasov/Mayhem/pull/7)
+**Completion PR:** [PR #7](https://github.com/DanilaMasov/Mayhem/pull/7)
 **Specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`, section 6
+**Final evidence:** `docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`
 
-## Current Environment Evidence
+## Environment
 
-- `SUPABASE_URL`: absent;
-- `SUPABASE_ANON_KEY`: absent;
-- `SUPABASE_DB_URL` / `DATABASE_URL`: absent;
-- `psql`: unavailable;
-- Supabase CLI, Docker, and Podman: unavailable;
-- GitHub Actions R2 secrets and variables: absent.
+- disposable organization: `Mayhem R2 Disposable 2026-07-17`, Free plan;
+- disposable project: `mayhem-r2-disposable-20260717`;
+- environment/project ref: `sgabxgyrvtwasjwenxyu`;
+- region: West EU (Ireland), `eu-west-1`;
+- final project health before acceptance: Healthy;
+- PostgreSQL client: keg-only Homebrew `libpq 18.4`;
+- anonymous sign-ins enabled only for this disposable project;
+- automatic grants for newly created Data API tables were disabled;
+- no Supabase CLI, Docker, Podman, PostgreSQL server, Xcode, Android SDK, or
+  other system SDK was installed.
 
-No package, CLI, container runtime, SDK, or system component was installed.
-No migration or destructive request was sent to a live service.
+The DB URL and publishable key existed only in
+`/private/tmp/mayhem-r2-sgabxgyrvtwasjwenxyu.env` with mode `0600`. They were
+never committed, added to shell profiles, added to GitHub Secrets, or printed
+by the runner. The temporary file and disposable project are cleanup items
+after PR and CI evidence are complete.
 
-## Prepared Command
+## Command
+
+The package command is:
 
 ```sh
 npm run supabase:live
 ```
 
-Required environment variables:
+`npm` is not installed in the local environment, so the equivalent locked
+entrypoint was used without installing Node tooling:
 
-- `MAYHEM_R2_ENVIRONMENT_ID`: non-production identifier;
+```sh
+PATH="/opt/homebrew/opt/libpq/bin:$PATH" \
+  /Users/emperor/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node \
+  scripts/run_live_supabase_acceptance.mjs
+```
+
+Required variables were loaded from the mode-`0600` temporary file:
+
+- `MAYHEM_R2_ENVIRONMENT_ID`;
 - `MAYHEM_R2_CONFIRM_DISPOSABLE=I_UNDERSTAND_THIS_IS_DISPOSABLE`;
-- `SUPABASE_URL`: HTTPS, except explicit localhost HTTP;
-- `SUPABASE_ANON_KEY`: public anonymous key;
-- `SUPABASE_DB_URL` or `DATABASE_URL`: disposable PostgreSQL connection;
-- optional `MAYHEM_R2_REPORT_PATH`: new output file, never overwritten.
+- `MAYHEM_R2_REPORT_PATH`;
+- `SUPABASE_URL`;
+- `SUPABASE_ANON_KEY`;
+- `SUPABASE_DB_URL`.
 
-The runner sends the database connection only through `PGDATABASE`, refuses a
-target containing existing Mayhem tables, applies all eight migrations in
-order, requests a PostgREST schema reload, executes the opt-in production
-Flutter client test, and emits a secret-free JSON report on success or probe
-failure.
+The runner decomposes the PostgreSQL URI into libpq variables and never places
+the URI or password in argv. Parameterized verification SQL is sent through
+stdin with `psql --file=-`, where psql variable substitution is active.
 
-## Forward-Only R2 Fixes
+## Findings And Fixes
 
-- `202607170007_r2_deletion_security_hardening.sql` closes the legacy
-  security-definer search paths and decrements social-proof aggregates before
-  deleting a participating user;
-- `202607170008_artifact_projection_revision.sql` advances the server
-  projection revision only when a genuinely new artifact is issued, allowing
-  production reconciliation to observe ownership changes.
+1. Attempt 1 applied migrations and then failed with
+   `anonymous_provider_disabled`. Anonymous sign-ins were enabled only on the
+   disposable project. No auth users had been created.
+2. Attempt 2 proved that `mayhem_jsonb_has_private_note_key(jsonb)` had an
+   ambiguous `value` reference, causing every canonical event to become
+   `permanent_schema`. Migration
+   `202607170009_private_note_validator_fix.sql` qualifies iterator fields.
+3. Attempt 3 proved that psql variables are not substituted in `--command`
+   input. `PsqlRunner.query()` now uses stdin and `--file=-`.
+4. Attempt 4 passed all nine probes and exposed only an inaccurate static
+   fixture-command label in the report metadata.
+5. Attempt 5 ran the exact final code from an empty schema and produced the
+   committed report. It passed all nine probes in 64,526 ms.
 
-Neither migration has been applied to a live environment yet.
+Every failed attempt emitted a secret-free report with explicit passed,
+failed, and not-run probes. Before each clean rerun, the disposable `public`
+schema and test-only auth users were reset atomically. Failed reset commands
+were transactionally rolled back and verified by unchanged object counts.
 
-## Prepared Acceptance Probes
+## Final Result
 
-- two independent anonymous signups and one session refresh;
-- installation registration and cross-user ownership rejection;
-- RLS ownership isolation, grants/revokes, closed security-definer search paths,
-  and direct table-write denial where RPC is required;
-- canonical event acceptance and exact ACK;
-- duplicate event idempotency;
-- valid plus malformed batch partial ACK;
-- private-note payload rejection;
-- invalid access token, refresh, and successful retry;
-- active/closed Season join, duplicate join, day availability, and duplicate day;
-- Boss-window rejection, concurrent submissions, duplicate participation, and
-  aggregate advisory-lock outcome;
-- server-only artifact issuance, duplicate prevention, owned-only
-  reconciliation, and projection-revision advancement;
-- social-proof visibility below and at threshold with no identity/private-text
-  fields;
-- production Flutter anonymous bootstrap, secure-session serialization/restore,
-  refresh, exact/partial ACK parsing, remote content and Feed persistence,
-  Season persistence, artifact reconciliation, and interrupted deletion
-  recovery;
-- Delete Everywhere receipt/retry behavior, cross-user deletion denial, social
-  counter compensation, full user cascade, and second-user survival.
+- nine migrations applied from zero in deterministic order;
+- nine live probes passed;
+- eight production Flutter client checks passed;
+- zero failed probes;
+- zero blocked probes;
+- zero not-run probes;
+- report scan found no anon key or database URL;
+- Delete Everywhere removed the first user and all owned data, compensated
+  social proof, preserved its receipt contract, and left the second user and
+  owned state intact.
 
-## Report Contract
+Covered behavior includes anonymous auth/refresh, installation ownership,
+RLS and grant boundaries, exact/duplicate/partial ACK, revoked-token recovery,
+Season windows and idempotency, concurrent Boss submissions, server-owned
+artifacts, thresholded social proof, production Flutter adapters, and complete
+cross-user-safe deletion.
 
-The JSON report contains only the environment identifier/host, migration
-versions, static commands, per-probe timings, client check names, and explicit
-`passed`, `failed`, `blocked`, and `notRun` lists. It never contains connection
-URLs, keys, tokens, or server response bodies.
+## Remaining Gates
 
-## Still Required Before R2 Acceptance
+The R2 live-backend gate is closed. Release flags remain false. Simulator and
+physical-device acceptance remain open and cannot be closed by this headless
+backend run. R3 may begin only after PR #7 is green and merged.
 
-- provide one disposable real Supabase/PostgreSQL environment and `psql`;
-- execute the complete runner from an empty Mayhem schema;
-- record actual project identifier, commands, migration versions, timings, and
-  results from the same environment;
-- commit the generated secret-free acceptance report;
-- rerun from a new clean target after any forward-only SQL fix.
+## Cleanup Record
 
-Source and dry-run tests do not close the live-backend gate.
+Locally installed for this acceptance only:
 
-## Software CI Evidence
+- `libpq 18.4`;
+- `krb5 1.22.2`, installed as a `libpq` dependency;
+- `readline 8.3.3`, installed as a `libpq` dependency.
 
-- [push run 29596288252](https://github.com/DanilaMasov/Mayhem/actions/runs/29596288252):
-  repository contracts and Flutter format/analyze/test passed;
-- [pull-request run 29596307195](https://github.com/DanilaMasov/Mayhem/actions/runs/29596307195):
-  repository contracts and Flutter format/analyze/test passed.
-
-These runs did not have R2 secrets or a PostgreSQL target and therefore did not
-execute the opt-in live probe.
+No PATH or shell-profile line was added. After final GitHub evidence, cleanup
+must delete the disposable project/organization, remove the mode-`0600` env
+file and temporary attempt reports under `/private/tmp`, uninstall `libpq`, and
+remove `krb5`/`readline` only if Homebrew confirms that no installed formula
+uses them.
