@@ -1,10 +1,10 @@
 # Mayhem Current Status
 
-**Status date:** 2026-07-15
+**Status date:** 2026-07-17
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/live-supabase-gate`
-**Current main checkpoint:** `73b61c3` (merge commit for PR #5)
+**Current branch:** `codex/r2-live-acceptance-completion`
+**Current main checkpoint:** `b50f36f` (merge commit for PR #6)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -37,12 +37,16 @@ Baseline pull request #1 and R1 pull requests
 PR #4 landed as merge commit `96e1f7d`; R1 software implementation is merged.
 The bounded post-R1 correction pass in pull request
 [#5](https://github.com/DanilaMasov/Mayhem/pull/5) is merged into `main` as
-`73b61c3`. Phase R2 is active on `codex/live-supabase-gate`. Its guarded core
-acceptance runner is prepared in draft pull request
-[#6](https://github.com/DanilaMasov/Mayhem/pull/6), but no disposable live
-environment or credentials are available, so the live-backend gate remains
-open. Remote operations activate only with a valid environment-specific
-Supabase configuration.
+`73b61c3`. The guarded R2 acceptance preparation in pull request
+[#6](https://github.com/DanilaMasov/Mayhem/pull/6) is merged into `main` as
+`b50f36f`. Phase R2 live acceptance is implemented on
+`codex/r2-live-acceptance-completion` in pull request
+[#7](https://github.com/DanilaMasov/Mayhem/pull/7). The final disposable
+Supabase run applied nine migrations from zero and passed all nine backend
+probes plus eight production Flutter client checks. Its secret-free report is
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Final branch CI is
+green; merge remains before R3. Remote operations still activate only with a
+valid environment-specific Supabase configuration.
 
 ## Open software gates
 
@@ -50,11 +54,12 @@ Supabase configuration.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
-## Open live-backend gates
+## Live-backend gates
 
 - R2 disposable Supabase/PostgreSQL migration, RLS, grants, RPC, concurrency,
-  deletion, auth, sync, Season/Boss, artifact, and social-proof acceptance.
-- Current SQL evidence is source-contract coverage only.
+  deletion, auth, sync, Season/Boss, artifact, social-proof, and production
+  Flutter client acceptance is closed by the 2026-07-17 live report.
+- No production Supabase environment has been configured or authorized.
 
 ## Open device gates
 
@@ -64,20 +69,21 @@ Supabase configuration.
 
 ## Known release blockers
 
-- Production remote auth/sync has not passed the R2 live-backend gate and is
-  unavailable in builds without `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+- Production remote auth/sync remains unavailable in builds without
+  `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- No live-backend acceptance, physical-device acceptance, release signing,
-  final application IDs, production assets, or store configuration.
+- R3 user-visible Season/Boss recovery UX, physical-device acceptance,
+  release signing, final application IDs, production assets, and store
+  configuration remain incomplete.
 
 ## Verification
 
-Clean-clone local verification completed on 2026-07-15. Commands and local
+Clean-clone local verification completed on 2026-07-17. Commands and local
 results:
 
 ```sh
 node --test tests/*.test.mjs
-# 28 passed
+# 34 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -92,17 +98,14 @@ node scripts/export_supabase_seed.mjs --check
 # 50 quests and 5 bosses verified
 
 cd mobile
-flutter pub get --offline
-# locked dependencies restored from the existing local package cache
-
-dart format --output=none --set-exit-if-changed lib test
-# 240 files, 0 changed
+dart format --output=none --set-exit-if-changed lib test tool
+# 242 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 217 passed
+# 217 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 Post-R1 correction local evidence:
@@ -128,15 +131,27 @@ R2 harness evidence:
   confirmation before reading the database target;
 - keeps DB URL, anon key, access tokens, refresh tokens, and server bodies out
   of argv, logs, diagnostics, and reports;
-- refuses a target containing existing Mayhem tables and applies six migrations
-  from zero in deterministic order through `psql`;
-- prepares two-user auth/refresh, ownership/RLS, direct-write denial,
-  exact/duplicate/partial ACK, private-note rejection, auth recovery, and
-  Delete Everywhere probes;
-- dry contract tests pass, but the runner has not reached PostgreSQL or Supabase
-  because credentials and `psql` are unavailable;
-- `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command and
-  remaining Season/Boss, social-proof, client, and live evidence.
+- refuses a target containing existing Mayhem tables and applies nine
+  migrations from zero in deterministic order through `psql`;
+- prepares two-user auth/refresh, ownership/RLS, grants, direct-write denial,
+  exact/duplicate/partial ACK, private-note rejection, and auth recovery;
+- covers Season join/day/closed-window rules, concurrent Boss submission,
+  duplicate participation, advisory-lock effects, server-owned artifacts,
+  thresholded social proof, identity/privacy isolation, and deletion cleanup;
+- invokes production Flutter auth/backend/content/Feed/Season/reconciliation
+  and Delete Everywhere adapters in a headless opt-in live test;
+- adds migration `007` to close legacy security-definer search paths and
+  decrement social proof during deletion, plus migration `008` to advance the
+  projection revision only for newly issued artifacts, and migration `009` to
+  repair recursive private-note validation found by the live run;
+- decomposes PostgreSQL credentials into libpq environment fields and sends
+  parameterized verification SQL through stdin instead of argv;
+- the final disposable run passed all nine probes in 64,526 ms with no failed,
+  blocked, or not-run checks;
+- the disposable Supabase project/organization, temporary credentials and
+  reports, and acceptance-only Homebrew formulas were removed after evidence;
+- `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command,
+  attempt history, cleanup contract, and final secret-free evidence.
 
 R1 final composition local evidence:
 
@@ -238,27 +253,41 @@ The post-R1 correction implementation is commit `49a5ab6` in merged pull request
 - [pull-request CI run 29435443641](https://github.com/DanilaMasov/Mayhem/actions/runs/29435443641):
   repository contracts and Flutter format/analyze/test passed.
 
-The guarded R2 live-acceptance preparation is commit `f48d57c` in draft pull
-request [#6](https://github.com/DanilaMasov/Mayhem/pull/6):
+The guarded R2 live-acceptance preparation is final branch commit `95cb456` in
+merged pull request [#6](https://github.com/DanilaMasov/Mayhem/pull/6),
+checkpoint `b50f36f`:
 
-- [push CI run 29437633828](https://github.com/DanilaMasov/Mayhem/actions/runs/29437633828):
+- [push CI run 29437932969](https://github.com/DanilaMasov/Mayhem/actions/runs/29437932969):
   repository contracts and Flutter format/analyze/test passed;
-- [pull-request CI run 29437656421](https://github.com/DanilaMasov/Mayhem/actions/runs/29437656421):
+- [pull-request CI run 29437940068](https://github.com/DanilaMasov/Mayhem/actions/runs/29437940068):
   repository contracts and Flutter format/analyze/test passed;
 - these source and dry-contract checks do not close the R2 live-backend gate.
 
-Live-backend, simulator/emulator, and physical-device tests were not run and
-their gates remain open. GitHub Actions also emits a non-blocking Node 20
-action-runtime deprecation warning for the v4 checkout/setup actions; it does
-not affect the current green software gate.
+The complete R2 harness implementation is commit `2b0d7f9` in draft pull
+request [#7](https://github.com/DanilaMasov/Mayhem/pull/7):
+
+- [push CI run 29596288252](https://github.com/DanilaMasov/Mayhem/actions/runs/29596288252):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29596307195](https://github.com/DanilaMasov/Mayhem/actions/runs/29596307195):
+  repository contracts and Flutter format/analyze/test passed;
+- final live fixes and evidence are commit `6884ab6`;
+- [push CI run 29602473292](https://github.com/DanilaMasov/Mayhem/actions/runs/29602473292):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29602476160](https://github.com/DanilaMasov/Mayhem/actions/runs/29602476160):
+  repository contracts and Flutter format/analyze/test passed.
+
+The R2 live-backend gate is closed by
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Simulator/emulator
+and physical-device gates remain open. GitHub Actions also emits a non-blocking
+Node 20 action-runtime deprecation warning for the v4 checkout/setup actions;
+it does not affect the current green software gate.
 
 ## Next authorized slice
 
-Continue Phase R2 only on `codex/live-supabase-gate`: provide an isolated
-Supabase/PostgreSQL environment, run the prepared core acceptance command, then
-add Season/Boss concurrency and social-proof probes against the same target.
-Keep every release flag false; R3-R6 remain gated by R2 and their own
-specification prerequisites.
+Finish final CI and merge for pull request #7, then begin R3 live-backed
+Season/Boss UX and recovery work in a new branch. Keep every release flag false
+until its own specification gate is closed. R4 physical-device acceptance and
+R5-R6 release work remain separately gated.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

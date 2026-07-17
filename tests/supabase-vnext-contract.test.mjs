@@ -5,6 +5,15 @@ import test from "node:test";
 const migration = (name) => new URL(`../supabase/migrations/${name}`, import.meta.url);
 const schemaPath = migration("202607130005_vnext_backend.sql");
 const rpcPath = migration("202607130006_vnext_rpc.sql");
+const r2HardeningPath = migration(
+  "202607170007_r2_deletion_security_hardening.sql"
+);
+const artifactRevisionPath = migration(
+  "202607170008_artifact_projection_revision.sql"
+);
+const privateNoteValidatorPath = migration(
+  "202607170009_private_note_validator_fix.sql"
+);
 const eventPath = new URL("../mobile/lib/core/sync/event_envelope_v2.dart", import.meta.url);
 const goldenPath = new URL("../contracts/v1/policy_golden.json", import.meta.url);
 
@@ -231,4 +240,72 @@ test("Season projection runs only after generic event validation", async () => {
     sql,
     /season_participation[\s\S]+?joined_at <= p_occurred_at/
   );
+});
+
+test("R2 hardening keeps deletion aggregates accurate and search paths closed", async () => {
+  const sql = await readFile(r2HardeningPath, "utf8");
+  assert.match(
+    sql,
+    /alter function public\.ingest_quest_events\(uuid, jsonb\)[\s\S]+?set search_path to ''/
+  );
+  assert.match(
+    sql,
+    /alter function public\.delete_my_cloud_data\(\)[\s\S]+?set search_path to ''/
+  );
+  assert.match(sql, /create or replace function public\.delete_my_data\(\)/);
+  assert.match(sql, /security definer[\s\S]+?set search_path = ''/);
+  assert.match(
+    sql,
+    /join public\.social_proof_aggregates aggregate[\s\S]+?participation\.user_id = v_user_id/
+  );
+  assert.match(
+    sql,
+    /hashtextextended\('social:' \|\| v_social\.aggregate_key, 0\)/
+  );
+  assert.match(
+    sql,
+    /value = greatest\(0, value - v_social\.decrement_by\)/
+  );
+  assert.match(sql, /delete from auth\.users where id = v_user_id/);
+  assert.match(
+    sql,
+    /revoke all on function public\.delete_my_data\(\) from public, anon/
+  );
+  assert.doesNotMatch(sql, /drop table|truncate table/i);
+});
+
+test("new server-owned artifacts advance reconciliation revision once", async () => {
+  const sql = await readFile(artifactRevisionPath, "utf8");
+  assert.match(
+    sql,
+    /create or replace function public\.advance_artifact_projection_revision\(\)/
+  );
+  assert.match(sql, /set search_path = ''/);
+  assert.match(
+    sql,
+    /projection_revision = public\.user_progress\.projection_revision \+ 1/
+  );
+  assert.match(
+    sql,
+    /create trigger user_artifacts_advance_projection_revision[\s\S]+?after insert on public\.user_artifacts/
+  );
+  assert.match(
+    sql,
+    /revoke all on function public\.advance_artifact_projection_revision\(\)[\s\S]+?from public, anon, authenticated/
+  );
+  assert.doesNotMatch(sql, /after update|after delete/i);
+});
+
+test("private-note validation qualifies jsonb iterator fields", async () => {
+  const sql = await readFile(privateNoteValidatorPath, "utf8");
+  assert.match(
+    sql,
+    /from jsonb_each\(value\) as entry\(key, value\)/
+  );
+  assert.match(sql, /select entry\.key, entry\.value/);
+  assert.match(
+    sql,
+    /public\.mayhem_jsonb_has_private_note_key\(item\.value\)/
+  );
+  assert.doesNotMatch(sql, /select key, value from jsonb_each/);
 });

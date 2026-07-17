@@ -81,6 +81,7 @@ export async function migrationPlan(repositoryRoot) {
 export class PsqlRunner {
   constructor({ databaseUrl, executable = "psql", spawnProcess = spawn }) {
     this.databaseUrl = databaseUrl;
+    this.connectionEnvironment = postgresConnectionEnvironment(databaseUrl);
     this.executable = executable;
     this.spawnProcess = spawnProcess;
   }
@@ -127,19 +128,19 @@ export class PsqlRunner {
       "--tuples-only",
       "--no-align",
       ...variableArguments,
-      `--command=${sql}`
-    ]);
+      "--file=-"
+    ], { input: `${sql}\n` });
   }
 
-  #run(argumentsList, { connect = true } = {}) {
+  #run(argumentsList, { connect = true, input } = {}) {
     return new Promise((resolve, reject) => {
       const child = this.spawnProcess(this.executable, argumentsList, {
         env: {
           ...psqlProcessEnvironment(process.env),
           PGCONNECT_TIMEOUT: "10",
-          ...(connect ? { PGDATABASE: this.databaseUrl } : {})
+          ...(connect ? this.connectionEnvironment : {})
         },
-        stdio: ["ignore", "pipe", "pipe"]
+        stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"]
       });
       let stdout = "";
       let stderr = "";
@@ -149,6 +150,7 @@ export class PsqlRunner {
       child.stderr.on("data", (chunk) => {
         stderr += chunk;
       });
+      if (input !== undefined) child.stdin.end(input);
       child.on("error", () => {
         reject(new Error("R2 requires an available psql executable"));
       });
@@ -167,6 +169,81 @@ export class PsqlRunner {
   }
 }
 
+export class FlutterLiveClientRunner {
+  constructor({
+    config,
+    executable = "flutter",
+    spawnProcess = spawn,
+    baseEnvironment = process.env
+  }) {
+    this.config = config;
+    this.executable = executable;
+    this.spawnProcess = spawnProcess;
+    this.baseEnvironment = baseEnvironment;
+  }
+
+  run(mobileRoot) {
+    return new Promise((resolve, reject) => {
+      const child = this.spawnProcess(
+        this.executable,
+        [
+          "test",
+          "--no-pub",
+          "--no-test-assets",
+          "-j",
+          "1",
+          "test/live/r2_live_supabase_test.dart"
+        ],
+        {
+          cwd: mobileRoot,
+          env: {
+            ...flutterProcessEnvironment(this.baseEnvironment),
+            MAYHEM_R2_ENVIRONMENT_ID: this.config.environmentId,
+            MAYHEM_R2_CONFIRM_DISPOSABLE: disposableConfirmation,
+            MAYHEM_R2_RUN_LIVE: "true",
+            SUPABASE_URL: this.config.supabaseUrl,
+            SUPABASE_ANON_KEY: this.config.anonKey
+          },
+          stdio: ["ignore", "pipe", "pipe"]
+        }
+      );
+      let stdout = "";
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr.on("data", () => {});
+      child.on("error", () => {
+        reject(new Error("R2 requires an available flutter executable"));
+      });
+      child.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`R2 Flutter client probe failed (${code})`));
+          return;
+        }
+        try {
+          const marker = stdout.match(
+            /MAYHEM_R2_CLIENT_REPORT:([A-Za-z0-9_-]+=*)/
+          );
+          if (!marker) throw new Error("missing report marker");
+          const report = JSON.parse(
+            Buffer.from(marker[1], "base64url").toString("utf8")
+          );
+          if (
+            report?.result !== "passed" ||
+            report.environmentId !== this.config.environmentId ||
+            !Array.isArray(report.checks)
+          ) {
+            throw new Error("invalid report");
+          }
+          resolve(report);
+        } catch {
+          reject(new Error("R2 Flutter client probe returned an invalid report"));
+        }
+      });
+    });
+  }
+}
+
 function psqlProcessEnvironment(environment) {
   const allowed = [
     "PATH",
@@ -180,6 +257,43 @@ function psqlProcessEnvironment(environment) {
     "PGSSLROOTCERT",
     "PGSSLCRL"
   ];
+  return Object.fromEntries(
+    allowed
+      .filter((name) => environment[name] !== undefined)
+      .map((name) => [name, environment[name]])
+  );
+}
+
+function postgresConnectionEnvironment(databaseUrl) {
+  let database;
+  try {
+    database = new URL(databaseUrl);
+  } catch {
+    throw new Error("R2 database URL must be a valid PostgreSQL URI");
+  }
+  if (!["postgres:", "postgresql:"].includes(database.protocol)) {
+    throw new Error("R2 database URL must use postgresql://");
+  }
+
+  const databaseName = decodeURIComponent(database.pathname.replace(/^\//, ""));
+  if (!database.hostname || !database.username || !databaseName) {
+    throw new Error("R2 database URL is missing required connection fields");
+  }
+
+  return {
+    PGHOST: database.hostname,
+    PGPORT: database.port || "5432",
+    PGDATABASE: databaseName,
+    PGUSER: decodeURIComponent(database.username),
+    PGPASSWORD: decodeURIComponent(database.password),
+    ...(database.searchParams.has("sslmode")
+      ? { PGSSLMODE: database.searchParams.get("sslmode") }
+      : {})
+  };
+}
+
+function flutterProcessEnvironment(environment) {
+  const allowed = ["PATH", "HOME", "LANG", "LC_ALL", "TMPDIR"];
   return Object.fromEntries(
     allowed
       .filter((name) => environment[name] !== undefined)
@@ -256,7 +370,10 @@ export function canonicalEvent({
   installationId,
   clientSequence,
   eventType,
-  payload = {}
+  payload = {},
+  occurredAtUtc = new Date().toISOString(),
+  contentId = null,
+  contentRevision = null
 }) {
   return {
     eventId,
@@ -266,9 +383,9 @@ export function canonicalEvent({
     eventType,
     assignmentId: null,
     attemptId: null,
-    contentId: null,
-    contentRevision: null,
-    occurredAtUtc: new Date().toISOString(),
+    contentId,
+    contentRevision,
+    occurredAtUtc,
     timezoneId: "Etc/UTC",
     timezoneOffsetMinutes: 0,
     payload
