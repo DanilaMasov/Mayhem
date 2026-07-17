@@ -148,6 +148,8 @@ R2 harness evidence:
   parameterized verification SQL through stdin instead of argv;
 - the final disposable run passed all nine probes in 64,526 ms with no failed,
   blocked, or not-run checks;
+- the disposable Supabase project/organization, temporary credentials and
+  reports, and acceptance-only Homebrew formulas were removed after evidence;
 - `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command,
   attempt history, cleanup contract, and final secret-free evidence.
 

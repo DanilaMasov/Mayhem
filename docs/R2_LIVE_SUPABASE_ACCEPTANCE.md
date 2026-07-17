@@ -20,11 +20,11 @@
 - no Supabase CLI, Docker, Podman, PostgreSQL server, Xcode, Android SDK, or
   other system SDK was installed.
 
-The DB URL and publishable key existed only in
+During acceptance, the DB URL and publishable key existed only in
 `/private/tmp/mayhem-r2-sgabxgyrvtwasjwenxyu.env` with mode `0600`. They were
 never committed, added to shell profiles, added to GitHub Secrets, or printed
-by the runner. The temporary file and disposable project are cleanup items
-after PR and CI evidence are complete.
+by the runner. The file, disposable project, and disposable organization were
+deleted after PR and CI evidence completed.
 
 ## Command
 
@@ -113,14 +113,19 @@ backend run. R3 may begin only after PR #7 is green and merged.
 
 ## Cleanup Record
 
-Locally installed for this acceptance only:
+Installed locally for this acceptance only:
 
 - `libpq 18.4`;
 - `krb5 1.22.2`, installed as a `libpq` dependency;
 - `readline 8.3.3`, installed as a `libpq` dependency.
 
-No PATH or shell-profile line was added. After final GitHub evidence, cleanup
-must delete the disposable project/organization, remove the mode-`0600` env
-file and temporary attempt reports under `/private/tmp`, uninstall `libpq`, and
-remove `krb5`/`readline` only if Homebrew confirms that no installed formula
-uses them.
+Cleanup completed on 2026-07-17:
+
+- deleted project `sgabxgyrvtwasjwenxyu`;
+- deleted organization `birrqamaehnouxzrapey`;
+- removed the mode-`0600` env file, final temporary report, four attempt
+  reports, PR body, and diff-audit file from `/private/tmp`;
+- reset the browser automation process that held credentials in memory;
+- verified that only `libpq` used the newly installed `krb5` and `readline`;
+- uninstalled `libpq 18.4`, `krb5 1.22.2`, and `readline 8.3.3`;
+- confirmed that no PATH or shell-profile line had been added.
