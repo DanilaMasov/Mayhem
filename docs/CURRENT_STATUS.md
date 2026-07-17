@@ -47,8 +47,10 @@ Its secret-free report is
 `docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 is active in pull
 request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged into
 `main` as `8f271d4`; commit `9298545` adds explicit read-only Season/Boss state
-projection and cached-versus-confirmed UX. The next R3 slice is active on
-`codex/r3-server-actions` and adds exact-ACK Join submission with durable retry
+projection and cached-versus-confirmed UX. The next R3 slice is commit
+`b64eeaa` in pull request
+[#9](https://github.com/DanilaMasov/Mayhem/pull/9) on
+`codex/r3-server-actions`; it adds exact-ACK Join submission with durable retry
 and process-death recovery. Remote operations still activate only with a valid
 environment-specific Supabase configuration.
 
@@ -149,6 +151,10 @@ R3 server-authoritative Join local evidence:
 - Join UI is disabled without a configured remote runtime, explains the
   server-confirmation boundary, and remains valid at 1.6x text;
 - no dependency, lockfile, migration, production flag, or SDK changed.
+- [push CI run 29609782160](https://github.com/DanilaMasov/Mayhem/actions/runs/29609782160):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29609798994](https://github.com/DanilaMasov/Mayhem/actions/runs/29609798994):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
