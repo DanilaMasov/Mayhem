@@ -85,6 +85,9 @@ class _Packages implements SeasonPackageStore {
   Future<void> clear() async {}
 
   @override
+  Future<SeasonPackage?> loadCachedPackage() async => package;
+
+  @override
   Future<SeasonPackage?> loadActivePackage(DateTime atUtc) async => package;
 
   @override

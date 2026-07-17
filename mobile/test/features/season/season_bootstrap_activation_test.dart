@@ -80,6 +80,10 @@ void main() {
         24,
       );
       expect(await store.loadActivePackage(DateTime.utc(2026, 8, 8)), isNull);
+      expect(
+        (await store.loadCachedPackage())?.season.seasonId,
+        'season_social_reset_0',
+      );
     },
   );
 

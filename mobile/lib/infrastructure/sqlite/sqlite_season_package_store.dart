@@ -16,7 +16,7 @@ class SqliteSeasonPackageStore implements SeasonPackageStore {
   final SqliteVNextContext context;
 
   @override
-  Future<SeasonPackage?> loadActivePackage(DateTime atUtc) {
+  Future<SeasonPackage?> loadCachedPackage() {
     return context.database.transaction((db) async {
       final rows = await db.query(
         'app_metadata',
@@ -34,13 +34,7 @@ class SqliteSeasonPackageStore implements SeasonPackageStore {
         final snapshot = RemoteSeasonSnapshot.fromJson(
           Map<String, dynamic>.from(decoded),
         );
-        final package = RemoteSeasonPackageMapper.fromSnapshot(snapshot);
-        final at = atUtc.toUtc();
-        if (at.isBefore(package.season.startsAt.toUtc()) ||
-            !at.isBefore(package.season.endsAt.toUtc())) {
-          return null;
-        }
-        return package;
+        return RemoteSeasonPackageMapper.fromSnapshot(snapshot);
       } on FormatException {
         await _delete(db);
         return null;
@@ -49,6 +43,18 @@ class SqliteSeasonPackageStore implements SeasonPackageStore {
         return null;
       }
     });
+  }
+
+  @override
+  Future<SeasonPackage?> loadActivePackage(DateTime atUtc) async {
+    final package = await loadCachedPackage();
+    if (package == null) return null;
+    final at = atUtc.toUtc();
+    if (at.isBefore(package.season.startsAt.toUtc()) ||
+        !at.isBefore(package.season.endsAt.toUtc())) {
+      return null;
+    }
+    return package;
   }
 
   @override

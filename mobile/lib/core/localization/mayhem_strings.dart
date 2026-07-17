@@ -102,6 +102,26 @@ abstract interface class MayhemStrings {
   String get anonymousLocalProfile;
   String strongestTrait(String trait);
   String get seasonArtifact;
+  String get seasonTitle;
+  String get seasonUnavailable;
+  String get seasonCached;
+  String get seasonConfirmed;
+  String get seasonRefreshing;
+  String get seasonConflict;
+  String get seasonStateError;
+  String get seasonNotJoined;
+  String get seasonExpired;
+  String get seasonCompleted;
+  String seasonDay(int day);
+  String seasonDaysCompleted(int completed, int total);
+  String get seasonOpen;
+  String get bossLocked;
+  String get bossUpcoming;
+  String get bossOpen;
+  String get bossSubmitting;
+  String get bossAlreadyParticipated;
+  String get bossCompleted;
+  String seasonParticipants(int count);
   String get settings;
   String get settingsTitle;
   String get account;
@@ -422,6 +442,47 @@ class MayhemStringsRu implements MayhemStrings {
   String strongestTrait(String trait) => 'Сильнейший сигнал: $trait';
   @override
   String get seasonArtifact => 'Артефакт Season откроется после реального шага';
+  @override
+  String get seasonTitle => 'ТЕКУЩИЙ SEASON';
+  @override
+  String get seasonUnavailable => 'Активный Season сейчас недоступен.';
+  @override
+  String get seasonCached => 'Показана последняя сохранённая версия';
+  @override
+  String get seasonConfirmed => 'Состояние подтверждено сервером';
+  @override
+  String get seasonRefreshing => 'Обновляем состояние с сервера';
+  @override
+  String get seasonConflict => 'Состояние изменилось. Требуется обновление';
+  @override
+  String get seasonStateError => 'Не удалось проверить состояние Season';
+  @override
+  String get seasonNotJoined => 'Участие ещё не подтверждено';
+  @override
+  String get seasonExpired => 'Season завершён';
+  @override
+  String get seasonCompleted => 'Season пройден';
+  @override
+  String seasonDay(int day) => 'ДЕНЬ $day ИЗ 7';
+  @override
+  String seasonDaysCompleted(int completed, int total) =>
+      '$completed из $total дней завершено';
+  @override
+  String get seasonOpen => 'ОТКРЫТЬ SEASON';
+  @override
+  String get bossLocked => 'Boss закрыт';
+  @override
+  String get bossUpcoming => 'Boss скоро откроется';
+  @override
+  String get bossOpen => 'Boss открыт';
+  @override
+  String get bossSubmitting => 'Подтверждаем участие в Boss';
+  @override
+  String get bossAlreadyParticipated => 'Участие в Boss уже принято';
+  @override
+  String get bossCompleted => 'Boss завершён';
+  @override
+  String seasonParticipants(int count) => '$count подтверждённых участников';
   @override
   String get settings => 'Настройки';
   @override

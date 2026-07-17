@@ -4,6 +4,8 @@ import '../../../core/design_system/components/components.dart';
 import '../../../core/design_system/tokens/tokens.dart';
 import '../../../core/localization/mayhem_strings.dart';
 import '../../challenge/domain/challenge_models.dart';
+import '../../season/application/season_experience_controller.dart';
+import '../../season/domain/season_experience_state.dart';
 import '../../streak/domain/momentum_state.dart';
 import '../application/journey_controller.dart';
 import '../domain/progress_models.dart';
@@ -13,17 +15,23 @@ abstract final class JourneyRoutes {
   static const traits = '/journey/traits';
   static const momentum = '/journey/momentum';
   static const history = '/journey/history';
+  static const season = '/journey/season';
 }
 
 class VNextJourneyScreen extends StatelessWidget {
-  const VNextJourneyScreen({super.key, required this.controller});
+  const VNextJourneyScreen({
+    super.key,
+    required this.controller,
+    required this.season,
+  });
 
   final JourneyController controller;
+  final SeasonExperienceController season;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([controller, season]),
       builder: (context, child) {
         if (controller.loading) {
           return Center(
@@ -46,16 +54,17 @@ class VNextJourneyScreen extends StatelessWidget {
             ),
           );
         }
-        return _JourneyContent(snapshot: snapshot);
+        return _JourneyContent(snapshot: snapshot, season: season.state);
       },
     );
   }
 }
 
 class _JourneyContent extends StatelessWidget {
-  const _JourneyContent({required this.snapshot});
+  const _JourneyContent({required this.snapshot, required this.season});
 
   final JourneySnapshot snapshot;
+  final SeasonExperienceState season;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +90,16 @@ class _JourneyContent extends StatelessWidget {
             ),
           ),
           _JourneyTopScene(snapshot: snapshot),
+          if (season.visible)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                MayhemSpacing.x5,
+                MayhemSpacing.x6,
+                MayhemSpacing.x5,
+                0,
+              ),
+              child: _SeasonSummary(state: season),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               MayhemSpacing.x5,
@@ -147,6 +166,73 @@ class _JourneyContent extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SeasonSummary extends StatelessWidget {
+  const _SeasonSummary({required this.state});
+
+  final SeasonExperienceState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final package = state.package;
+    final strings = context.strings;
+    return MayhemPressable(
+      semanticLabel: strings.seasonTitle,
+      onPressed: () => Navigator.of(context).pushNamed(JourneyRoutes.season),
+      borderRadius: MayhemRadii.medium,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: MayhemColors.surfaceBase,
+          borderRadius: MayhemRadii.medium,
+          border: Border.all(color: MayhemColors.lineStrong),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 112),
+          child: Padding(
+            padding: const EdgeInsets.all(MayhemSpacing.x4),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.local_fire_department_outlined,
+                  color: MayhemColors.brandSignalSoft,
+                  size: 30,
+                ),
+                const SizedBox(width: MayhemSpacing.x4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MayhemText(
+                        strings.seasonTitle,
+                        variant: MayhemTextVariant.labelMicro,
+                      ),
+                      const SizedBox(height: MayhemSpacing.x1),
+                      MayhemText(
+                        package?.season.title ?? strings.seasonUnavailable,
+                        variant: MayhemTextVariant.labelLarge,
+                        color: MayhemColors.textPrimary,
+                        maxLines: 2,
+                      ),
+                      if (state.currentDay case final day?) ...[
+                        const SizedBox(height: MayhemSpacing.x1),
+                        MayhemText(
+                          strings.seasonDay(day),
+                          variant: MayhemTextVariant.bodySmall,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward, size: 20),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

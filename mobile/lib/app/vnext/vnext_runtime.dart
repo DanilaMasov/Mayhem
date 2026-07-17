@@ -16,6 +16,7 @@ import '../../features/onboarding/data/local_onboarding_repository.dart';
 import '../../features/progress/application/journey_controller.dart';
 import '../../features/progress/domain/development_rank_config.dart';
 import '../../features/season/application/artifact_ownership_controller.dart';
+import '../../features/season/application/season_experience_controller.dart';
 import '../../features/season/application/season_participation_coordinator.dart';
 import '../../features/settings/application/remote_account_controller.dart';
 import '../../features/settings/application/settings_controller.dart';
@@ -76,6 +77,14 @@ class VNextRuntime extends ChangeNotifier {
       packages: store.season,
       clock: currentTime,
     );
+    final season = SeasonExperienceController(
+      packages: store.season,
+      participation: store.seasonParticipation,
+      ownership: store.reconciliation,
+      enabled: () =>
+          featureFlags.isEnabled(MayhemFeatureFlag.seasonZeroEnabled),
+      clock: clock.utcNow,
+    );
     late final VNextRuntime runtime;
     final seasonParticipation = SeasonParticipationCoordinator(
       packages: store.season,
@@ -113,6 +122,7 @@ class VNextRuntime extends ChangeNotifier {
       journey: journey,
       settings: settings,
       artifacts: artifacts,
+      season: season,
       seasonParticipation: seasonParticipation,
     );
     featureFlags.addListener(runtime._handleFeatureFlagsChanged);
@@ -129,6 +139,7 @@ class VNextRuntime extends ChangeNotifier {
     required this.journey,
     required this.settings,
     required this.artifacts,
+    required this.season,
     required this.seasonParticipation,
   });
 
@@ -141,6 +152,7 @@ class VNextRuntime extends ChangeNotifier {
   final JourneyController journey;
   final SettingsController settings;
   final ArtifactOwnershipController artifacts;
+  final SeasonExperienceController season;
   final SeasonParticipationCoordinator seasonParticipation;
 
   LocalIdentity? _identity;
@@ -185,6 +197,7 @@ class VNextRuntime extends ChangeNotifier {
       feed.initialize(),
       journey.initialize(),
       artifacts.initialize(),
+      season.initialize(),
     ]);
     final feedSnapshot = feed.snapshot;
     if (feedSnapshot != null) feedChallenge.initialize(feedSnapshot);
@@ -198,7 +211,11 @@ class VNextRuntime extends ChangeNotifier {
   }
 
   Future<void> refreshAfterRemoteSync() async {
-    await Future.wait([journey.initialize(), artifacts.initialize()]);
+    await Future.wait([
+      journey.initialize(),
+      artifacts.initialize(),
+      season.initialize(),
+    ]);
     await _detectRankUp();
   }
 
@@ -218,6 +235,11 @@ class VNextRuntime extends ChangeNotifier {
     _remoteAccount = account;
     _terminalSyncTrigger = onTerminalSync;
   }
+
+  Future<void> beginRemoteRefresh() => season.beginRemoteRefresh();
+
+  Future<void> completeRemoteRefresh({required bool succeeded}) =>
+      season.completeRemoteRefresh(succeeded: succeeded);
 
   Future<void> _detectRankUp() async {
     final rankLabel = journey.snapshot?.projection.rank.label;
@@ -254,11 +276,15 @@ class VNextRuntime extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _handleFeatureFlagsChanged() => notifyListeners();
+  void _handleFeatureFlagsChanged() {
+    season.initialize();
+    notifyListeners();
+  }
 
   @override
   void dispose() {
     featureFlags.removeListener(_handleFeatureFlagsChanged);
+    season.dispose();
     _remoteAccount?.dispose();
     super.dispose();
   }

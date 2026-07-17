@@ -7,6 +7,7 @@ import '../../features/feed/presentation/vnext_feed_screen.dart';
 import '../../features/profile/presentation/vnext_you_screen.dart';
 import '../../features/progress/presentation/vnext_journey_screen.dart';
 import '../../features/settings/presentation/vnext_settings_screen.dart';
+import '../../features/season/presentation/vnext_season_screen.dart';
 import 'vnext_runtime.dart';
 import '../composition/remote_runtime_diagnostics.dart';
 
@@ -86,8 +87,12 @@ class _VNextShellState extends State<VNextShell> {
         VNextMomentumDetailScreen(snapshot: snapshot),
       (VNextTab.journey, JourneyRoutes.history) when snapshot != null =>
         VNextHistoryScreen(snapshot: snapshot),
+      (VNextTab.journey, JourneyRoutes.season) => VNextSeasonScreen(
+        controller: widget.runtime.season,
+      ),
       (VNextTab.journey, _) => VNextJourneyScreen(
         controller: widget.runtime.journey,
+        season: widget.runtime.season,
       ),
       (VNextTab.you, YouRoutes.settings) ||
       (VNextTab.you, YouRoutes.privacy) ||
