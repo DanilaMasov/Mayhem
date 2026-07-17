@@ -9,6 +9,7 @@ import 'package:mayhem_mobile/core/design_system/components/components.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
 import 'package:mayhem_mobile/features/season/domain/artifact_ownership.dart';
+import 'package:mayhem_mobile/features/season/domain/season_experience_state.dart';
 import 'package:mayhem_mobile/features/feed/domain/feed_models.dart';
 import 'package:mayhem_mobile/features/onboarding/domain/onboarding_models.dart';
 import 'package:mayhem_mobile/features/progress/domain/progress_models.dart';
@@ -438,11 +439,50 @@ void main() {
     expect(find.text('Показана последняя сохранённая версия'), findsOneWidget);
     expect(find.text('Участие ещё не подтверждено'), findsOneWidget);
     expect(find.text('Состояние подтверждено сервером'), findsNothing);
+    await tester.scrollUntilVisible(find.text('ВСТУПИТЬ В SEASON'), 300);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<MayhemPrimaryButton>(find.byType(MayhemPrimaryButton))
+          .enabled,
+      isFalse,
+    );
 
+    runtime.season.attachRemote(
+      synchronize: () async {
+        final pending = await runtime.store.eventSync.loadAllPending();
+        final join = pending.singleWhere(
+          (event) => event.eventType.wireName == 'season_joined',
+        );
+        await runtime.store.eventSync.applyServerResults(
+          results: [
+            RemoteEventResult(
+              eventId: join.eventId,
+              accepted: true,
+              disposition: RemoteEventDisposition.accepted,
+            ),
+          ],
+          receivedAt: DateTime.utc(2026, 7, 13, 9, 1),
+        );
+        return true;
+      },
+    );
     await runtime.completeRemoteRefresh(succeeded: true);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Состояние подтверждено сервером'),
+      -300,
+    );
     await tester.pumpAndSettle();
     expect(find.text('Состояние подтверждено сервером'), findsOneWidget);
     expect(find.text('Показана последняя сохранённая версия'), findsNothing);
+
+    await tester.scrollUntilVisible(find.text('ВСТУПИТЬ В SEASON'), 300);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ВСТУПИТЬ В SEASON'));
+    await tester.pumpAndSettle();
+    expect(find.text('ВСТУПИТЬ В SEASON'), findsNothing);
+    expect(runtime.season.state.membership, SeasonMembership.active);
     expect(tester.takeException(), isNull);
   });
 

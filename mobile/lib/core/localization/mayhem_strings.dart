@@ -110,6 +110,12 @@ abstract interface class MayhemStrings {
   String get seasonConflict;
   String get seasonStateError;
   String get seasonNotJoined;
+  String get seasonJoining;
+  String get seasonJoinFailed;
+  String get seasonJoin;
+  String get seasonJoinRetry;
+  String get seasonJoinExplanation;
+  String get seasonJoinRemoteRequired;
   String get seasonExpired;
   String get seasonCompleted;
   String seasonDay(int day);
@@ -458,6 +464,20 @@ class MayhemStringsRu implements MayhemStrings {
   String get seasonStateError => 'Не удалось проверить состояние Season';
   @override
   String get seasonNotJoined => 'Участие ещё не подтверждено';
+  @override
+  String get seasonJoining => 'Подтверждаем участие';
+  @override
+  String get seasonJoinFailed => 'Участие не подтверждено. Можно повторить';
+  @override
+  String get seasonJoin => 'ВСТУПИТЬ В SEASON';
+  @override
+  String get seasonJoinRetry => 'ПОВТОРИТЬ ПОДТВЕРЖДЕНИЕ';
+  @override
+  String get seasonJoinExplanation =>
+      'Участие начнётся только после подтверждения сервера. Повторный запрос не создаст дубликат.';
+  @override
+  String get seasonJoinRemoteRequired =>
+      'Для вступления нужна настроенная облачная сессия и сеть.';
   @override
   String get seasonExpired => 'Season завершён';
   @override

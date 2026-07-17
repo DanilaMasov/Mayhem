@@ -27,6 +27,8 @@ class VNextSeasonScreen extends StatelessWidget {
         builder: (context, child) => _SeasonBody(
           state: controller.state,
           onRetry: controller.initialize,
+          canJoin: controller.canJoin,
+          onJoin: controller.join,
         ),
       ),
     );
@@ -34,10 +36,17 @@ class VNextSeasonScreen extends StatelessWidget {
 }
 
 class _SeasonBody extends StatelessWidget {
-  const _SeasonBody({required this.state, required this.onRetry});
+  const _SeasonBody({
+    required this.state,
+    required this.onRetry,
+    required this.canJoin,
+    required this.onJoin,
+  });
 
   final SeasonExperienceState state;
   final VoidCallback onRetry;
+  final bool canJoin;
+  final VoidCallback onJoin;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +133,26 @@ class _SeasonBody extends StatelessWidget {
             icon: Icons.flag_outlined,
             label: _membershipLabel(strings, state.membership),
           ),
+          if (state.membership == SeasonMembership.notJoined ||
+              state.membership == SeasonMembership.joining ||
+              state.membership == SeasonMembership.joinFailedRetryable) ...[
+            const SizedBox(height: MayhemSpacing.x3),
+            MayhemText(
+              canJoin || state.membership == SeasonMembership.joining
+                  ? strings.seasonJoinExplanation
+                  : strings.seasonJoinRemoteRequired,
+              variant: MayhemTextVariant.bodySmall,
+            ),
+            const SizedBox(height: MayhemSpacing.x4),
+            MayhemPrimaryButton(
+              label: state.membership == SeasonMembership.joinFailedRetryable
+                  ? strings.seasonJoinRetry
+                  : strings.seasonJoin,
+              onPressed: canJoin ? onJoin : null,
+              enabled: canJoin,
+              loading: state.membership == SeasonMembership.joining,
+            ),
+          ],
           const SizedBox(height: MayhemSpacing.x3),
           _StatusPanel(
             icon: Icons.bolt_outlined,
@@ -146,8 +175,8 @@ class _SeasonBody extends StatelessWidget {
         SeasonMembership.notJoined => strings.seasonNotJoined,
         SeasonMembership.expired => strings.seasonExpired,
         SeasonMembership.completed => strings.seasonCompleted,
-        SeasonMembership.joining => strings.loading,
-        SeasonMembership.joinFailedRetryable => strings.remoteSyncFailed,
+        SeasonMembership.joining => strings.seasonJoining,
+        SeasonMembership.joinFailedRetryable => strings.seasonJoinFailed,
         SeasonMembership.active =>
           state.currentDay == null
               ? strings.seasonTitle

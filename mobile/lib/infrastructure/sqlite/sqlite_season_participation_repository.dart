@@ -19,6 +19,13 @@ class SqliteSeasonParticipationRepository
   }
 
   @override
+  Future<void> clear(String seasonId) => context.database.transaction(
+    (db) => db
+        .delete('app_metadata', where: 'key = ?', whereArgs: [_key(seasonId)])
+        .then((_) {}),
+  );
+
+  @override
   Future<bool> commit({
     required SeasonParticipationState state,
     required EventDraftV2 event,

@@ -3,8 +3,8 @@
 **Status date:** 2026-07-17
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r3-season-boss-flow`
-**Current main checkpoint:** `ccdd12d` (merge commit for PR #7)
+**Current branch:** `codex/r3-server-actions`
+**Current main checkpoint:** `8f271d4` (merge commit for PR #8)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -45,16 +45,17 @@ The bounded post-R1 correction pass in pull request
 and passed all nine backend probes plus eight production Flutter client checks.
 Its secret-free report is
 `docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 is active in pull
-request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) on
-`codex/r3-season-boss-flow`; commit `9298545` adds explicit read-only
-Season/Boss state projection and cached-versus-confirmed UX without exposing
-unconfirmed Join or Boss mutations. Remote operations still activate only
-with a valid environment-specific Supabase configuration.
+request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged into
+`main` as `8f271d4`; commit `9298545` adds explicit read-only Season/Boss state
+projection and cached-versus-confirmed UX. The next R3 slice is active on
+`codex/r3-server-actions` and adds exact-ACK Join submission with durable retry
+and process-death recovery. Remote operations still activate only with a valid
+environment-specific Supabase configuration.
 
 ## Open software gates
 
-- R3 server-authoritative Join/day/Boss mutations, interruption recovery, and
-  remaining state-specific UX.
+- R3 server-authoritative day/Boss mutations, cross-device participation
+  refresh, interruption recovery, and remaining state-specific UX.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
@@ -103,13 +104,13 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 246 files, 0 changed
+# 249 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 226 passed; 1 live-only test skipped without an explicit disposable target
+# 230 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -126,12 +127,28 @@ R3 state-foundation local evidence:
   data separately from server-confirmed data and remains valid at 1.6x text;
 - social proof is rendered only when the validated package exposes a value at
   or above its privacy threshold;
-- no Join, day-completion, or Boss mutation is exposed by this slice, because
-  the existing local event coordinator alone does not prove server acceptance.
+- the state-foundation commit exposed no mutation from the local coordinator
+  alone; the subsequent Join slice adds the required exact-ACK boundary.
 - [push CI run 29606646694](https://github.com/DanilaMasov/Mayhem/actions/runs/29606646694):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29606663881](https://github.com/DanilaMasov/Mayhem/actions/runs/29606663881):
   repository contracts and Flutter format/analyze/test passed.
+
+R3 server-authoritative Join local evidence:
+
+- Join is staged atomically with its canonical event and becomes active only
+  after the exact event receives a server-accepted ACK;
+- the durable action journal distinguishes pending, synced, and rejected
+  delivery without storing secrets or creating a second mutation channel;
+- a staged Join survives runtime disposal and a new app composition restores
+  retryable state from SQLite;
+- retry clears only the event backoff and resubmits the same event ID, allowing
+  the server's duplicate-event handling to recover from a lost ACK;
+- network failure leaves one retryable pending action; server rejection clears
+  optimistic local participation before a new attempt is allowed;
+- Join UI is disabled without a configured remote runtime, explains the
+  server-confirmation boundary, and remains valid at 1.6x text;
+- no dependency, lockfile, migration, production flag, or SDK changed.
 
 Post-R1 correction local evidence:
 
@@ -314,10 +331,11 @@ it does not affect the current green software gate.
 
 ## Next authorized slice
 
-Complete the next R3 slice with server-authoritative Join/day/Boss mutation,
-authoritative participation refresh, bounded retry, and process-death recovery.
-Keep every release flag false until its own specification gate is closed. R4
-physical-device acceptance and R5-R6 release work remain separately gated.
+Complete the next R3 slice with server-authoritative day completion and Boss
+participation, then add authoritative participation refresh for cross-device
+recovery. Keep every release flag false until its own specification gate is
+closed. R4 physical-device acceptance and R5-R6 release work remain separately
+gated.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

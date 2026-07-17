@@ -77,14 +77,6 @@ class VNextRuntime extends ChangeNotifier {
       packages: store.season,
       clock: currentTime,
     );
-    final season = SeasonExperienceController(
-      packages: store.season,
-      participation: store.seasonParticipation,
-      ownership: store.reconciliation,
-      enabled: () =>
-          featureFlags.isEnabled(MayhemFeatureFlag.seasonZeroEnabled),
-      clock: clock.utcNow,
-    );
     late final VNextRuntime runtime;
     final seasonParticipation = SeasonParticipationCoordinator(
       packages: store.season,
@@ -96,6 +88,16 @@ class VNextRuntime extends ChangeNotifier {
           timezoneOffsetMinutes?.call() ??
           clock.localNow().timeZoneOffset.inMinutes,
       onTerminalAction: () => runtime._terminalSyncTrigger?.call(),
+    );
+    final season = SeasonExperienceController(
+      packages: store.season,
+      participation: store.seasonParticipation,
+      ownership: store.reconciliation,
+      actions: store.seasonActions,
+      joinStager: seasonParticipation,
+      enabled: () =>
+          featureFlags.isEnabled(MayhemFeatureFlag.seasonZeroEnabled),
+      clock: clock.utcNow,
     );
     final feedChallenge = FeedChallengeController(
       flow: ChallengeFlowCoordinator(
@@ -228,12 +230,14 @@ class VNextRuntime extends ChangeNotifier {
   void attachRemote({
     required RemoteAccountController account,
     required void Function() onTerminalSync,
+    required Future<bool> Function() synchronizeSeasonAction,
   }) {
     if (_remoteAccount != null) {
       throw StateError('Remote runtime is already attached');
     }
     _remoteAccount = account;
     _terminalSyncTrigger = onTerminalSync;
+    season.attachRemote(synchronize: synchronizeSeasonAction);
   }
 
   Future<void> beginRemoteRefresh() => season.beginRemoteRefresh();
