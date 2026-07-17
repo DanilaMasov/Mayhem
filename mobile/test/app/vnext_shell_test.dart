@@ -406,6 +406,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Journey exposes cached Season state without fake confirmation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = (await tester.runAsync(
+      () => buildVNextTestRuntime(
+        debugOverrides: const {
+          MayhemFeatureFlag.newFeedEnabled: true,
+          MayhemFeatureFlag.seasonZeroEnabled: true,
+          MayhemFeatureFlag.bossRaidEnabled: true,
+        },
+      ),
+    ))!;
+    await runtime.store.season.saveValidatedSnapshot(_activeSeason());
+    await runtime.season.initialize();
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ТЕКУЩИЙ SEASON'), findsOneWidget);
+    expect(find.text('Нулевая неделя'), findsOneWidget);
+    await tester.tap(find.text('Нулевая неделя'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Показана последняя сохранённая версия'), findsOneWidget);
+    expect(find.text('Участие ещё не подтверждено'), findsOneWidget);
+    expect(find.text('Состояние подтверждено сервером'), findsNothing);
+
+    await runtime.completeRemoteRefresh(succeeded: true);
+    await tester.pumpAndSettle();
+    expect(find.text('Состояние подтверждено сервером'), findsOneWidget);
+    expect(find.text('Показана последняя сохранённая версия'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Phase 4 primary surfaces support 1.6x text', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

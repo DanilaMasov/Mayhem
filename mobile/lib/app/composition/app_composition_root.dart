@@ -92,11 +92,13 @@ class AppCompositionRoot extends ChangeNotifier
 
   Future<AppRemoteRuntimeStatus> _runBootstrap() async {
     try {
+      await vnextRuntime?.beginRemoteRefresh();
       await remote.bootstrap(_cancellation);
       if (_shutdown || _cancellation.isCancelled) {
         return AppRemoteRuntimeStatus.disposed;
       }
       _setRemoteState(AppRemoteRuntimeStatus.ready);
+      await vnextRuntime?.completeRemoteRefresh(succeeded: true);
       telemetry.record('remote_bootstrap_ready');
     } on AppOperationCancelled {
       if (_shutdown) return AppRemoteRuntimeStatus.disposed;
@@ -104,12 +106,14 @@ class AppCompositionRoot extends ChangeNotifier
         AppRemoteRuntimeStatus.degraded,
         errorCode: 'remote_bootstrap_cancelled',
       );
+      await vnextRuntime?.completeRemoteRefresh(succeeded: false);
     } catch (error, stackTrace) {
       if (_shutdown || _cancellation.isCancelled) {
         return AppRemoteRuntimeStatus.disposed;
       }
       final code = 'remote_bootstrap_${error.runtimeType}';
       _setRemoteState(AppRemoteRuntimeStatus.degraded, errorCode: code);
+      await vnextRuntime?.completeRemoteRefresh(succeeded: false);
       telemetry.record('remote_bootstrap_failed', fields: {'code': code});
       developer.log(
         'Remote bootstrap failed; local runtime remains available',
@@ -131,16 +135,22 @@ class AppCompositionRoot extends ChangeNotifier
 
   Future<void> _runForeground() async {
     try {
+      await vnextRuntime?.beginRemoteRefresh();
       await remote.onForeground(_cancellation);
       if (_shutdown || _cancellation.isCancelled) return;
       _setRemoteState(AppRemoteRuntimeStatus.ready);
+      await vnextRuntime?.completeRemoteRefresh(succeeded: true);
       telemetry.record('remote_foreground_ready');
     } on AppOperationCancelled {
+      if (!_shutdown) {
+        await vnextRuntime?.completeRemoteRefresh(succeeded: false);
+      }
       return;
     } catch (error, stackTrace) {
       if (_shutdown || _cancellation.isCancelled) return;
       final code = 'remote_foreground_${error.runtimeType}';
       _setRemoteState(AppRemoteRuntimeStatus.degraded, errorCode: code);
+      await vnextRuntime?.completeRemoteRefresh(succeeded: false);
       telemetry.record('remote_foreground_failed', fields: {'code': code});
       developer.log(
         'Foreground remote refresh failed; local runtime remains available',
