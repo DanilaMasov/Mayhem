@@ -4,7 +4,18 @@ import 'season_package_store.dart';
 import '../domain/season_participation_repository.dart';
 import '../domain/season_participation_state.dart';
 
-class SeasonParticipationCoordinator {
+class StagedSeasonAction {
+  const StagedSeasonAction({required this.committed, this.eventId});
+
+  final bool committed;
+  final String? eventId;
+}
+
+abstract interface class SeasonJoinStager {
+  Future<StagedSeasonAction> stageJoin();
+}
+
+class SeasonParticipationCoordinator implements SeasonJoinStager {
   const SeasonParticipationCoordinator({
     required this.packages,
     required this.participation,
@@ -23,7 +34,10 @@ class SeasonParticipationCoordinator {
   final int timezoneOffsetMinutes;
   final void Function()? onTerminalAction;
 
-  Future<bool> join() async {
+  Future<bool> join() async => (await stageJoin()).committed;
+
+  @override
+  Future<StagedSeasonAction> stageJoin() async {
     final now = clock().toUtc();
     final package = await packages.loadActivePackage(now);
     if (package == null) throw StateError('No active Season package');
@@ -32,7 +46,7 @@ class SeasonParticipationCoordinator {
       if (existing.seasonRevision != package.season.revision) {
         throw StateError('Season revision changed during participation');
       }
-      return false;
+      return const StagedSeasonAction(committed: false);
     }
     final state = SeasonParticipationState(
       seasonId: package.season.seasonId,
@@ -40,19 +54,20 @@ class SeasonParticipationCoordinator {
       joinedAt: now,
       completedDays: const {},
     );
-    final committed = await participation.commit(
-      state: state,
-      event: _event(
-        type: CanonicalEventTypeV2.seasonJoined,
-        occurredAt: now,
-        payload: {
-          'seasonId': state.seasonId,
-          'seasonRevision': state.seasonRevision,
-        },
-      ),
+    final event = _event(
+      type: CanonicalEventTypeV2.seasonJoined,
+      occurredAt: now,
+      payload: {
+        'seasonId': state.seasonId,
+        'seasonRevision': state.seasonRevision,
+      },
     );
+    final committed = await participation.commit(state: state, event: event);
     if (committed) onTerminalAction?.call();
-    return committed;
+    return StagedSeasonAction(
+      committed: committed,
+      eventId: committed ? event.eventId : null,
+    );
   }
 
   Future<bool> completeDay(int day) async {

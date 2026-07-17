@@ -71,6 +71,12 @@ class MemoryDatabaseExecutor implements DatabaseExecutor {
                 right['client_sequence'] as num,
               );
       });
+    } else if (orderBy == 'client_sequence DESC') {
+      result.sort(
+        (left, right) => (right['client_sequence'] as num).compareTo(
+          left['client_sequence'] as num,
+        ),
+      );
     }
     final columns = invocation.namedArguments[#columns] as List<String>?;
     if (columns != null) {
@@ -149,6 +155,7 @@ class MemoryDatabaseExecutor implements DatabaseExecutor {
     return switch (where) {
       'key = ?' => row['key'] == args[0],
       'event_id = ?' => row['event_id'] == args[0],
+      'event_type = ?' => row['event_type'] == args[0],
       'local_user_id = ?' => row['local_user_id'] == args[0],
       'assignment_id = ?' => row['assignment_id'] == args[0],
       'attempt_id = ?' => row['attempt_id'] == args[0],

@@ -4,6 +4,8 @@ import 'season_participation_state.dart';
 abstract interface class SeasonParticipationRepository {
   Future<SeasonParticipationState?> load(String seasonId);
 
+  Future<void> clear(String seasonId);
+
   Future<bool> commit({
     required SeasonParticipationState state,
     required EventDraftV2 event,

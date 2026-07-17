@@ -156,6 +156,12 @@ Future<void> main() async {
       runtime.attachRemote(
         account: remoteComposition.account,
         onTerminalSync: remoteComposition.sync.onTerminalResult,
+        synchronizeSeasonAction: () async {
+          final result = await remoteComposition.sync.synchronize(
+            trigger: SyncTrigger.manual,
+          );
+          return result.status == SyncRunStatus.synchronized;
+        },
       );
       remote = remoteComposition.orchestrator;
     }

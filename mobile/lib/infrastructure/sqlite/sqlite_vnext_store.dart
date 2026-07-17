@@ -10,6 +10,7 @@ import 'sqlite_event_sync_store_v2.dart';
 import 'sqlite_projection_reconciliation_store.dart';
 import 'sqlite_remote_feature_flag_cache.dart';
 import 'sqlite_season_package_store.dart';
+import 'sqlite_season_action_journal.dart';
 import 'sqlite_season_participation_repository.dart';
 import 'sqlite_vnext_context.dart';
 import 'vnext_database.dart';
@@ -30,6 +31,7 @@ class SqliteVNextStore {
     reconciliation = SqliteProjectionReconciliationStore(context);
     remoteFlags = SqliteRemoteFeatureFlagCache(context);
     season = SqliteSeasonPackageStore(context);
+    seasonActions = SqliteSeasonActionJournal(context);
     seasonParticipation = SqliteSeasonParticipationRepository(context);
   }
 
@@ -46,5 +48,6 @@ class SqliteVNextStore {
   late final SqliteProjectionReconciliationStore reconciliation;
   late final SqliteRemoteFeatureFlagCache remoteFlags;
   late final SqliteSeasonPackageStore season;
+  late final SqliteSeasonActionJournal seasonActions;
   late final SqliteSeasonParticipationRepository seasonParticipation;
 }
