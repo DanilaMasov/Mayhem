@@ -48,10 +48,11 @@ Its secret-free report is
 in pull request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged as
 `8f271d4`. Server-authoritative Join in pull request
 [#9](https://github.com/DanilaMasov/Mayhem/pull/9) is merged into `main` as
-`8761978`. Commit `f84e831` on `codex/r3-day-boss-actions` extends the same
-durable exact-ACK lifecycle to Day completion and Boss participation. Remote
-operations still activate only with a valid environment-specific Supabase
-configuration.
+`8761978`. Commit `f84e831` in pull request
+[#10](https://github.com/DanilaMasov/Mayhem/pull/10) on
+`codex/r3-day-boss-actions` extends the same durable exact-ACK lifecycle to Day
+completion and Boss participation. Remote operations still activate only with
+a valid environment-specific Supabase configuration.
 
 ## Open software gates
 
@@ -171,6 +172,10 @@ R3 server-authoritative Day/Boss local evidence:
 - Season scrolling reserves the navigation inset so terminal controls remain
   hit-testable at large text sizes;
 - no dependency, lockfile, migration, production flag, or SDK changed.
+- [push CI run 29615519565](https://github.com/DanilaMasov/Mayhem/actions/runs/29615519565):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29615538337](https://github.com/DanilaMasov/Mayhem/actions/runs/29615538337):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
