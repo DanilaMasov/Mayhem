@@ -81,6 +81,7 @@ export async function migrationPlan(repositoryRoot) {
 export class PsqlRunner {
   constructor({ databaseUrl, executable = "psql", spawnProcess = spawn }) {
     this.databaseUrl = databaseUrl;
+    this.connectionEnvironment = postgresConnectionEnvironment(databaseUrl);
     this.executable = executable;
     this.spawnProcess = spawnProcess;
   }
@@ -127,19 +128,19 @@ export class PsqlRunner {
       "--tuples-only",
       "--no-align",
       ...variableArguments,
-      `--command=${sql}`
-    ]);
+      "--file=-"
+    ], { input: `${sql}\n` });
   }
 
-  #run(argumentsList, { connect = true } = {}) {
+  #run(argumentsList, { connect = true, input } = {}) {
     return new Promise((resolve, reject) => {
       const child = this.spawnProcess(this.executable, argumentsList, {
         env: {
           ...psqlProcessEnvironment(process.env),
           PGCONNECT_TIMEOUT: "10",
-          ...(connect ? { PGDATABASE: this.databaseUrl } : {})
+          ...(connect ? this.connectionEnvironment : {})
         },
-        stdio: ["ignore", "pipe", "pipe"]
+        stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"]
       });
       let stdout = "";
       let stderr = "";
@@ -149,6 +150,7 @@ export class PsqlRunner {
       child.stderr.on("data", (chunk) => {
         stderr += chunk;
       });
+      if (input !== undefined) child.stdin.end(input);
       child.on("error", () => {
         reject(new Error("R2 requires an available psql executable"));
       });
@@ -260,6 +262,34 @@ function psqlProcessEnvironment(environment) {
       .filter((name) => environment[name] !== undefined)
       .map((name) => [name, environment[name]])
   );
+}
+
+function postgresConnectionEnvironment(databaseUrl) {
+  let database;
+  try {
+    database = new URL(databaseUrl);
+  } catch {
+    throw new Error("R2 database URL must be a valid PostgreSQL URI");
+  }
+  if (!["postgres:", "postgresql:"].includes(database.protocol)) {
+    throw new Error("R2 database URL must use postgresql://");
+  }
+
+  const databaseName = decodeURIComponent(database.pathname.replace(/^\//, ""));
+  if (!database.hostname || !database.username || !databaseName) {
+    throw new Error("R2 database URL is missing required connection fields");
+  }
+
+  return {
+    PGHOST: database.hostname,
+    PGPORT: database.port || "5432",
+    PGDATABASE: databaseName,
+    PGUSER: decodeURIComponent(database.username),
+    PGPASSWORD: decodeURIComponent(database.password),
+    ...(database.searchParams.has("sslmode")
+      ? { PGSSLMODE: database.searchParams.get("sslmode") }
+      : {})
+  };
 }
 
 function flutterProcessEnvironment(environment) {

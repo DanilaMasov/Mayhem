@@ -96,18 +96,24 @@ test("R2 migration plan is deterministic and complete", async () => {
       "202607130005",
       "202607130006",
       "202607170007",
-      "202607170008"
+      "202607170008",
+      "202607170009"
     ]
   );
 });
 
-test("psql receives the database URL only through its environment", async () => {
+test("psql receives decomposed credentials only through libpq environment", async () => {
   const calls = [];
   const spawnProcess = (executable, argumentsList, options) => {
-    calls.push({ executable, argumentsList, options });
+    const call = { executable, argumentsList, options, input: "" };
+    calls.push(call);
     const child = new EventEmitter();
+    child.stdin = new PassThrough();
     child.stdout = new PassThrough();
     child.stderr = new PassThrough();
+    child.stdin.on("data", (chunk) => {
+      call.input += chunk;
+    });
     queueMicrotask(() => {
       child.stdout.end("0\n");
       child.stderr.end();
@@ -127,11 +133,14 @@ test("psql receives the database URL only through its environment", async () => 
     JSON.stringify(calls[0].argumentsList),
     /database-secret/
   );
-  assert.equal(
-    calls[0].options.env.PGDATABASE,
-    validEnvironment.SUPABASE_DB_URL
-  );
+  assert.equal(calls[0].options.env.PGHOST, "db.test");
+  assert.equal(calls[0].options.env.PGPORT, "5432");
+  assert.equal(calls[0].options.env.PGDATABASE, "postgres");
+  assert.equal(calls[0].options.env.PGUSER, "postgres");
+  assert.equal(calls[0].options.env.PGPASSWORD, "database-secret");
   assert.equal(calls[0].options.env.SUPABASE_ANON_KEY, undefined);
+  assert.match(calls[0].argumentsList.join(" "), /--file=-/);
+  assert.equal(calls[0].input, "select 0\n");
 });
 
 test("canonical R2 events match the v2 transport envelope", () => {

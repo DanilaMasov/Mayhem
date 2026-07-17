@@ -11,6 +11,9 @@ const r2HardeningPath = migration(
 const artifactRevisionPath = migration(
   "202607170008_artifact_projection_revision.sql"
 );
+const privateNoteValidatorPath = migration(
+  "202607170009_private_note_validator_fix.sql"
+);
 const eventPath = new URL("../mobile/lib/core/sync/event_envelope_v2.dart", import.meta.url);
 const goldenPath = new URL("../contracts/v1/policy_golden.json", import.meta.url);
 
@@ -291,4 +294,18 @@ test("new server-owned artifacts advance reconciliation revision once", async ()
     /revoke all on function public\.advance_artifact_projection_revision\(\)[\s\S]+?from public, anon, authenticated/
   );
   assert.doesNotMatch(sql, /after update|after delete/i);
+});
+
+test("private-note validation qualifies jsonb iterator fields", async () => {
+  const sql = await readFile(privateNoteValidatorPath, "utf8");
+  assert.match(
+    sql,
+    /from jsonb_each\(value\) as entry\(key, value\)/
+  );
+  assert.match(sql, /select entry\.key, entry\.value/);
+  assert.match(
+    sql,
+    /public\.mayhem_jsonb_has_private_note_key\(item\.value\)/
+  );
+  assert.doesNotMatch(sql, /select key, value from jsonb_each/);
 });

@@ -614,7 +614,7 @@ function withClientChecks(report, clientChecks) {
     commands: Object.freeze({
       acceptance: "npm run supabase:live",
       migrations: "psql --single-transaction --file=<versioned migration>",
-      fixture: "runner-managed deterministic R2 fixture via psql --command",
+      fixture: "runner-managed deterministic R2 fixture via psql --file=-",
       flutterClient:
         "flutter test --no-pub --no-test-assets -j 1 test/live/r2_live_supabase_test.dart"
     }),
