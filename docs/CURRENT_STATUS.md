@@ -1,10 +1,10 @@
 # Mayhem Current Status
 
-**Status date:** 2026-07-17
+**Status date:** 2026-07-18
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r3-server-actions`
-**Current main checkpoint:** `8f271d4` (merge commit for PR #8)
+**Current branch:** `codex/r3-day-boss-actions`
+**Current main checkpoint:** `8761978` (merge commit for PR #9)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -44,20 +44,19 @@ The bounded post-R1 correction pass in pull request
 `ccdd12d`. The final disposable Supabase run applied nine migrations from zero
 and passed all nine backend probes plus eight production Flutter client checks.
 Its secret-free report is
-`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 is active in pull
-request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged into
-`main` as `8f271d4`; commit `9298545` adds explicit read-only Season/Boss state
-projection and cached-versus-confirmed UX. The next R3 slice is commit
-`b64eeaa` in pull request
-[#9](https://github.com/DanilaMasov/Mayhem/pull/9) on
-`codex/r3-server-actions`; it adds exact-ACK Join submission with durable retry
-and process-death recovery. Remote operations still activate only with a valid
-environment-specific Supabase configuration.
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 state foundation
+in pull request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged as
+`8f271d4`. Server-authoritative Join in pull request
+[#9](https://github.com/DanilaMasov/Mayhem/pull/9) is merged into `main` as
+`8761978`. Commit `f84e831` on `codex/r3-day-boss-actions` extends the same
+durable exact-ACK lifecycle to Day completion and Boss participation. Remote
+operations still activate only with a valid environment-specific Supabase
+configuration.
 
 ## Open software gates
 
-- R3 server-authoritative day/Boss mutations, cross-device participation
-  refresh, interruption recovery, and remaining state-specific UX.
+- R3 cross-device authoritative participation refresh and final
+  state-specific UX audit.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
@@ -79,13 +78,13 @@ environment-specific Supabase configuration.
 - Production remote auth/sync remains unavailable in builds without
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- R3 user-visible Season/Boss recovery UX, physical-device acceptance,
-  release signing, final application IDs, production assets, and store
-  configuration remain incomplete.
+- R3 cross-device participation refresh, physical-device acceptance, release
+  signing, final application IDs, production assets, and store configuration
+  remain incomplete.
 
 ## Verification
 
-Clean-clone local verification completed on 2026-07-17. Commands and local
+Clean-clone local verification completed on 2026-07-18. Commands and local
 results:
 
 ```sh
@@ -106,13 +105,13 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 249 files, 0 changed
+# 250 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 230 passed; 1 live-only test skipped without an explicit disposable target
+# 235 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -155,6 +154,23 @@ R3 server-authoritative Join local evidence:
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29609798994](https://github.com/DanilaMasov/Mayhem/actions/runs/29609798994):
   repository contracts and Flutter format/analyze/test passed.
+
+R3 server-authoritative Day/Boss local evidence:
+
+- Day completion and Boss participation are staged atomically with canonical
+  events and become terminal only after the exact event receives an accepted
+  server ACK;
+- pending delivery survives runtime disposal, and retry resubmits the same
+  event ID instead of duplicating participation or changing the Boss route;
+- network failure and missing ACK remain explicitly retryable, while permanent
+  rejection rolls back only the affected optimistic day or Boss state;
+- an unconfirmed Join cannot expose Day/Boss actions, and one operation lock
+  prevents parallel Season mutations;
+- Journey exposes Day submission and package-approved Boss route selection;
+  the 1.6x text widget flow covers Join, Day, and Boss end to end;
+- Season scrolling reserves the navigation inset so terminal controls remain
+  hit-testable at large text sizes;
+- no dependency, lockfile, migration, production flag, or SDK changed.
 
 Post-R1 correction local evidence:
 
