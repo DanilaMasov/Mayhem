@@ -44,9 +44,9 @@ The bounded post-R1 correction pass in pull request
 [#7](https://github.com/DanilaMasov/Mayhem/pull/7). The final disposable
 Supabase run applied nine migrations from zero and passed all nine backend
 probes plus eight production Flutter client checks. Its secret-free report is
-`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Final branch CI and
-merge remain before R3. Remote operations still activate only with a valid
-environment-specific Supabase configuration.
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Final branch CI is
+green; merge remains before R3. Remote operations still activate only with a
+valid environment-specific Supabase configuration.
 
 ## Open software gates
 
@@ -268,7 +268,11 @@ request [#7](https://github.com/DanilaMasov/Mayhem/pull/7):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29596307195](https://github.com/DanilaMasov/Mayhem/actions/runs/29596307195):
   repository contracts and Flutter format/analyze/test passed;
-- those CI runs cover the original harness commit; final live-fix CI is pending.
+- final live fixes and evidence are commit `6884ab6`;
+- [push CI run 29602473292](https://github.com/DanilaMasov/Mayhem/actions/runs/29602473292):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29602476160](https://github.com/DanilaMasov/Mayhem/actions/runs/29602476160):
+  repository contracts and Flutter format/analyze/test passed.
 
 The R2 live-backend gate is closed by
 `docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Simulator/emulator

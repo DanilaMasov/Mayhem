@@ -96,6 +96,15 @@ Season windows and idempotency, concurrent Boss submissions, server-owned
 artifacts, thresholded social proof, production Flutter adapters, and complete
 cross-user-safe deletion.
 
+## GitHub CI
+
+Final live fixes and evidence at commit `6884ab6` passed both CI events:
+
+- [push run 29602473292](https://github.com/DanilaMasov/Mayhem/actions/runs/29602473292);
+- [pull-request run 29602476160](https://github.com/DanilaMasov/Mayhem/actions/runs/29602476160).
+
+Each run passed repository contracts and Flutter format/analyze/test.
+
 ## Remaining Gates
 
 The R2 live-backend gate is closed. Release flags remain false. Simulator and
