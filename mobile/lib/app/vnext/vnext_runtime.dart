@@ -94,7 +94,7 @@ class VNextRuntime extends ChangeNotifier {
       participation: store.seasonParticipation,
       ownership: store.reconciliation,
       actions: store.seasonActions,
-      joinStager: seasonParticipation,
+      actionStager: seasonParticipation,
       enabled: () =>
           featureFlags.isEnabled(MayhemFeatureFlag.seasonZeroEnabled),
       clock: clock.utcNow,

@@ -26,6 +26,27 @@ class SqliteSeasonParticipationRepository
   );
 
   @override
+  Future<void> revertDay(String seasonId, int day) =>
+      context.database.transaction((db) async {
+        final current = await _load(db, seasonId);
+        if (current == null || !current.completedDays.contains(day)) return;
+        await _write(
+          db,
+          current.copyWith(
+            completedDays: {...current.completedDays}..remove(day),
+          ),
+        );
+      });
+
+  @override
+  Future<void> revertBoss(String seasonId) =>
+      context.database.transaction((db) async {
+        final current = await _load(db, seasonId);
+        if (current == null || current.bossParticipatedAt == null) return;
+        await _write(db, current.copyWith(clearBossParticipatedAt: true));
+      });
+
+  @override
   Future<bool> commit({
     required SeasonParticipationState state,
     required EventDraftV2 event,
@@ -36,22 +57,29 @@ class SqliteSeasonParticipationRepository
         throw const FormatException('Invalid Season participation transition');
       }
       if (_sameState(current, state)) return false;
-      await db.insert('app_metadata', {
-        'key': _key(state.seasonId),
-        'value': jsonEncode({
-          'seasonId': state.seasonId,
-          'seasonRevision': state.seasonRevision,
-          'joinedAt': state.joinedAt.toUtc().toIso8601String(),
-          'completedDays': state.completedDays.toList()..sort(),
-          'bossParticipatedAt': state.bossParticipatedAt
-              ?.toUtc()
-              .toIso8601String(),
-        }),
-        'updated_at': context.clock().toUtc().toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await _write(db, state);
       await context.appendEvents(db, [event]);
       return true;
     });
+  }
+
+  Future<void> _write(
+    DatabaseExecutor db,
+    SeasonParticipationState state,
+  ) async {
+    await db.insert('app_metadata', {
+      'key': _key(state.seasonId),
+      'value': jsonEncode({
+        'seasonId': state.seasonId,
+        'seasonRevision': state.seasonRevision,
+        'joinedAt': state.joinedAt.toUtc().toIso8601String(),
+        'completedDays': state.completedDays.toList()..sort(),
+        'bossParticipatedAt': state.bossParticipatedAt
+            ?.toUtc()
+            .toIso8601String(),
+      }),
+      'updated_at': context.clock().toUtc().toIso8601String(),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<SeasonParticipationState?> _load(

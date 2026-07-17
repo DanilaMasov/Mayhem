@@ -120,13 +120,26 @@ abstract interface class MayhemStrings {
   String get seasonCompleted;
   String seasonDay(int day);
   String seasonDaysCompleted(int completed, int total);
+  String get seasonDayAvailable;
+  String get seasonDaySubmitting;
+  String get seasonDayFailed;
+  String get seasonDayCompleted;
+  String seasonCompleteDay(int day);
+  String get seasonRetryDay;
+  String get seasonActionRemoteRequired;
   String get seasonOpen;
   String get bossLocked;
   String get bossUpcoming;
   String get bossOpen;
   String get bossSubmitting;
+  String get bossFailed;
   String get bossAlreadyParticipated;
   String get bossCompleted;
+  String get bossChooseRoute;
+  String get bossRetry;
+  String get bossNormalRoute;
+  String get bossLowPressureRoute;
+  String get bossAdvancedRoute;
   String seasonParticipants(int count);
   String get settings;
   String get settingsTitle;
@@ -488,6 +501,21 @@ class MayhemStringsRu implements MayhemStrings {
   String seasonDaysCompleted(int completed, int total) =>
       '$completed из $total дней завершено';
   @override
+  String get seasonDayAvailable => 'Дневной вызов доступен';
+  @override
+  String get seasonDaySubmitting => 'Подтверждаем завершение дня';
+  @override
+  String get seasonDayFailed => 'Завершение дня не подтверждено';
+  @override
+  String get seasonDayCompleted => 'Дневной вызов подтверждён';
+  @override
+  String seasonCompleteDay(int day) => 'ЗАВЕРШИТЬ ДЕНЬ $day';
+  @override
+  String get seasonRetryDay => 'ПОВТОРИТЬ ЗАВЕРШЕНИЕ';
+  @override
+  String get seasonActionRemoteRequired =>
+      'Для подтверждения действия нужна облачная сессия и сеть.';
+  @override
   String get seasonOpen => 'ОТКРЫТЬ SEASON';
   @override
   String get bossLocked => 'Boss закрыт';
@@ -498,9 +526,21 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get bossSubmitting => 'Подтверждаем участие в Boss';
   @override
+  String get bossFailed => 'Участие в Boss не подтверждено';
+  @override
   String get bossAlreadyParticipated => 'Участие в Boss уже принято';
   @override
   String get bossCompleted => 'Boss завершён';
+  @override
+  String get bossChooseRoute => 'ВЫБРАТЬ МАРШРУТ BOSS';
+  @override
+  String get bossRetry => 'ПОВТОРИТЬ ОТПРАВКУ BOSS';
+  @override
+  String get bossNormalRoute => 'Прямой маршрут';
+  @override
+  String get bossLowPressureRoute => 'Сниженная интенсивность';
+  @override
+  String get bossAdvancedRoute => 'Продвинутый маршрут';
   @override
   String seasonParticipants(int count) => '$count подтверждённых участников';
   @override
