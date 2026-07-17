@@ -44,8 +44,9 @@ The bounded post-R1 correction pass in pull request
 `ccdd12d`. The final disposable Supabase run applied nine migrations from zero
 and passed all nine backend probes plus eight production Flutter client checks.
 Its secret-free report is
-`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 is active on
-`codex/r3-season-boss-flow`; its first slice adds explicit read-only
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 is active in pull
+request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) on
+`codex/r3-season-boss-flow`; commit `9298545` adds explicit read-only
 Season/Boss state projection and cached-versus-confirmed UX without exposing
 unconfirmed Join or Boss mutations. Remote operations still activate only
 with a valid environment-specific Supabase configuration.
@@ -127,6 +128,10 @@ R3 state-foundation local evidence:
   or above its privacy threshold;
 - no Join, day-completion, or Boss mutation is exposed by this slice, because
   the existing local event coordinator alone does not prove server acceptance.
+- [push CI run 29606646694](https://github.com/DanilaMasov/Mayhem/actions/runs/29606646694):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29606663881](https://github.com/DanilaMasov/Mayhem/actions/runs/29606663881):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
