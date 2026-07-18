@@ -82,6 +82,7 @@ class VNextSyncCoordinator implements RemoteSynchronizer {
     this.remoteFeed,
     this.onProjectionCommitted,
     this.onSeasonStateCommitted,
+    this.onSeasonActivationFailed,
     this.onRemoteFeedCommitted,
     CapabilityRevisionSet? capabilities,
     this.reconciler = const ProjectionReconciler(),
@@ -105,6 +106,8 @@ class VNextSyncCoordinator implements RemoteSynchronizer {
   final RemoteFeedRefresher? remoteFeed;
   final Future<void> Function()? onProjectionCommitted;
   final Future<void> Function()? onSeasonStateCommitted;
+  final Future<void> Function(SeasonActivationFailure failure)?
+  onSeasonActivationFailed;
   final Future<void> Function()? onRemoteFeedCommitted;
   final String platform;
   final String appVersion;
@@ -229,6 +232,20 @@ class VNextSyncCoordinator implements RemoteSynchronizer {
             error: error.runtimeType,
             stackTrace: stackTrace,
           );
+          try {
+            await onSeasonActivationFailed?.call(
+              error is FormatException
+                  ? SeasonActivationFailure.incompatiblePackage
+                  : SeasonActivationFailure.recoverable,
+            );
+          } catch (callbackError, callbackStackTrace) {
+            developer.log(
+              'Season activation failure callback failed closed',
+              name: 'mayhem.season',
+              error: callbackError.runtimeType,
+              stackTrace: callbackStackTrace,
+            );
+          }
         }
       }
 

@@ -27,7 +27,8 @@ class VNextSeasonScreen extends StatelessWidget {
         animation: controller,
         builder: (context, child) => _SeasonBody(
           state: controller.state,
-          onRetry: controller.initialize,
+          onRetry: controller.retryRemote,
+          canRetry: controller.canRetryRemote,
           canJoin: controller.canJoin,
           onJoin: controller.join,
           canCompleteDay: controller.canCompleteDay,
@@ -45,6 +46,7 @@ class _SeasonBody extends StatelessWidget {
   const _SeasonBody({
     required this.state,
     required this.onRetry,
+    required this.canRetry,
     required this.canJoin,
     required this.onJoin,
     required this.canCompleteDay,
@@ -56,6 +58,7 @@ class _SeasonBody extends StatelessWidget {
 
   final SeasonExperienceState state;
   final VoidCallback onRetry;
+  final bool canRetry;
   final bool canJoin;
   final VoidCallback onJoin;
   final bool canCompleteDay;
@@ -73,27 +76,48 @@ class _SeasonBody extends StatelessWidget {
       return Center(child: MayhemText(context.strings.loading));
     }
     if (package == null) {
+      final strings = context.strings;
+      final (icon, color, message) = switch (state.availability) {
+        SeasonAvailability.incompatiblePackage => (
+          Icons.extension_off_outlined,
+          MayhemColors.semanticError,
+          strings.seasonPackageIncompatible,
+        ),
+        SeasonAvailability.recoverableError => (
+          Icons.error_outline,
+          MayhemColors.semanticError,
+          strings.seasonRecoverableError,
+        ),
+        SeasonAvailability.conflictRefreshRequired => (
+          Icons.sync_problem_outlined,
+          MayhemColors.semanticWarning,
+          strings.seasonConflict,
+        ),
+        _ => (
+          Icons.event_busy_outlined,
+          MayhemColors.textSecondary,
+          strings.seasonUnavailable,
+        ),
+      };
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(MayhemSpacing.x6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.event_busy_outlined,
-                size: 38,
-                color: MayhemColors.textSecondary,
-              ),
+              Icon(icon, size: 38, color: color),
               const SizedBox(height: MayhemSpacing.x4),
               MayhemText(
-                context.strings.seasonUnavailable,
+                message,
                 variant: MayhemTextVariant.bodyLarge,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: MayhemSpacing.x5),
               MayhemSecondaryButton(
-                label: context.strings.retry,
-                onPressed: onRetry,
+                label: strings.retry,
+                onPressed: canRetry ? onRetry : null,
+                enabled: canRetry,
+                loading: state.availability == SeasonAvailability.loadingRemote,
                 expand: false,
               ),
             ],
@@ -121,6 +145,17 @@ class _SeasonBody extends StatelessWidget {
           ),
           const SizedBox(height: MayhemSpacing.x2),
           _FreshnessLine(state: state),
+          if (state.availability ==
+                  SeasonAvailability.conflictRefreshRequired ||
+              state.availability == SeasonAvailability.incompatiblePackage ||
+              state.availability == SeasonAvailability.recoverableError) ...[
+            const SizedBox(height: MayhemSpacing.x4),
+            MayhemSecondaryButton(
+              label: strings.retry,
+              onPressed: canRetry ? onRetry : null,
+              enabled: canRetry,
+            ),
+          ],
           const SizedBox(height: MayhemSpacing.x8),
           if (state.currentDay case final day?) ...[
             MayhemText(
@@ -344,7 +379,9 @@ class _FreshnessLine extends StatelessWidget {
       SeasonAvailability.recoverableError => (
         Icons.error_outline,
         MayhemColors.semanticError,
-        strings.seasonStateError,
+        state.availability == SeasonAvailability.incompatiblePackage
+            ? strings.seasonPackageIncompatible
+            : strings.seasonRecoverableError,
       ),
       _ when state.freshness == SeasonDataFreshness.serverConfirmed => (
         Icons.cloud_done_outlined,

@@ -167,6 +167,105 @@ void main() {
       isNull,
     );
   });
+
+  test('R3 state matrix keeps every explicit state reachable', () {
+    final joined = _participation();
+    final availability = <SeasonAvailability>{
+      SeasonExperienceState.loading().availability,
+      _resolve(package: null, enabled: false).availability,
+      _resolve(package: null).availability,
+      _resolve(package: package, remoteLoading: true).availability,
+      _resolve(package: package, remoteUnavailable: true).availability,
+      _resolve(
+        package: package,
+        freshness: SeasonDataFreshness.serverConfirmed,
+      ).availability,
+      _resolve(package: package, conflict: true).availability,
+      _resolve(package: package, incompatiblePackage: true).availability,
+      _resolve(package: package, errorCode: 'retry').availability,
+    };
+    final membership = <SeasonMembership>{
+      _resolve(package: null).membership,
+      _resolve(package: package).membership,
+      _resolve(package: package, operation: SeasonOperation.joining).membership,
+      _resolve(package: package, joinFailed: true).membership,
+      _resolve(package: package, participation: joined).membership,
+      _resolve(
+        package: package,
+        participation: joined,
+        now: DateTime.utc(2026, 8, 9),
+      ).membership,
+      _resolve(
+        package: package,
+        participation: _participation(
+          completedDays: const {1, 2, 3, 4, 5, 6, 7},
+        ),
+        artifacts: [_artifact()],
+      ).membership,
+    };
+    final days = <SeasonDayPhase>{
+      _resolve(package: package).dayPhase,
+      _resolve(package: package, participation: joined).dayPhase,
+      _resolve(
+        package: package,
+        participation: joined,
+        operation: SeasonOperation.dayInProgress,
+      ).dayPhase,
+      _resolve(
+        package: package,
+        participation: joined,
+        dayFailed: true,
+      ).dayPhase,
+      _resolve(
+        package: package,
+        participation: _participation(completedDays: const {3}),
+      ).dayPhase,
+    };
+    final bosses = <SeasonBossPhase>{
+      _resolve(package: package).bossPhase,
+      _resolve(
+        package: package,
+        participation: joined,
+        now: DateTime.utc(2026, 8, 3),
+      ).bossPhase,
+      _resolve(
+        package: package,
+        participation: joined,
+        now: DateTime.utc(2026, 8, 7, 13),
+      ).bossPhase,
+      _resolve(
+        package: package,
+        participation: joined,
+        now: DateTime.utc(2026, 8, 7, 13),
+        operation: SeasonOperation.bossSubmitting,
+      ).bossPhase,
+      _resolve(
+        package: package,
+        participation: joined,
+        now: DateTime.utc(2026, 8, 7, 13),
+        bossFailed: true,
+      ).bossPhase,
+      _resolve(
+        package: package,
+        participation: _participation(
+          bossParticipatedAt: DateTime.utc(2026, 8, 7, 13),
+        ),
+        now: DateTime.utc(2026, 8, 7, 14),
+      ).bossPhase,
+      _resolve(
+        package: package,
+        participation: _participation(
+          completedDays: const {1, 2, 3, 4, 5, 6, 7},
+        ),
+        artifacts: [_artifact()],
+      ).bossPhase,
+    };
+
+    expect(availability, SeasonAvailability.values.toSet());
+    expect(membership, SeasonMembership.values.toSet());
+    expect(days, SeasonDayPhase.values.toSet());
+    expect(bosses, SeasonBossPhase.values.toSet());
+  });
 }
 
 SeasonExperienceState _resolve({
@@ -178,7 +277,10 @@ SeasonExperienceState _resolve({
   SeasonDataFreshness freshness = SeasonDataFreshness.cached,
   SeasonOperation operation = SeasonOperation.none,
   bool remoteLoading = false,
+  bool remoteUnavailable = false,
   bool joinFailed = false,
+  bool dayFailed = false,
+  bool bossFailed = false,
   bool conflict = false,
   bool incompatiblePackage = false,
   String? errorCode,
@@ -191,7 +293,10 @@ SeasonExperienceState _resolve({
   freshness: freshness,
   operation: operation,
   remoteLoading: remoteLoading,
+  remoteUnavailable: remoteUnavailable,
   joinFailed: joinFailed,
+  dayFailed: dayFailed,
+  bossFailed: bossFailed,
   conflict: conflict,
   incompatiblePackage: incompatiblePackage,
   errorCode: errorCode,
