@@ -3,8 +3,8 @@
 **Status date:** 2026-07-18
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-release-identity`
-**Current main checkpoint:** `26d82e1` (merge commit for PR #13)
+**Current branch:** `codex/r5-staging-release-smoke`
+**Current main checkpoint:** `814be9b` (merge commit for PR #14)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -66,15 +66,17 @@ and adds the missing social-aggregate privacy disclosure. It is merged into
 `main` as `26d82e1`; its final push and pull-request CI are green. The current
 R5 slice applies the owner-approved production/staging identities and minimum
 OS policy without changing signing material, assets, telemetry, backend
-configuration, dependencies, or release flags. The implementation is commit
-`6edd869` in pull request
-[#14](https://github.com/DanilaMasov/Mayhem/pull/14); its initial push and
-pull-request CI are green.
+configuration, dependencies, or release flags. Pull request
+[#14](https://github.com/DanilaMasov/Mayhem/pull/14) is merged into `main` as
+`814be9b`. Pull request
+[#15](https://github.com/DanilaMasov/Mayhem/pull/15) adds unsigned Android and
+iOS staging release compilation in CI without backend or signing secrets; its
+initial native and ordinary CI checks are green.
 
 ## Open software gates
 
 - R5 store registration, signing, assets, support path, privacy-safe staging
-  crash reporting, and real release-build acceptance.
+  crash reporting, signed install/launch acceptance, and release records.
 - R6 visual refinement, gated behind a signed staging candidate and a
   preliminary two-device R4 defect-finding pass.
 
@@ -113,7 +115,7 @@ results:
 
 ```sh
 node --test tests/*.test.mjs
-# 40 passed
+# 44 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -287,11 +289,28 @@ R5 release-identity local evidence:
   and all 254 non-live Flutter tests pass locally;
 - no dependency, lockfile, SDK, signing material, telemetry, backend secret,
   production flag, or launcher asset changed;
-- native Android/iOS compile, signing, install, and store registration remain
-  open external-toolchain gates;
+- unsigned Android/iOS staging release compilation passes in hosted CI;
+  signing, install, launch, and store registration remain external gates;
 - [initial push CI run 29656281403](https://github.com/DanilaMasov/Mayhem/actions/runs/29656281403):
   repository contracts and Flutter format/analyze/test passed;
 - [initial pull-request CI run 29656293884](https://github.com/DanilaMasov/Mayhem/actions/runs/29656293884):
+  repository contracts and Flutter format/analyze/test passed.
+
+R5 staging release-smoke evidence:
+
+- the workflow runs only for matching pull requests or explicit manual
+  dispatch, so expensive macOS builds are not duplicated on every branch push;
+- Android compiles an unsigned staging release AAB with API 29 floor and no
+  keystore variables;
+- iOS compiles a staging release application with iOS 16 floor and
+  `--no-codesign`;
+- both builds use `--flavor staging`, assert `MAYHEM_ENVIRONMENT=staging`, and
+  resolve dependencies with the committed lockfile enforced;
+- no Supabase value, production flavor, signing secret, SDK change, uploaded
+  artifact, dependency, lockfile, or production flag is introduced;
+- [staging release-smoke CI run 29657632595](https://github.com/DanilaMasov/Mayhem/actions/runs/29657632595):
+  Android release compilation passed in 4m46s and iOS in 4m34s;
+- [ordinary pull-request CI run 29657632614](https://github.com/DanilaMasov/Mayhem/actions/runs/29657632614):
   repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
@@ -475,10 +494,11 @@ it does not affect the current green software gate.
 
 ## Next authorized slice
 
-The bounded R5 release-identity software slice is complete in pull request #14.
-Next, stop at the external staging Supabase gate unless an authorized target is
-available. Migration `010` and two-account acceptance must pass before
-privacy-configured Sentry or signed staging distribution work begins.
+The bounded R5 release-identity slice is merged and unsigned staging release
+compilation is green in pull request #15. Next, stop at the external staging
+Supabase gate unless an authorized target is available. Migration `010` and
+two-account acceptance must pass before privacy-configured Sentry or signed
+staging distribution work begins.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to
