@@ -64,6 +64,7 @@ Future<void> main() async {
     final environment = MayhemRuntimeEnvironment.resolve(
       configured: configuredEnvironment,
       releaseMode: kReleaseMode,
+      flavor: appFlavor ?? '',
     ).name;
     final secureStorage = FlutterSecureKeyValueStore();
     final secureSessions = FlutterSecureSessionStore(

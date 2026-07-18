@@ -30,6 +30,36 @@ void main() {
     );
   });
 
+  test('uses native flavor when no explicit environment is provided', () {
+    expect(
+      MayhemRuntimeEnvironment.resolve(
+        configured: '',
+        releaseMode: true,
+        flavor: 'staging',
+      ),
+      MayhemRuntimeEnvironment.staging,
+    );
+    expect(
+      MayhemRuntimeEnvironment.resolve(
+        configured: '',
+        releaseMode: true,
+        flavor: 'production',
+      ),
+      MayhemRuntimeEnvironment.production,
+    );
+  });
+
+  test('rejects conflicting native flavor and explicit environment', () {
+    expect(
+      () => MayhemRuntimeEnvironment.resolve(
+        configured: 'production',
+        releaseMode: true,
+        flavor: 'staging',
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('rejects unknown environments and development release targets', () {
     expect(
       () => MayhemRuntimeEnvironment.resolve(
@@ -42,6 +72,14 @@ void main() {
       () => MayhemRuntimeEnvironment.resolve(
         configured: 'development',
         releaseMode: true,
+      ),
+      throwsFormatException,
+    );
+    expect(
+      () => MayhemRuntimeEnvironment.resolve(
+        configured: '',
+        releaseMode: false,
+        flavor: 'preview',
       ),
       throwsFormatException,
     );

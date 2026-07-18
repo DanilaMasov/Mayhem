@@ -1,4 +1,4 @@
-package com.mayhem.social.mayhem_mobile
+package com.danilamasov.mayhem
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

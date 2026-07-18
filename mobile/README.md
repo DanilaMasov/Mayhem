@@ -27,7 +27,9 @@ Production-oriented Flutter implementation for iOS and Android. The web app in t
 - versioned Supabase schema, generated quest seed and authenticated ingestion/deletion RPC contracts;
 - injected Supabase HTTP transport and resettable durable installation identity, disabled until an authenticated session exists;
 - SQLite reflection records committed atomically with completion and event log updates;
-- Android and iOS display name set to `MAYHEM`;
+- production identity `com.danilamasov.mayhem` and isolated staging identity
+  `com.danilamasov.mayhem.staging` on Android and iOS;
+- Android 10 / API 29 and iOS 16 minimum supported versions;
 - portrait phone orientation.
 
 ## Architecture
@@ -57,7 +59,7 @@ npm run content:check
 cd mobile
 flutter analyze --no-pub
 flutter test --no-pub --no-test-assets -j 1
-flutter run --no-pub
+flutter run --no-pub --flavor staging
 ```
 
 The root JS catalog is a temporary legacy migration source. `content:export`
@@ -127,7 +129,7 @@ Phase 2 now provides a feature-independent visual foundation:
 Run the isolated gallery with:
 
 ```sh
-flutter run --no-pub -t lib/dev/motion_lab/main.dart
+flutter run --no-pub --flavor staging -t lib/dev/motion_lab/main.dart
 ```
 
 The current local Flutter SDK cannot launch it because its engine cache is
