@@ -66,7 +66,10 @@ and adds the missing social-aggregate privacy disclosure. It is merged into
 `main` as `26d82e1`; its final push and pull-request CI are green. The current
 R5 slice applies the owner-approved production/staging identities and minimum
 OS policy without changing signing material, assets, telemetry, backend
-configuration, dependencies, or release flags.
+configuration, dependencies, or release flags. The implementation is commit
+`6edd869` in pull request
+[#14](https://github.com/DanilaMasov/Mayhem/pull/14); its initial push and
+pull-request CI are green.
 
 ## Open software gates
 
@@ -285,7 +288,11 @@ R5 release-identity local evidence:
 - no dependency, lockfile, SDK, signing material, telemetry, backend secret,
   production flag, or launcher asset changed;
 - native Android/iOS compile, signing, install, and store registration remain
-  open external-toolchain gates.
+  open external-toolchain gates;
+- [initial push CI run 29656281403](https://github.com/DanilaMasov/Mayhem/actions/runs/29656281403):
+  repository contracts and Flutter format/analyze/test passed;
+- [initial pull-request CI run 29656293884](https://github.com/DanilaMasov/Mayhem/actions/runs/29656293884):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
@@ -468,12 +475,10 @@ it does not affect the current green software gate.
 
 ## Next authorized slice
 
-Complete the bounded R5 release-identity slice: exact production/staging IDs,
-Android 10 / API 29 and iOS 16 floors, native flavors, runtime/flavor mismatch
-protection, and release documentation. Then stop at the external staging
-Supabase gate unless an authorized target is available. Migration `010` and
-two-account acceptance must pass before privacy-configured Sentry or signed
-staging distribution work begins.
+The bounded R5 release-identity software slice is complete in pull request #14.
+Next, stop at the external staging Supabase gate unless an authorized target is
+available. Migration `010` and two-account acceptance must pass before
+privacy-configured Sentry or signed staging distribution work begins.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to
