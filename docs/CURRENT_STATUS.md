@@ -50,15 +50,16 @@ in pull request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged as
 [#9](https://github.com/DanilaMasov/Mayhem/pull/9) is merged into `main` as
 `8761978`. Server-authoritative Day completion and Boss participation in pull
 request [#10](https://github.com/DanilaMasov/Mayhem/pull/10) are merged into
-`main` as `4453a17`. Commit `bc59f21` on
+`main` as `4453a17`. Pull request
+[#11](https://github.com/DanilaMasov/Mayhem/pull/11) on
 `codex/r3-cross-device-participation` adds authenticated participation to the
 active-Season snapshot and reconciles it with unresolved same-revision local
-actions. Remote operations still activate only with a valid
-environment-specific Supabase configuration.
+actions. Its initial push and pull-request CI are green. Remote operations
+still activate only with a valid environment-specific Supabase configuration.
 
 ## Open software gates
 
-- R3 cross-device authoritative participation pull-request/CI gate and final
+- R3 cross-device authoritative participation merge gate and final
   deterministic state-specific UX audit.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
@@ -200,6 +201,10 @@ R3 cross-device participation local evidence:
 - no dependency, lockfile, production flag, or SDK changed;
 - migration `010` remains unapplied until an authorized backend target is
   provided, and all associated production flags remain false.
+- [push CI run 29643920613](https://github.com/DanilaMasov/Mayhem/actions/runs/29643920613):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29643930964](https://github.com/DanilaMasov/Mayhem/actions/runs/29643930964):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
