@@ -8,6 +8,8 @@ import 'season_package_store.dart';
 
 enum SeasonActivationStatus { disabled, noActiveSeason, activated }
 
+enum SeasonActivationFailure { incompatiblePackage, recoverable }
+
 abstract interface class SeasonBootstrapActivation {
   Future<SeasonActivationStatus> apply({
     required RemoteSeasonSnapshot? snapshot,

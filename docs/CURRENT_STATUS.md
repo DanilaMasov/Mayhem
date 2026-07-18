@@ -3,8 +3,8 @@
 **Status date:** 2026-07-18
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r3-cross-device-participation`
-**Current main checkpoint:** `4453a17` (merge commit for PR #10)
+**Current branch:** `codex/r3-state-matrix-audit`
+**Current main checkpoint:** `3b564c2` (merge commit for PR #11)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -51,16 +51,19 @@ in pull request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged as
 `8761978`. Server-authoritative Day completion and Boss participation in pull
 request [#10](https://github.com/DanilaMasov/Mayhem/pull/10) are merged into
 `main` as `4453a17`. Pull request
-[#11](https://github.com/DanilaMasov/Mayhem/pull/11) on
-`codex/r3-cross-device-participation` adds authenticated participation to the
-active-Season snapshot and reconciles it with unresolved same-revision local
-actions. Its initial push and pull-request CI are green. Remote operations
-still activate only with a valid environment-specific Supabase configuration.
+[#11](https://github.com/DanilaMasov/Mayhem/pull/11) adds authenticated
+participation to the active-Season snapshot and reconciles it with unresolved
+same-revision local actions; it is merged into `main` as `3b564c2`. Commit
+`423d2b9` on `codex/r3-state-matrix-audit` closes the remaining production
+state-path and retry gaps found by the final R3 software audit. Remote
+operations still activate only with a valid environment-specific Supabase
+configuration. The final R3 software correction is under review in pull
+request [#12](https://github.com/DanilaMasov/Mayhem/pull/12); its initial push
+and pull-request CI are green.
 
 ## Open software gates
 
-- R3 cross-device authoritative participation merge gate and final
-  deterministic state-specific UX audit.
+- R3 final state-matrix merge gate.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
@@ -85,9 +88,9 @@ still activate only with a valid environment-specific Supabase configuration.
 - Production remote auth/sync remains unavailable in builds without
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- R3 final state-matrix audit, migration `010` live acceptance, physical-device
-  acceptance, release signing, final application IDs, production assets, and
-  store configuration remain incomplete.
+- R3 final state-matrix merge, migration `010` live acceptance,
+  physical-device acceptance, release signing, final application IDs,
+  production assets, and store configuration remain incomplete.
 
 ## Verification
 
@@ -112,13 +115,13 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 251 files, 0 changed
+# 252 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 242 passed; 1 live-only test skipped without an explicit disposable target
+# 248 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -204,6 +207,28 @@ R3 cross-device participation local evidence:
 - [push CI run 29643920613](https://github.com/DanilaMasov/Mayhem/actions/runs/29643920613):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29643930964](https://github.com/DanilaMasov/Mayhem/actions/runs/29643930964):
+  repository contracts and Flutter format/analyze/test passed.
+
+R3 final state-matrix local evidence:
+
+- every required availability, membership, Day, and Boss enum state is
+  exercised by one exhaustive deterministic domain contract;
+- malformed optional Season activation remains isolated from core sync but is
+  propagated to the production runtime as `incompatiblePackage`; non-format
+  activation failures are propagated separately as recoverable;
+- incompatible, recoverable, conflict, and unavailable empty states no longer
+  collapse into one generic screen;
+- the Season Retry command uses the existing coalesced remote synchronizer,
+  suppresses parallel attempts, and always exits loading through `finally`;
+- a stale cached package remains readable after activation failure, while
+  Join, Day, and Boss mutations are blocked until compatible state returns;
+- a successful retry clears stale failure state and renders the newly
+  validated server-confirmed package;
+- the new cached-package failure path remains valid at 1.6x text;
+- no dependency, lockfile, migration, production flag, or SDK changed.
+- [push CI run 29646030801](https://github.com/DanilaMasov/Mayhem/actions/runs/29646030801):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29646043550](https://github.com/DanilaMasov/Mayhem/actions/runs/29646043550):
   repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:

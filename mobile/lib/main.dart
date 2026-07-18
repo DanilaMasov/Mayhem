@@ -152,6 +152,7 @@ Future<void> main() async {
         },
         onProjectionCommitted: runtime.refreshAfterRemoteSync,
         onSeasonStateCommitted: runtime.refreshAfterRemoteSeason,
+        onSeasonActivationFailed: runtime.reportRemoteSeasonFailure,
         onRemoteFeedCommitted: runtime.refreshAfterRemoteFeed,
       );
       runtime.attachRemote(

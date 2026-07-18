@@ -7,6 +7,7 @@ import '../domain/artifact_ownership.dart';
 import '../domain/season_action_journal.dart';
 import '../domain/season_experience_state.dart';
 import '../domain/season_participation_repository.dart';
+import 'season_bootstrap_activator.dart';
 import 'season_participation_coordinator.dart';
 import 'season_package_store.dart';
 
@@ -33,6 +34,8 @@ class SeasonExperienceController extends ChangeNotifier {
   bool _serverConfirmed = false;
   bool _remoteLoading = false;
   bool _remoteUnavailable = false;
+  bool _incompatiblePackage = false;
+  String? _remoteErrorCode;
   bool _joinInFlight = false;
   bool _dayInFlight = false;
   bool _bossInFlight = false;
@@ -44,26 +47,35 @@ class SeasonExperienceController extends ChangeNotifier {
 
   SeasonExperienceState get state => _state;
   bool get _actionInFlight => _joinInFlight || _dayInFlight || _bossInFlight;
+  bool get canRetryRemote =>
+      !_disposed && _synchronize != null && !_actionInFlight && !_remoteLoading;
   bool get canJoin =>
       !_disposed &&
       _synchronize != null &&
       !_actionInFlight &&
+      _stateAllowsMutation &&
       (state.membership == SeasonMembership.notJoined ||
           state.membership == SeasonMembership.joinFailedRetryable);
   bool get canCompleteDay =>
       !_disposed &&
       _synchronize != null &&
       !_actionInFlight &&
+      _stateAllowsMutation &&
       (state.dayPhase == SeasonDayPhase.available ||
           state.dayPhase == SeasonDayPhase.failedRetryable);
   bool get canParticipateBoss =>
       !_disposed &&
       _synchronize != null &&
       !_actionInFlight &&
+      _stateAllowsMutation &&
       (state.bossPhase == SeasonBossPhase.open ||
           state.bossPhase == SeasonBossPhase.failedRetryable);
   bool get retriesPendingBoss =>
       _latestBoss?.delivery == SeasonActionDelivery.pending;
+  bool get _stateAllowsMutation =>
+      !_remoteLoading &&
+      (state.availability == SeasonAvailability.ready ||
+          state.availability == SeasonAvailability.offlineCached);
 
   void attachRemote({required Future<bool> Function() synchronize}) {
     if (_disposed) throw StateError('Season experience is disposed');
@@ -79,14 +91,56 @@ class SeasonExperienceController extends ChangeNotifier {
   Future<void> beginRemoteRefresh() async {
     _remoteLoading = true;
     _remoteUnavailable = false;
+    _incompatiblePackage = false;
+    _remoteErrorCode = null;
     await _reload();
   }
 
   Future<void> completeRemoteRefresh({required bool succeeded}) async {
     _remoteLoading = false;
-    _serverConfirmed = succeeded;
+    _serverConfirmed =
+        succeeded && !_incompatiblePackage && _remoteErrorCode == null;
     _remoteUnavailable = !succeeded;
     await _reload();
+  }
+
+  Future<void> markRemoteStateCommitted() async {
+    _incompatiblePackage = false;
+    _remoteErrorCode = null;
+    await _reload();
+  }
+
+  Future<void> markRemoteActivationFailure(
+    SeasonActivationFailure failure,
+  ) async {
+    _serverConfirmed = false;
+    _remoteUnavailable = false;
+    _incompatiblePackage =
+        failure == SeasonActivationFailure.incompatiblePackage;
+    _remoteErrorCode = failure == SeasonActivationFailure.recoverable
+        ? 'season_activation_failed'
+        : null;
+    await _reload();
+  }
+
+  Future<void> retryRemote() async {
+    if (!canRetryRemote) return;
+    await beginRemoteRefresh();
+    var succeeded = false;
+    try {
+      succeeded = await _synchronize!.call();
+    } catch (error, stackTrace) {
+      developer.log(
+        'Season remote retry failed; cached state remains available',
+        name: 'mayhem.season.retry',
+        error: error.runtimeType,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      if (!_disposed) {
+        await completeRemoteRefresh(succeeded: succeeded);
+      }
+    }
   }
 
   Future<void> join() async {
@@ -270,6 +324,8 @@ class SeasonExperienceController extends ChangeNotifier {
         dayFailed: dayFailed,
         bossFailed: bossFailed,
         conflict: conflict,
+        incompatiblePackage: _incompatiblePackage,
+        errorCode: _remoteErrorCode,
       );
     } catch (error, stackTrace) {
       _state = SeasonExperienceState.resolve(

@@ -108,7 +108,8 @@ abstract interface class MayhemStrings {
   String get seasonConfirmed;
   String get seasonRefreshing;
   String get seasonConflict;
-  String get seasonStateError;
+  String get seasonPackageIncompatible;
+  String get seasonRecoverableError;
   String get seasonNotJoined;
   String get seasonJoining;
   String get seasonJoinFailed;
@@ -474,7 +475,11 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get seasonConflict => 'Состояние изменилось. Требуется обновление';
   @override
-  String get seasonStateError => 'Не удалось проверить состояние Season';
+  String get seasonPackageIncompatible =>
+      'Этот Season несовместим с текущей версией приложения.';
+  @override
+  String get seasonRecoverableError =>
+      'Не удалось загрузить Season. Повтори попытку.';
   @override
   String get seasonNotJoined => 'Участие ещё не подтверждено';
   @override

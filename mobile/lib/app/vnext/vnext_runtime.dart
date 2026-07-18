@@ -16,6 +16,7 @@ import '../../features/onboarding/data/local_onboarding_repository.dart';
 import '../../features/progress/application/journey_controller.dart';
 import '../../features/progress/domain/development_rank_config.dart';
 import '../../features/season/application/artifact_ownership_controller.dart';
+import '../../features/season/application/season_bootstrap_activator.dart';
 import '../../features/season/application/season_experience_controller.dart';
 import '../../features/season/application/season_participation_coordinator.dart';
 import '../../features/settings/application/remote_account_controller.dart';
@@ -221,7 +222,10 @@ class VNextRuntime extends ChangeNotifier {
     await _detectRankUp();
   }
 
-  Future<void> refreshAfterRemoteSeason() => season.initialize();
+  Future<void> refreshAfterRemoteSeason() => season.markRemoteStateCommitted();
+
+  Future<void> reportRemoteSeasonFailure(SeasonActivationFailure failure) =>
+      season.markRemoteActivationFailure(failure);
 
   Future<void> refreshAfterRemoteFeed() async {
     await feed.initialize();

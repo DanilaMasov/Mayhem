@@ -36,6 +36,8 @@ class ProductionRemoteComposition {
     required Future<void> Function() clearLocalData,
     Future<void> Function()? onProjectionCommitted,
     Future<void> Function()? onSeasonStateCommitted,
+    Future<void> Function(SeasonActivationFailure failure)?
+    onSeasonActivationFailed,
     Future<void> Function()? onRemoteFeedCommitted,
   }) {
     final http = const DartIoJsonHttpExecutor();
@@ -94,6 +96,7 @@ class ProductionRemoteComposition {
       clock: clock,
       onProjectionCommitted: onProjectionCommitted,
       onSeasonStateCommitted: onSeasonStateCommitted,
+      onSeasonActivationFailed: onSeasonActivationFailed,
       onRemoteFeedCommitted: onRemoteFeedCommitted,
     );
     final deletion = DeleteEverywhereCoordinator(
