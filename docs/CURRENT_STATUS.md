@@ -3,8 +3,8 @@
 **Status date:** 2026-07-18
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r3-state-matrix-audit`
-**Current main checkpoint:** `3b564c2` (merge commit for PR #11)
+**Current branch:** `codex/r5-release-safety`
+**Current main checkpoint:** `9958be3` (merge commit for PR #12)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -57,14 +57,17 @@ same-revision local actions; it is merged into `main` as `3b564c2`. Commit
 `423d2b9` on `codex/r3-state-matrix-audit` closes the remaining production
 state-path and retry gaps found by the final R3 software audit. Remote
 operations still activate only with a valid environment-specific Supabase
-configuration. The final R3 software correction is under review in pull
-request [#12](https://github.com/DanilaMasov/Mayhem/pull/12); its initial push
-and pull-request CI are green.
+configuration. The final R3 software correction in pull request
+[#12](https://github.com/DanilaMasov/Mayhem/pull/12) is merged into `main` as
+`9958be3`; R3 software implementation is closed. Commit `09aa227` on
+`codex/r5-release-safety` starts R5 by removing Android debug release signing,
+aligning portrait declarations, validating runtime environments, and adding
+the missing social-aggregate privacy disclosure.
 
 ## Open software gates
 
-- R3 final state-matrix merge gate.
-- R5 release configuration and hardening.
+- R5 release-safety pull-request/CI gate plus final IDs, signing, assets,
+  support path, and real release-build acceptance.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
 ## Live-backend gates
@@ -88,9 +91,9 @@ and pull-request CI are green.
 - Production remote auth/sync remains unavailable in builds without
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- R3 final state-matrix merge, migration `010` live acceptance,
-  physical-device acceptance, release signing, final application IDs,
-  production assets, and store configuration remain incomplete.
+- Migration `010` live acceptance, physical-device acceptance, approved release
+  signing, final application IDs, launcher/store assets, support path, and
+  store configuration remain incomplete.
 
 ## Verification
 
@@ -99,7 +102,7 @@ results:
 
 ```sh
 node --test tests/*.test.mjs
-# 35 passed
+# 39 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -115,13 +118,13 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 252 files, 0 changed
+# 254 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 248 passed; 1 live-only test skipped without an explicit disposable target
+# 252 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -230,6 +233,26 @@ R3 final state-matrix local evidence:
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29646043550](https://github.com/DanilaMasov/Mayhem/actions/runs/29646043550):
   repository contracts and Flutter format/analyze/test passed.
+
+R5 release-safety local evidence:
+
+- Android release no longer falls back to the debug signing configuration;
+- Android release signing is composed only from a complete four-variable
+  external environment contract, and a partial secret set fails closed;
+- Android manifest, iPhone/iPad plist declarations, and Flutter runtime now
+  agree on portrait-only orientation;
+- application runtime accepts only `development`, `staging`, or `production`,
+  defaults release to production, and rejects development release targets;
+- repository contracts protect signing, orientation, non-placeholder IDs,
+  semantic version shape, positive build number, and signing-file exclusions;
+- Settings explains that participant counts are aggregate-only and hidden
+  below the privacy threshold;
+- `docs/RELEASE_CONFIGURATION.md` records environment, signing, versioning,
+  secret-handling, and still-open owner approvals;
+- no package, lockfile, SDK, signing material, analytics, crash-reporting, or
+  production flag changed;
+- Android/iOS release compilation, signing, install, and launch remain untested
+  until an approved SDK/signing environment is provided.
 
 Post-R1 correction local evidence:
 

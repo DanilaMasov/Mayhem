@@ -74,20 +74,25 @@ pipeline. Domain and widget tests themselves pass.
 
 ## Toolchain status
 
-- Flutter 3.44.6 / Dart 3.12.2 installed.
-- OpenJDK 21 installed and configured in Flutter.
-- Android command-line tools installed.
-- Android API/build packages still require explicit acceptance of the Google Android SDK license before an APK can be built.
-- Full iOS build requires a complete Xcode installation and CocoaPods.
+- Locked software checks target Flutter 3.44.6 / Dart 3.12.2.
+- No SDK, simulator, signing tool, or system package is installed automatically.
+- Android release verification requires an approved SDK/license environment.
+- iOS archive verification requires an approved Xcode/CocoaPods/signing environment.
+- Physical-device acceptance remains mandatory and cannot be replaced by CI,
+  simulators, or emulators.
+
+Release environment, signing, versioning, and open-approval rules are recorded
+in [`../docs/RELEASE_CONFIGURATION.md`](../docs/RELEASE_CONFIGURATION.md).
 
 ## Feed-first migration
 
 The July 2026 master specification supersedes the previous incremental Today
-roadmap. Domain vNext, safe SQLite v5 migration and the Phase 2 visual
-foundation are implemented. The next product phase is the local-first Feed
-vertical slice behind the disabled feature flag; auth and live sync remain
-deferred until the local contracts and real session boundary are proven. See
-`../docs/feed-vnext-execution-plan.md`.
+roadmap. The local-first Feed, production composition, live Supabase acceptance,
+and R3 Season/Boss software flow are implemented behind fail-closed production
+flags. Physical-device R4 evidence, migration `010` live acceptance, and R5
+release approvals remain open. See `../docs/CURRENT_STATUS.md` for the current
+checkpoint and `../docs/feed-vnext-execution-plan.md` for historical execution
+context.
 
 ### Domain vNext foundation
 
@@ -102,8 +107,8 @@ Phase 1 is implemented behind the disabled Feed flag:
   rule-based difficulty policies;
 - legacy Energy no longer blocks accepting a challenge.
 
-The current production route is still legacy Today until the Phase 2 design
-system and Phase 3 local-first Feed slice pass their gates.
+The production default remains legacy Today until physical-device and rollout
+gates explicitly authorize the new Feed.
 
 ### Design system and Motion Lab
 
