@@ -11,6 +11,35 @@ import 'package:mayhem_mobile/features/settings/presentation/vnext_settings_scre
 import 'package:mayhem_mobile/presentation/theme/mayhem_theme.dart';
 
 void main() {
+  testWidgets('privacy section discloses thresholded social aggregates', (
+    tester,
+  ) async {
+    final controller = SettingsController(
+      LocalUserPreferencesRepository(_MemoryMetadata()),
+    );
+    await controller.initialize();
+    final flags = FeatureFlagRuntime.safe();
+    addTearDown(flags.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MayhemTheme.dark,
+        builder: (context, child) =>
+            MayhemStringsScope(strings: const MayhemStringsRu(), child: child!),
+        home: VNextSettingsScreen(
+          controller: controller,
+          featureFlags: flags,
+          onResetLocalData: () async {},
+        ),
+      ),
+    );
+
+    final disclosure = const MayhemStringsRu().socialAggregatePrivacy;
+    await tester.scrollUntilVisible(find.text(disclosure), 300);
+
+    expect(find.text(disclosure), findsOneWidget);
+  });
+
   testWidgets('successful device reset always leaves loading state', (
     tester,
   ) async {

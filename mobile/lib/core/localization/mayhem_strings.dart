@@ -161,6 +161,7 @@ abstract interface class MayhemStrings {
   String get dataAndSync;
   String get localOnlyStatus;
   String get privateNotesStatus;
+  String get socialAggregatePrivacy;
   String get resetOnDevice;
   String get resetOnDeviceBody;
   String get deleteEverywhere;
@@ -590,6 +591,9 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get privateNotesStatus =>
       'Текст приватных заметок не синхронизируется.';
+  @override
+  String get socialAggregatePrivacy =>
+      'Счётчики участников показываются только в агрегированном виде и скрываются, пока не достигнут минимальный порог приватности.';
   @override
   String get resetOnDevice => 'СБРОСИТЬ ДАННЫЕ НА ЭТОМ УСТРОЙСТВЕ';
   @override
