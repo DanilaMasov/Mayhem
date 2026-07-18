@@ -62,11 +62,13 @@ configuration. The final R3 software correction in pull request
 `9958be3`; R3 software implementation is closed. Commit `09aa227` on
 `codex/r5-release-safety` starts R5 by removing Android debug release signing,
 aligning portrait declarations, validating runtime environments, and adding
-the missing social-aggregate privacy disclosure.
+the missing social-aggregate privacy disclosure. The slice is under review in
+pull request [#13](https://github.com/DanilaMasov/Mayhem/pull/13); its initial
+push and pull-request CI are green.
 
 ## Open software gates
 
-- R5 release-safety pull-request/CI gate plus final IDs, signing, assets,
+- R5 release-safety merge gate plus final IDs, signing, assets,
   support path, and real release-build acceptance.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
@@ -253,6 +255,10 @@ R5 release-safety local evidence:
   production flag changed;
 - Android/iOS release compilation, signing, install, and launch remain untested
   until an approved SDK/signing environment is provided.
+- [push CI run 29646587806](https://github.com/DanilaMasov/Mayhem/actions/runs/29646587806):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29646599999](https://github.com/DanilaMasov/Mayhem/actions/runs/29646599999):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
