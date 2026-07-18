@@ -14,6 +14,9 @@ const artifactRevisionPath = migration(
 const privateNoteValidatorPath = migration(
   "202607170009_private_note_validator_fix.sql"
 );
+const seasonParticipationPath = migration(
+  "202607180010_season_participation_snapshot.sql"
+);
 const eventPath = new URL("../mobile/lib/core/sync/event_envelope_v2.dart", import.meta.url);
 const goldenPath = new URL("../contracts/v1/policy_golden.json", import.meta.url);
 
@@ -308,4 +311,32 @@ test("private-note validation qualifies jsonb iterator fields", async () => {
     /public\.mayhem_jsonb_has_private_note_key\(item\.value\)/
   );
   assert.doesNotMatch(sql, /select key, value from jsonb_each/);
+});
+
+test("active Season snapshot exposes only authenticated participation", async () => {
+  const sql = await readFile(seasonParticipationPath, "utf8");
+  assert.match(sql, /v_user_id uuid := auth\.uid\(\)/);
+  assert.match(sql, /set search_path = ''/);
+  assert.match(
+    sql,
+    /season_participation[\s\S]+?p\.season_id = v_season\.season_id and p\.user_id = v_user_id/
+  );
+  assert.match(
+    sql,
+    /season_day_completions[\s\S]+?c\.season_id = v_season\.season_id and c\.user_id = v_user_id/
+  );
+  assert.match(
+    sql,
+    /boss_participation[\s\S]+?p\.boss_event_id = v_season\.payload #>> '\{boss,bossEventId\}'[\s\S]+?p\.user_id = v_user_id/
+  );
+  for (const field of [
+    "'participation'",
+    "'seasonId'",
+    "'seasonRevision'",
+    "'joinedAt'",
+    "'completedDays'",
+    "'bossParticipatedAt'"
+  ]) {
+    assert.match(sql, new RegExp(field));
+  }
 });

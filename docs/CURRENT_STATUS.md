@@ -3,8 +3,8 @@
 **Status date:** 2026-07-18
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r3-day-boss-actions`
-**Current main checkpoint:** `8761978` (merge commit for PR #9)
+**Current branch:** `codex/r3-cross-device-participation`
+**Current main checkpoint:** `4453a17` (merge commit for PR #10)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -48,16 +48,19 @@ Its secret-free report is
 in pull request [#8](https://github.com/DanilaMasov/Mayhem/pull/8) is merged as
 `8f271d4`. Server-authoritative Join in pull request
 [#9](https://github.com/DanilaMasov/Mayhem/pull/9) is merged into `main` as
-`8761978`. Commit `f84e831` in pull request
-[#10](https://github.com/DanilaMasov/Mayhem/pull/10) on
-`codex/r3-day-boss-actions` extends the same durable exact-ACK lifecycle to Day
-completion and Boss participation. Remote operations still activate only with
-a valid environment-specific Supabase configuration.
+`8761978`. Server-authoritative Day completion and Boss participation in pull
+request [#10](https://github.com/DanilaMasov/Mayhem/pull/10) are merged into
+`main` as `4453a17`. Pull request
+[#11](https://github.com/DanilaMasov/Mayhem/pull/11) on
+`codex/r3-cross-device-participation` adds authenticated participation to the
+active-Season snapshot and reconciles it with unresolved same-revision local
+actions. Its initial push and pull-request CI are green. Remote operations
+still activate only with a valid environment-specific Supabase configuration.
 
 ## Open software gates
 
-- R3 cross-device authoritative participation refresh and final
-  state-specific UX audit.
+- R3 cross-device authoritative participation merge gate and final
+  deterministic state-specific UX audit.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
@@ -66,6 +69,9 @@ a valid environment-specific Supabase configuration.
 - R2 disposable Supabase/PostgreSQL migration, RLS, grants, RPC, concurrency,
   deletion, auth, sync, Season/Boss, artifact, social-proof, and production
   Flutter client acceptance is closed by the 2026-07-17 live report.
+- Migration `202607180010_season_participation_snapshot.sql` has local static
+  contract coverage but still requires an authorized disposable/live
+  PostgreSQL migration and RPC acceptance run.
 - No production Supabase environment has been configured or authorized.
 
 ## Open device gates
@@ -79,9 +85,9 @@ a valid environment-specific Supabase configuration.
 - Production remote auth/sync remains unavailable in builds without
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- R3 cross-device participation refresh, physical-device acceptance, release
-  signing, final application IDs, production assets, and store configuration
-  remain incomplete.
+- R3 final state-matrix audit, migration `010` live acceptance, physical-device
+  acceptance, release signing, final application IDs, production assets, and
+  store configuration remain incomplete.
 
 ## Verification
 
@@ -90,7 +96,7 @@ results:
 
 ```sh
 node --test tests/*.test.mjs
-# 34 passed
+# 35 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -106,13 +112,13 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 250 files, 0 changed
+# 251 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 235 passed; 1 live-only test skipped without an explicit disposable target
+# 242 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -175,6 +181,29 @@ R3 server-authoritative Day/Boss local evidence:
 - [push CI run 29615519565](https://github.com/DanilaMasov/Mayhem/actions/runs/29615519565):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29615538337](https://github.com/DanilaMasov/Mayhem/actions/runs/29615538337):
+  repository contracts and Flutter format/analyze/test passed.
+
+R3 cross-device participation local evidence:
+
+- the authenticated active-Season RPC returns only the current account's
+  joined timestamp, completed days, and Boss participation timestamp;
+- the client validates participation identity, revision, day range,
+  uniqueness, and timestamps before replacing the authoritative local base;
+- unresolved Join, Day, and Boss actions are preserved only when they belong
+  to the same Season revision, so bootstrap cannot erase retryable writes or
+  carry them into a changed package;
+- a second device can render server-confirmed membership without synthesizing
+  a local Join event, while server absence clears stale confirmed state;
+- manual and foreground Season activation refresh the Season runtime even
+  when the progress projection revision did not change;
+- package and participation persistence remain backward-compatible with
+  snapshots written before the participation field existed;
+- no dependency, lockfile, production flag, or SDK changed;
+- migration `010` remains unapplied until an authorized backend target is
+  provided, and all associated production flags remain false.
+- [push CI run 29643920613](https://github.com/DanilaMasov/Mayhem/actions/runs/29643920613):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29643930964](https://github.com/DanilaMasov/Mayhem/actions/runs/29643930964):
   repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:

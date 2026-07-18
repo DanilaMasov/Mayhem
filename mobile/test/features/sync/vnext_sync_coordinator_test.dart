@@ -123,7 +123,25 @@ void main() {
 
     expect(result.status, SyncRunStatus.synchronized);
     expect(activation.calls, 1);
+    expect(harness.seasonRefreshes, 0);
   });
+
+  test(
+    'successful Season activation refreshes its runtime projection',
+    () async {
+      final activation = _SeasonActivation(fails: false);
+      final harness = _Harness(
+        remoteOperationsEnabled: true,
+        seasonActivation: activation,
+      );
+
+      final result = await harness.coordinator.synchronize();
+
+      expect(result.status, SyncRunStatus.synchronized);
+      expect(activation.calls, 1);
+      expect(harness.seasonRefreshes, 1);
+    },
+  );
 
   test('validated bootstrap flags update the effective runtime', () async {
     final harness = _Harness(
@@ -204,11 +222,13 @@ class _Harness {
       random: Random(1),
       seasonActivation: seasonActivation,
       onProjectionCommitted: () async => projectionRefreshes += 1,
+      onSeasonStateCommitted: () async => seasonRefreshes += 1,
       onRemoteFeedCommitted: () async => remoteFeedRefreshes += 1,
     );
   }
 
   int projectionRefreshes = 0;
+  int seasonRefreshes = 0;
   int remoteFeedRefreshes = 0;
 
   final _AuthGateway auth;
@@ -227,6 +247,9 @@ class _Harness {
 }
 
 class _SeasonActivation implements SeasonBootstrapActivation {
+  _SeasonActivation({this.fails = true});
+
+  final bool fails;
   int calls = 0;
 
   @override
@@ -235,7 +258,8 @@ class _SeasonActivation implements SeasonBootstrapActivation {
     required FeatureFlagSnapshot flags,
   }) async {
     calls += 1;
-    throw const FormatException('invalid season payload');
+    if (fails) throw const FormatException('invalid season payload');
+    return SeasonActivationStatus.noActiveSeason;
   }
 }
 

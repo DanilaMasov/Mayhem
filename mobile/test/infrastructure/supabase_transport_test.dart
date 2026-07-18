@@ -454,7 +454,10 @@ void main() {
             body:
                 '{"seasonId":"season-1","revision":2,"title":"Reset",'
                 '"startsAt":"2026-07-01T00:00:00.000Z",'
-                '"endsAt":"2026-08-01T00:00:00.000Z","payload":{}}',
+                '"endsAt":"2026-08-01T00:00:00.000Z","payload":{},'
+                '"participation":{"seasonId":"season-1",'
+                '"seasonRevision":2,"joinedAt":"2026-07-02T00:00:00.000Z",'
+                '"completedDays":[1,2],"bossParticipatedAt":null}}',
           ),
         ),
       ),
@@ -464,6 +467,8 @@ void main() {
 
     expect(season?.seasonId, 'season-1');
     expect(season?.revision, 2);
+    expect(season?.participation?.completedDays, {1, 2});
+    expect(season?.participation?.bossParticipatedAt, isNull);
   });
 }
 

@@ -151,6 +151,7 @@ Future<void> main() async {
           await runtime.reinitializeAfterLocalReset();
         },
         onProjectionCommitted: runtime.refreshAfterRemoteSync,
+        onSeasonStateCommitted: runtime.refreshAfterRemoteSeason,
         onRemoteFeedCommitted: runtime.refreshAfterRemoteFeed,
       );
       runtime.attachRemote(

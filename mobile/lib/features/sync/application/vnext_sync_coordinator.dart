@@ -81,6 +81,7 @@ class VNextSyncCoordinator implements RemoteSynchronizer {
     this.seasonActivation,
     this.remoteFeed,
     this.onProjectionCommitted,
+    this.onSeasonStateCommitted,
     this.onRemoteFeedCommitted,
     CapabilityRevisionSet? capabilities,
     this.reconciler = const ProjectionReconciler(),
@@ -103,6 +104,7 @@ class VNextSyncCoordinator implements RemoteSynchronizer {
   final SeasonBootstrapActivation? seasonActivation;
   final RemoteFeedRefresher? remoteFeed;
   final Future<void> Function()? onProjectionCommitted;
+  final Future<void> Function()? onSeasonStateCommitted;
   final Future<void> Function()? onRemoteFeedCommitted;
   final String platform;
   final String appVersion;
@@ -219,6 +221,7 @@ class VNextSyncCoordinator implements RemoteSynchronizer {
             snapshot: bootstrap.activeSeason,
             flags: effectiveFlags,
           );
+          await onSeasonStateCommitted?.call();
         } catch (error, stackTrace) {
           developer.log(
             'Season bootstrap activation failed closed',

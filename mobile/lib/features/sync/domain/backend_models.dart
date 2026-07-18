@@ -615,6 +615,58 @@ class ServerProjectionSnapshot {
   final List<RemoteOwnedArtifact> ownedArtifacts;
 }
 
+class RemoteSeasonParticipationSnapshot {
+  RemoteSeasonParticipationSnapshot({
+    required this.seasonId,
+    required this.seasonRevision,
+    required this.joinedAt,
+    required Set<int> completedDays,
+    this.bossParticipatedAt,
+  }) : completedDays = Set.unmodifiable(completedDays) {
+    _nonEmpty(seasonId, 'seasonId');
+    _validRevision(seasonRevision);
+    if (completedDays.any((day) => day < 1 || day > 7) ||
+        bossParticipatedAt?.isBefore(joinedAt) == true) {
+      throw const FormatException('Remote Season participation is invalid');
+    }
+  }
+
+  factory RemoteSeasonParticipationSnapshot.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final values = json['completedDays'];
+    if (values is! List ||
+        values.any((value) => value is! num || value.toInt() != value)) {
+      throw const FormatException('completedDays must contain integers');
+    }
+    final days = values.cast<num>().map((value) => value.toInt()).toSet();
+    if (days.length != values.length) {
+      throw const FormatException('completedDays must be unique');
+    }
+    return RemoteSeasonParticipationSnapshot(
+      seasonId: _string(json, 'seasonId'),
+      seasonRevision: _integer(json, 'seasonRevision'),
+      joinedAt: _utcDate(json, 'joinedAt'),
+      completedDays: days,
+      bossParticipatedAt: _optionalUtcDate(json['bossParticipatedAt']),
+    );
+  }
+
+  final String seasonId;
+  final int seasonRevision;
+  final DateTime joinedAt;
+  final Set<int> completedDays;
+  final DateTime? bossParticipatedAt;
+
+  Map<String, Object?> toJson() => {
+    'seasonId': seasonId,
+    'seasonRevision': seasonRevision,
+    'joinedAt': joinedAt.toUtc().toIso8601String(),
+    'completedDays': completedDays.toList()..sort(),
+    'bossParticipatedAt': bossParticipatedAt?.toUtc().toIso8601String(),
+  };
+}
+
 class RemoteSeasonSnapshot {
   RemoteSeasonSnapshot({
     required this.seasonId,
@@ -623,12 +675,21 @@ class RemoteSeasonSnapshot {
     required this.startsAt,
     required this.endsAt,
     required Map<String, dynamic> payload,
+    this.participation,
   }) : payload = Map.unmodifiable(payload) {
     _nonEmpty(seasonId, 'seasonId');
     _nonEmpty(title, 'title');
     _validRevision(revision);
     if (!endsAt.isAfter(startsAt)) {
       throw const FormatException('Remote season schedule is invalid');
+    }
+    final remoteParticipation = participation;
+    if (remoteParticipation != null &&
+        (remoteParticipation.seasonId != seasonId ||
+            remoteParticipation.seasonRevision != revision ||
+            remoteParticipation.joinedAt.isBefore(startsAt) ||
+            !remoteParticipation.joinedAt.isBefore(endsAt))) {
+      throw const FormatException('Remote Season participation is mismatched');
     }
   }
 
@@ -640,6 +701,11 @@ class RemoteSeasonSnapshot {
         startsAt: _utcDate(json, 'startsAt'),
         endsAt: _utcDate(json, 'endsAt'),
         payload: _object(json, 'payload'),
+        participation: json['participation'] == null
+            ? null
+            : RemoteSeasonParticipationSnapshot.fromJson(
+                _object(json, 'participation'),
+              ),
       );
 
   final String seasonId;
@@ -648,6 +714,7 @@ class RemoteSeasonSnapshot {
   final DateTime startsAt;
   final DateTime endsAt;
   final Map<String, dynamic> payload;
+  final RemoteSeasonParticipationSnapshot? participation;
 }
 
 class BootstrapPayload {

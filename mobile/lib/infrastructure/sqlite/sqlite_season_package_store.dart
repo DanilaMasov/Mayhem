@@ -67,6 +67,7 @@ class SqliteSeasonPackageStore implements SeasonPackageStore {
       'startsAt': snapshot.startsAt.toUtc().toIso8601String(),
       'endsAt': snapshot.endsAt.toUtc().toIso8601String(),
       'payload': snapshot.payload,
+      'participation': snapshot.participation?.toJson(),
     });
     return context.database.transaction((db) async {
       await db.insert('app_metadata', {

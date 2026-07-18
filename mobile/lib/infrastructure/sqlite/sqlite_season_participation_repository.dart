@@ -47,6 +47,25 @@ class SqliteSeasonParticipationRepository
       });
 
   @override
+  Future<void> replaceAuthoritative(
+    String seasonId,
+    SeasonParticipationState? state,
+  ) => context.database.transaction((db) async {
+    if (state == null) {
+      await db.delete(
+        'app_metadata',
+        where: 'key = ?',
+        whereArgs: [_key(seasonId)],
+      );
+      return;
+    }
+    if (state.seasonId != seasonId) {
+      throw const FormatException('Projected Season participation is invalid');
+    }
+    await _write(db, state);
+  });
+
+  @override
   Future<bool> commit({
     required SeasonParticipationState state,
     required EventDraftV2 event,
@@ -77,6 +96,7 @@ class SqliteSeasonParticipationRepository
         'bossParticipatedAt': state.bossParticipatedAt
             ?.toUtc()
             .toIso8601String(),
+        'serverConfirmed': state.serverConfirmed,
       }),
       'updated_at': context.clock().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -114,6 +134,7 @@ class SqliteSeasonParticipationRepository
       bossParticipatedAt: json['bossParticipatedAt'] == null
           ? null
           : DateTime.parse(json['bossParticipatedAt'] as String).toUtc(),
+      serverConfirmed: json['serverConfirmed'] as bool? ?? false,
     );
   }
 

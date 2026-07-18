@@ -5,6 +5,7 @@ class SeasonParticipationState {
     required this.joinedAt,
     required Set<int> completedDays,
     this.bossParticipatedAt,
+    this.serverConfirmed = false,
   }) : completedDays = Set.unmodifiable(completedDays) {
     if (seasonId.trim().isEmpty ||
         seasonRevision < 1 ||
@@ -19,11 +20,13 @@ class SeasonParticipationState {
   final DateTime joinedAt;
   final Set<int> completedDays;
   final DateTime? bossParticipatedAt;
+  final bool serverConfirmed;
 
   SeasonParticipationState copyWith({
     Set<int>? completedDays,
     DateTime? bossParticipatedAt,
     bool clearBossParticipatedAt = false,
+    bool? serverConfirmed,
   }) => SeasonParticipationState(
     seasonId: seasonId,
     seasonRevision: seasonRevision,
@@ -32,5 +35,6 @@ class SeasonParticipationState {
     bossParticipatedAt: clearBossParticipatedAt
         ? null
         : bossParticipatedAt ?? this.bossParticipatedAt,
+    serverConfirmed: serverConfirmed ?? this.serverConfirmed,
   );
 }

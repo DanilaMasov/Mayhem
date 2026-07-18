@@ -35,6 +35,7 @@ class ProductionRemoteComposition {
     required DateTime Function() clock,
     required Future<void> Function() clearLocalData,
     Future<void> Function()? onProjectionCommitted,
+    Future<void> Function()? onSeasonStateCommitted,
     Future<void> Function()? onRemoteFeedCommitted,
   }) {
     final http = const DartIoJsonHttpExecutor();
@@ -84,12 +85,15 @@ class ProductionRemoteComposition {
       seasonActivation: SeasonBootstrapActivator(
         localActivationEnabled: true,
         store: store.season,
+        participation: store.seasonParticipation,
+        actions: store.seasonActions,
       ),
       platform: platform,
       appVersion: appVersion,
       environment: environment,
       clock: clock,
       onProjectionCommitted: onProjectionCommitted,
+      onSeasonStateCommitted: onSeasonStateCommitted,
       onRemoteFeedCommitted: onRemoteFeedCommitted,
     );
     final deletion = DeleteEverywhereCoordinator(
