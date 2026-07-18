@@ -57,11 +57,13 @@ same-revision local actions; it is merged into `main` as `3b564c2`. Commit
 `423d2b9` on `codex/r3-state-matrix-audit` closes the remaining production
 state-path and retry gaps found by the final R3 software audit. Remote
 operations still activate only with a valid environment-specific Supabase
-configuration.
+configuration. The final R3 software correction is under review in pull
+request [#12](https://github.com/DanilaMasov/Mayhem/pull/12); its initial push
+and pull-request CI are green.
 
 ## Open software gates
 
-- R3 final state-matrix pull-request and CI gate.
+- R3 final state-matrix merge gate.
 - R5 release configuration and hardening.
 - R6 visual refinement, authorized only after R1-R4 evidence.
 
@@ -224,6 +226,10 @@ R3 final state-matrix local evidence:
   validated server-confirmed package;
 - the new cached-package failure path remains valid at 1.6x text;
 - no dependency, lockfile, migration, production flag, or SDK changed.
+- [push CI run 29646030801](https://github.com/DanilaMasov/Mayhem/actions/runs/29646030801):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29646043550](https://github.com/DanilaMasov/Mayhem/actions/runs/29646043550):
+  repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
 
