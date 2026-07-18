@@ -10,6 +10,11 @@ abstract interface class SeasonParticipationRepository {
 
   Future<void> revertBoss(String seasonId);
 
+  Future<void> replaceAuthoritative(
+    String seasonId,
+    SeasonParticipationState? state,
+  );
+
   Future<bool> commit({
     required SeasonParticipationState state,
     required EventDraftV2 event,

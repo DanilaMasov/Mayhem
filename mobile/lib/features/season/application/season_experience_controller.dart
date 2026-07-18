@@ -206,13 +206,15 @@ class SeasonExperienceController extends ChangeNotifier {
       var bossFailed = false;
       var conflict = false;
       if (joined != null) {
-        if (latestJoin == null) {
+        if (latestJoin == null && !joined.serverConfirmed) {
           conflict = true;
-        } else if (latestJoin.delivery == SeasonActionDelivery.rejected) {
+        } else if (!joined.serverConfirmed &&
+            latestJoin?.delivery == SeasonActionDelivery.rejected) {
           await participation.clear(package!.season.seasonId);
           joined = null;
           joinFailed = true;
-        } else if (latestJoin.delivery == SeasonActionDelivery.pending &&
+        } else if (!joined.serverConfirmed &&
+            latestJoin?.delivery == SeasonActionDelivery.pending &&
             !_joinInFlight) {
           joinFailed = true;
         }

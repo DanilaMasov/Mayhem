@@ -3,6 +3,8 @@ import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
 import 'package:mayhem_mobile/features/season/application/season_bootstrap_activator.dart';
 import 'package:mayhem_mobile/features/sync/domain/backend_models.dart';
 import 'package:mayhem_mobile/infrastructure/sqlite/sqlite_season_package_store.dart';
+import 'package:mayhem_mobile/infrastructure/sqlite/sqlite_season_action_journal.dart';
+import 'package:mayhem_mobile/infrastructure/sqlite/sqlite_season_participation_repository.dart';
 import 'package:mayhem_mobile/infrastructure/sqlite/sqlite_vnext_context.dart';
 
 import '../../support/memory_vnext_database.dart';
@@ -11,10 +13,7 @@ void main() {
   test('local or remote kill switch removes the cached package', () async {
     final store = _store();
     await store.saveValidatedSnapshot(_snapshot());
-    final activator = SeasonBootstrapActivator(
-      localActivationEnabled: false,
-      store: store,
-    );
+    final activator = _activator(store, enabled: false);
 
     final result = await activator.apply(
       snapshot: _snapshot(),
@@ -25,10 +24,7 @@ void main() {
     expect(await store.loadActivePackage(DateTime.utc(2026, 8, 4)), isNull);
 
     await store.saveValidatedSnapshot(_snapshot());
-    final remoteKillSwitch = SeasonBootstrapActivator(
-      localActivationEnabled: true,
-      store: store,
-    );
+    final remoteKillSwitch = _activator(store);
     expect(
       await remoteKillSwitch.apply(
         snapshot: _snapshot(),
@@ -43,10 +39,7 @@ void main() {
     'activation caches a validated package without disabled social data',
     () async {
       final store = _store();
-      final activator = SeasonBootstrapActivator(
-        localActivationEnabled: true,
-        store: store,
-      );
+      final activator = _activator(store);
 
       final result = await activator.apply(
         snapshot: _snapshot(),
@@ -64,10 +57,7 @@ void main() {
     'qualified social data survives only when its flag is enabled',
     () async {
       final store = _store();
-      final activator = SeasonBootstrapActivator(
-        localActivationEnabled: true,
-        store: store,
-      );
+      final activator = _activator(store);
 
       await activator.apply(
         snapshot: _snapshot(),
@@ -90,10 +80,7 @@ void main() {
   test('invalid replacement cannot overwrite the last valid cache', () async {
     final database = MemoryVNextDatabase();
     final store = SqliteSeasonPackageStore(SqliteVNextContext(database));
-    final activator = SeasonBootstrapActivator(
-      localActivationEnabled: true,
-      store: store,
-    );
+    final activator = _activator(store);
     final valid = _snapshot();
     await activator.apply(
       snapshot: valid,
@@ -139,6 +126,16 @@ SqliteSeasonPackageStore _store() => SqliteSeasonPackageStore(
     MemoryVNextDatabase(),
     clock: () => DateTime.utc(2026, 7, 14),
   ),
+);
+
+SeasonBootstrapActivator _activator(
+  SqliteSeasonPackageStore store, {
+  bool enabled = true,
+}) => SeasonBootstrapActivator(
+  localActivationEnabled: enabled,
+  store: store,
+  participation: SqliteSeasonParticipationRepository(store.context),
+  actions: SqliteSeasonActionJournal(store.context),
 );
 
 FeatureFlagSnapshot _flags({

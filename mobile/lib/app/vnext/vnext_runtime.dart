@@ -221,6 +221,8 @@ class VNextRuntime extends ChangeNotifier {
     await _detectRankUp();
   }
 
+  Future<void> refreshAfterRemoteSeason() => season.initialize();
+
   Future<void> refreshAfterRemoteFeed() async {
     await feed.initialize();
     final snapshot = feed.snapshot;

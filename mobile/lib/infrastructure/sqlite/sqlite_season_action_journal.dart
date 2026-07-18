@@ -88,7 +88,11 @@ class SqliteSeasonActionJournal implements SeasonActionJournal {
 
   SeasonActionRecord _record(EventEnvelopeV2 event, Map<String, Object?> row) {
     final seasonId = event.payload['seasonId'];
-    if (seasonId is! String || seasonId.trim().isEmpty) {
+    final seasonRevision = event.payload['seasonRevision'];
+    if (seasonId is! String ||
+        seasonId.trim().isEmpty ||
+        seasonRevision is! int ||
+        seasonRevision < 1) {
       throw const FormatException('Season action identity is invalid');
     }
     final day = event.payload['day'];
@@ -97,6 +101,7 @@ class SqliteSeasonActionJournal implements SeasonActionJournal {
       eventId: event.eventId,
       eventType: event.eventType,
       seasonId: seasonId,
+      seasonRevision: seasonRevision,
       delivery: _delivery(row['sync_status']),
       attempts: (row['attempt_count'] as num?)?.toInt() ?? 0,
       day: day is int ? day : null,

@@ -279,6 +279,8 @@ Future<Map<String, Object?>> runR2LiveClientAcceptance() async {
       await SeasonBootstrapActivator(
         localActivationEnabled: true,
         store: localStore.season,
+        participation: localStore.seasonParticipation,
+        actions: localStore.seasonActions,
       ).apply(
         snapshot: season,
         flags: FeatureFlagSnapshot(
