@@ -21,6 +21,7 @@ import 'content/data/bundled_vnext_content_adapter.dart';
 import 'core/clock/mayhem_clock.dart';
 import 'core/clock/platform_timezone_id.dart';
 import 'core/feature_flags/feature_flag_runtime.dart';
+import 'core/environment/runtime_environment.dart';
 import 'features/sync/application/vnext_sync_coordinator.dart';
 import 'features/settings/application/delete_everywhere_recovery_store.dart';
 import 'infrastructure/sqlite/sqflite_game_store.dart';
@@ -60,11 +61,10 @@ Future<void> main() async {
     await controller.initialize();
     final featureFlags = FeatureFlagRuntime.fromEnvironment();
     const configuredEnvironment = String.fromEnvironment('MAYHEM_ENVIRONMENT');
-    final environment = configuredEnvironment.trim().isNotEmpty
-        ? configuredEnvironment.trim().toLowerCase()
-        : kReleaseMode
-        ? 'production'
-        : 'development';
+    final environment = MayhemRuntimeEnvironment.resolve(
+      configured: configuredEnvironment,
+      releaseMode: kReleaseMode,
+    ).name;
     final secureStorage = FlutterSecureKeyValueStore();
     final secureSessions = FlutterSecureSessionStore(
       storage: secureStorage,

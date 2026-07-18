@@ -4,6 +4,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val releaseSigning = mapOf(
+    "storeFile" to System.getenv("MAYHEM_ANDROID_KEYSTORE_PATH"),
+    "storePassword" to System.getenv("MAYHEM_ANDROID_KEYSTORE_PASSWORD"),
+    "keyAlias" to System.getenv("MAYHEM_ANDROID_KEY_ALIAS"),
+    "keyPassword" to System.getenv("MAYHEM_ANDROID_KEY_PASSWORD"),
+)
+val configuredReleaseSigningValues = releaseSigning.values.count { !it.isNullOrBlank() }
+if (configuredReleaseSigningValues != 0 && configuredReleaseSigningValues != releaseSigning.size) {
+    throw GradleException("Android release signing requires all MAYHEM_ANDROID_* variables")
+}
+val releaseSigningConfigured = configuredReleaseSigningValues == releaseSigning.size
+
 android {
     namespace = "com.mayhem.social.mayhem_mobile"
     compileSdk = flutter.compileSdkVersion
@@ -15,7 +27,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.mayhem.social.mayhem_mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -26,11 +37,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseSigning.getValue("storeFile")!!)
+                storePassword = releaseSigning.getValue("storePassword")
+                keyAlias = releaseSigning.getValue("keyAlias")
+                keyPassword = releaseSigning.getValue("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

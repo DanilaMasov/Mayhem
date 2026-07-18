@@ -142,6 +142,11 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
                 strings.privateNotesStatus,
                 variant: MayhemTextVariant.bodySmall,
               ),
+              const SizedBox(height: MayhemSpacing.x2),
+              MayhemText(
+                strings.socialAggregatePrivacy,
+                variant: MayhemTextVariant.bodySmall,
+              ),
               const _SectionDivider(),
               _SectionTitle(strings.language),
               _StatusLine(
