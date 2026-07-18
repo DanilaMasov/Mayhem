@@ -73,6 +73,8 @@ void main() {
       runtime.season.state.membership,
       SeasonMembership.joinFailedRetryable,
     );
+    expect(runtime.season.state.dayPhase, SeasonDayPhase.unavailable);
+    expect(runtime.season.state.bossPhase, SeasonBossPhase.locked);
     expect(
       (await runtime.store.seasonActions.latestJoin('season-0'))?.delivery,
       SeasonActionDelivery.pending,

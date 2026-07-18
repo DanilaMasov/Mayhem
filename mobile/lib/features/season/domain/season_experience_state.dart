@@ -24,13 +24,20 @@ enum SeasonMembership {
   completed,
 }
 
-enum SeasonDayPhase { unavailable, available, inProgress, completed }
+enum SeasonDayPhase {
+  unavailable,
+  available,
+  inProgress,
+  failedRetryable,
+  completed,
+}
 
 enum SeasonBossPhase {
   locked,
   upcoming,
   open,
   submitting,
+  failedRetryable,
   alreadyParticipated,
   completed,
 }
@@ -72,6 +79,8 @@ class SeasonExperienceState {
     bool remoteLoading = false,
     bool remoteUnavailable = false,
     bool joinFailed = false,
+    bool dayFailed = false,
+    bool bossFailed = false,
     bool conflict = false,
     bool incompatiblePackage = false,
     String? errorCode,
@@ -127,6 +136,8 @@ class SeasonExperienceState {
     final allDaysCompleted = joined && participation.completedDays.length == 7;
     final seasonEnded = !at.isBefore(season.endsAt.toUtc());
     final currentDay = _currentDay(season, at);
+    final participationActive =
+        joined && !joinFailed && operation != SeasonOperation.joining;
 
     final membership = operation == SeasonOperation.joining
         ? SeasonMembership.joining
@@ -142,22 +153,28 @@ class SeasonExperienceState {
 
     final dayPhase = operation == SeasonOperation.dayInProgress
         ? SeasonDayPhase.inProgress
+        : participationActive && dayFailed
+        ? SeasonDayPhase.failedRetryable
         : currentDay != null &&
-              joined &&
+              participationActive &&
               participation.completedDays.contains(currentDay)
         ? SeasonDayPhase.completed
-        : currentDay != null && joined && !seasonEnded
+        : currentDay != null && participationActive && !seasonEnded
         ? SeasonDayPhase.available
         : SeasonDayPhase.unavailable;
 
     final boss = package.boss;
     final bossPhase = ownsReward
         ? SeasonBossPhase.completed
-        : joined && participation.bossParticipatedAt != null
-        ? SeasonBossPhase.alreadyParticipated
         : operation == SeasonOperation.bossSubmitting
         ? SeasonBossPhase.submitting
-        : !joined || seasonEnded || !at.isBefore(boss.endsAt.toUtc())
+        : participationActive && bossFailed
+        ? SeasonBossPhase.failedRetryable
+        : participationActive && participation.bossParticipatedAt != null
+        ? SeasonBossPhase.alreadyParticipated
+        : !participationActive ||
+              seasonEnded ||
+              !at.isBefore(boss.endsAt.toUtc())
         ? SeasonBossPhase.locked
         : at.isBefore(boss.startsAt.toUtc())
         ? SeasonBossPhase.upcoming

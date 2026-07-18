@@ -6,6 +6,10 @@ abstract interface class SeasonParticipationRepository {
 
   Future<void> clear(String seasonId);
 
+  Future<void> revertDay(String seasonId, int day);
+
+  Future<void> revertBoss(String seasonId);
+
   Future<bool> commit({
     required SeasonParticipationState state,
     required EventDraftV2 event,

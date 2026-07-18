@@ -11,11 +11,15 @@ class StagedSeasonAction {
   final String? eventId;
 }
 
-abstract interface class SeasonJoinStager {
+abstract interface class SeasonActionStager {
   Future<StagedSeasonAction> stageJoin();
+
+  Future<StagedSeasonAction> stageDay(int day);
+
+  Future<StagedSeasonAction> stageBoss(ChallengeRouteType route);
 }
 
-class SeasonParticipationCoordinator implements SeasonJoinStager {
+class SeasonParticipationCoordinator implements SeasonActionStager {
   const SeasonParticipationCoordinator({
     required this.packages,
     required this.participation,
@@ -70,7 +74,10 @@ class SeasonParticipationCoordinator implements SeasonJoinStager {
     );
   }
 
-  Future<bool> completeDay(int day) async {
+  Future<bool> completeDay(int day) async => (await stageDay(day)).committed;
+
+  @override
+  Future<StagedSeasonAction> stageDay(int day) async {
     final now = clock().toUtc();
     final package = await packages.loadActivePackage(now);
     if (package == null) throw StateError('No active Season package');
@@ -79,7 +86,9 @@ class SeasonParticipationCoordinator implements SeasonJoinStager {
     if (current.seasonRevision != package.season.revision) {
       throw StateError('Season revision changed during participation');
     }
-    if (current.completedDays.contains(day)) return false;
+    if (current.completedDays.contains(day)) {
+      return const StagedSeasonAction(committed: false);
+    }
     if (day < 1 ||
         day > 7 ||
         now.isBefore(
@@ -90,23 +99,28 @@ class SeasonParticipationCoordinator implements SeasonJoinStager {
     final next = current.copyWith(
       completedDays: {...current.completedDays, day},
     );
-    final committed = await participation.commit(
-      state: next,
-      event: _event(
-        type: CanonicalEventTypeV2.seasonDayCompleted,
-        occurredAt: now,
-        payload: {
-          'seasonId': current.seasonId,
-          'seasonRevision': current.seasonRevision,
-          'day': day,
-        },
-      ),
+    final event = _event(
+      type: CanonicalEventTypeV2.seasonDayCompleted,
+      occurredAt: now,
+      payload: {
+        'seasonId': current.seasonId,
+        'seasonRevision': current.seasonRevision,
+        'day': day,
+      },
     );
+    final committed = await participation.commit(state: next, event: event);
     if (committed) onTerminalAction?.call();
-    return committed;
+    return StagedSeasonAction(
+      committed: committed,
+      eventId: committed ? event.eventId : null,
+    );
   }
 
-  Future<bool> participateBoss(ChallengeRouteType route) async {
+  Future<bool> participateBoss(ChallengeRouteType route) async =>
+      (await stageBoss(route)).committed;
+
+  @override
+  Future<StagedSeasonAction> stageBoss(ChallengeRouteType route) async {
     final now = clock().toUtc();
     final package = await packages.loadActivePackage(now);
     if (package == null) throw StateError('No active Season package');
@@ -115,7 +129,9 @@ class SeasonParticipationCoordinator implements SeasonJoinStager {
     if (current.seasonRevision != package.season.revision) {
       throw StateError('Season revision changed during participation');
     }
-    if (current.bossParticipatedAt != null) return false;
+    if (current.bossParticipatedAt != null) {
+      return const StagedSeasonAction(committed: false);
+    }
     final boss = package.boss;
     if (now.isBefore(boss.startsAt.toUtc()) ||
         !now.isBefore(boss.endsAt.toUtc()) ||
@@ -123,23 +139,24 @@ class SeasonParticipationCoordinator implements SeasonJoinStager {
       throw const FormatException('Boss route is not available');
     }
     final next = current.copyWith(bossParticipatedAt: now);
-    final committed = await participation.commit(
-      state: next,
-      event: _event(
-        type: CanonicalEventTypeV2.bossParticipated,
-        occurredAt: now,
-        contentId: boss.contentId,
-        contentRevision: boss.contentRevision,
-        payload: {
-          'seasonId': current.seasonId,
-          'seasonRevision': current.seasonRevision,
-          'bossEventId': boss.bossEventId,
-          'route': _routeWire(route),
-        },
-      ),
+    final event = _event(
+      type: CanonicalEventTypeV2.bossParticipated,
+      occurredAt: now,
+      contentId: boss.contentId,
+      contentRevision: boss.contentRevision,
+      payload: {
+        'seasonId': current.seasonId,
+        'seasonRevision': current.seasonRevision,
+        'bossEventId': boss.bossEventId,
+        'route': _routeWire(route),
+      },
     );
+    final committed = await participation.commit(state: next, event: event);
     if (committed) onTerminalAction?.call();
-    return committed;
+    return StagedSeasonAction(
+      committed: committed,
+      eventId: committed ? event.eventId : null,
+    );
   }
 
   EventDraftV2 _event({

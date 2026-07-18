@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/components/components.dart';
 import '../../../core/design_system/tokens/tokens.dart';
 import '../../../core/localization/mayhem_strings.dart';
+import '../../challenge/domain/challenge_models.dart';
 import '../application/season_experience_controller.dart';
 import '../domain/season_experience_state.dart';
 
@@ -29,6 +30,11 @@ class VNextSeasonScreen extends StatelessWidget {
           onRetry: controller.initialize,
           canJoin: controller.canJoin,
           onJoin: controller.join,
+          canCompleteDay: controller.canCompleteDay,
+          onCompleteDay: controller.completeDay,
+          canParticipateBoss: controller.canParticipateBoss,
+          retriesPendingBoss: controller.retriesPendingBoss,
+          onParticipateBoss: controller.participateBoss,
         ),
       ),
     );
@@ -41,12 +47,22 @@ class _SeasonBody extends StatelessWidget {
     required this.onRetry,
     required this.canJoin,
     required this.onJoin,
+    required this.canCompleteDay,
+    required this.onCompleteDay,
+    required this.canParticipateBoss,
+    required this.retriesPendingBoss,
+    required this.onParticipateBoss,
   });
 
   final SeasonExperienceState state;
   final VoidCallback onRetry;
   final bool canJoin;
   final VoidCallback onJoin;
+  final bool canCompleteDay;
+  final VoidCallback onCompleteDay;
+  final bool canParticipateBoss;
+  final bool retriesPendingBoss;
+  final ValueChanged<ChallengeRouteType> onParticipateBoss;
 
   @override
   Widget build(BuildContext context) {
@@ -91,11 +107,12 @@ class _SeasonBody extends StatelessWidget {
     return SafeArea(
       top: false,
       child: ListView(
+        key: const PageStorageKey('season-scroll'),
         padding: const EdgeInsets.fromLTRB(
           MayhemSpacing.x5,
           MayhemSpacing.x5,
           MayhemSpacing.x5,
-          MayhemSpacing.x8,
+          MayhemSpacing.x20 + MayhemSpacing.x10,
         ),
         children: [
           MayhemText(
@@ -155,9 +172,60 @@ class _SeasonBody extends StatelessWidget {
           ],
           const SizedBox(height: MayhemSpacing.x3),
           _StatusPanel(
+            icon: Icons.today_outlined,
+            label: _dayLabel(strings, state.dayPhase),
+          ),
+          if (state.dayPhase == SeasonDayPhase.available ||
+              state.dayPhase == SeasonDayPhase.inProgress ||
+              state.dayPhase == SeasonDayPhase.failedRetryable) ...[
+            const SizedBox(height: MayhemSpacing.x3),
+            MayhemPrimaryButton(
+              label: state.dayPhase == SeasonDayPhase.failedRetryable
+                  ? strings.seasonRetryDay
+                  : strings.seasonCompleteDay(state.currentDay ?? 1),
+              onPressed: canCompleteDay ? onCompleteDay : null,
+              enabled: canCompleteDay,
+              loading: state.dayPhase == SeasonDayPhase.inProgress,
+            ),
+            if (!canCompleteDay &&
+                state.dayPhase != SeasonDayPhase.inProgress) ...[
+              const SizedBox(height: MayhemSpacing.x2),
+              MayhemText(
+                strings.seasonActionRemoteRequired,
+                variant: MayhemTextVariant.bodySmall,
+              ),
+            ],
+          ],
+          const SizedBox(height: MayhemSpacing.x3),
+          _StatusPanel(
             icon: Icons.bolt_outlined,
             label: _bossLabel(strings, state.bossPhase),
           ),
+          if (state.bossPhase == SeasonBossPhase.open ||
+              state.bossPhase == SeasonBossPhase.submitting ||
+              state.bossPhase == SeasonBossPhase.failedRetryable) ...[
+            const SizedBox(height: MayhemSpacing.x3),
+            MayhemSecondaryButton(
+              label: retriesPendingBoss
+                  ? strings.bossRetry
+                  : strings.bossChooseRoute,
+              onPressed: canParticipateBoss
+                  ? retriesPendingBoss
+                        ? () => onParticipateBoss(ChallengeRouteType.normal)
+                        : () => _chooseBossRoute(context)
+                  : null,
+              enabled: canParticipateBoss,
+              loading: state.bossPhase == SeasonBossPhase.submitting,
+            ),
+            if (!canParticipateBoss &&
+                state.bossPhase != SeasonBossPhase.submitting) ...[
+              const SizedBox(height: MayhemSpacing.x2),
+              MayhemText(
+                strings.seasonActionRemoteRequired,
+                variant: MayhemTextVariant.bodySmall,
+              ),
+            ],
+          ],
           if (state.socialProofCount case final count?) ...[
             const SizedBox(height: MayhemSpacing.x3),
             _StatusPanel(
@@ -190,9 +258,67 @@ class _SeasonBody extends StatelessWidget {
         SeasonBossPhase.upcoming => strings.bossUpcoming,
         SeasonBossPhase.open => strings.bossOpen,
         SeasonBossPhase.submitting => strings.bossSubmitting,
+        SeasonBossPhase.failedRetryable => strings.bossFailed,
         SeasonBossPhase.alreadyParticipated => strings.bossAlreadyParticipated,
         SeasonBossPhase.completed => strings.bossCompleted,
       };
+
+  String _dayLabel(MayhemStrings strings, SeasonDayPhase phase) =>
+      switch (phase) {
+        SeasonDayPhase.unavailable => strings.seasonUnavailable,
+        SeasonDayPhase.available => strings.seasonDayAvailable,
+        SeasonDayPhase.inProgress => strings.seasonDaySubmitting,
+        SeasonDayPhase.failedRetryable => strings.seasonDayFailed,
+        SeasonDayPhase.completed => strings.seasonDayCompleted,
+      };
+
+  Future<void> _chooseBossRoute(BuildContext context) async {
+    final boss = state.package!.boss;
+    final strings = context.strings;
+    final routes = <(ChallengeRouteType, String, String)>[
+      (
+        ChallengeRouteType.normal,
+        strings.bossNormalRoute,
+        boss.normalRoute.copy,
+      ),
+      (
+        ChallengeRouteType.lowPressure,
+        strings.bossLowPressureRoute,
+        boss.lowPressureRoute.copy,
+      ),
+      if (boss.advancedRouteSafetyApproved && boss.advancedRoute != null)
+        (
+          ChallengeRouteType.advanced,
+          strings.bossAdvancedRoute,
+          boss.advancedRoute!.copy,
+        ),
+    ];
+    final selected = await showModalBottomSheet<ChallengeRouteType>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: MayhemSpacing.x4),
+          children: [
+            for (final route in routes)
+              ListTile(
+                title: MayhemText(
+                  route.$2,
+                  variant: MayhemTextVariant.bodyLarge,
+                ),
+                subtitle: MayhemText(
+                  route.$3,
+                  variant: MayhemTextVariant.bodySmall,
+                ),
+                onTap: () => Navigator.of(context).pop(route.$1),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null) onParticipateBoss(selected);
+  }
 }
 
 class _FreshnessLine extends StatelessWidget {

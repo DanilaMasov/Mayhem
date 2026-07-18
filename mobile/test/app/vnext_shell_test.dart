@@ -451,16 +451,14 @@ void main() {
     runtime.season.attachRemote(
       synchronize: () async {
         final pending = await runtime.store.eventSync.loadAllPending();
-        final join = pending.singleWhere(
-          (event) => event.eventType.wireName == 'season_joined',
-        );
         await runtime.store.eventSync.applyServerResults(
           results: [
-            RemoteEventResult(
-              eventId: join.eventId,
-              accepted: true,
-              disposition: RemoteEventDisposition.accepted,
-            ),
+            for (final event in pending)
+              RemoteEventResult(
+                eventId: event.eventId,
+                accepted: true,
+                disposition: RemoteEventDisposition.accepted,
+              ),
           ],
           receivedAt: DateTime.utc(2026, 7, 13, 9, 1),
         );
@@ -483,6 +481,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('ВСТУПИТЬ В SEASON'), findsNothing);
     expect(runtime.season.state.membership, SeasonMembership.active);
+
+    await tester.scrollUntilVisible(find.text('ЗАВЕРШИТЬ ДЕНЬ 4'), 300);
+    await tester.tap(find.text('ЗАВЕРШИТЬ ДЕНЬ 4'));
+    await tester.pumpAndSettle();
+    expect(find.text('Дневной вызов подтверждён'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('ВЫБРАТЬ МАРШРУТ BOSS'), 300);
+    await tester.drag(
+      find.byKey(const PageStorageKey('season-scroll')),
+      const Offset(0, -160),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ВЫБРАТЬ МАРШРУТ BOSS'));
+    await tester.pumpAndSettle();
+    expect(find.text('Прямой маршрут'), findsOneWidget);
+    await tester.tap(find.text('Прямой маршрут'));
+    await tester.pumpAndSettle();
+    expect(find.text('Участие в Boss уже принято'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

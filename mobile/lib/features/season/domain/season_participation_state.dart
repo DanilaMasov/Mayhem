@@ -23,11 +23,14 @@ class SeasonParticipationState {
   SeasonParticipationState copyWith({
     Set<int>? completedDays,
     DateTime? bossParticipatedAt,
+    bool clearBossParticipatedAt = false,
   }) => SeasonParticipationState(
     seasonId: seasonId,
     seasonRevision: seasonRevision,
     joinedAt: joinedAt,
     completedDays: completedDays ?? this.completedDays,
-    bossParticipatedAt: bossParticipatedAt ?? this.bossParticipatedAt,
+    bossParticipatedAt: clearBossParticipatedAt
+        ? null
+        : bossParticipatedAt ?? this.bossParticipatedAt,
   );
 }
