@@ -3,8 +3,8 @@
 **Status date:** 2026-07-18
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-release-safety`
-**Current main checkpoint:** `9958be3` (merge commit for PR #12)
+**Current branch:** `codex/r5-release-identity`
+**Current main checkpoint:** `26d82e1` (merge commit for PR #13)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -59,18 +59,24 @@ state-path and retry gaps found by the final R3 software audit. Remote
 operations still activate only with a valid environment-specific Supabase
 configuration. The final R3 software correction in pull request
 [#12](https://github.com/DanilaMasov/Mayhem/pull/12) is merged into `main` as
-`9958be3`; R3 software implementation is closed. Commit `09aa227` on
-`codex/r5-release-safety` starts R5 by removing Android debug release signing,
-aligning portrait declarations, validating runtime environments, and adding
-the missing social-aggregate privacy disclosure. The slice is under review in
-pull request [#13](https://github.com/DanilaMasov/Mayhem/pull/13); its initial
-push and pull-request CI are green.
+`9958be3`; R3 software implementation is closed. Pull request
+[#13](https://github.com/DanilaMasov/Mayhem/pull/13) removes Android debug
+release signing, aligns portrait declarations, validates runtime environments,
+and adds the missing social-aggregate privacy disclosure. It is merged into
+`main` as `26d82e1`; its final push and pull-request CI are green. The current
+R5 slice applies the owner-approved production/staging identities and minimum
+OS policy without changing signing material, assets, telemetry, backend
+configuration, dependencies, or release flags. The implementation is commit
+`6edd869` in pull request
+[#14](https://github.com/DanilaMasov/Mayhem/pull/14); its initial push and
+pull-request CI are green.
 
 ## Open software gates
 
-- R5 release-safety merge gate plus final IDs, signing, assets,
-  support path, and real release-build acceptance.
-- R6 visual refinement, authorized only after R1-R4 evidence.
+- R5 store registration, signing, assets, support path, privacy-safe staging
+  crash reporting, and real release-build acceptance.
+- R6 visual refinement, gated behind a signed staging candidate and a
+  preliminary two-device R4 defect-finding pass.
 
 ## Live-backend gates
 
@@ -87,15 +93,18 @@ push and pull-request CI are green.
 - R4 physical iOS and Android performance, lifecycle, accessibility, haptics,
   thermal, migration, secure-session, and interrupted-deletion acceptance.
 - Simulator/emulator evidence cannot close physical-device acceptance.
+- Any R6 visual or interaction change invalidates earlier UI/device evidence;
+  the final candidate requires a fresh full four-device R4 regression.
 
 ## Known release blockers
 
 - Production remote auth/sync remains unavailable in builds without
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- Migration `010` live acceptance, physical-device acceptance, approved release
-  signing, final application IDs, launcher/store assets, support path, and
-  store configuration remain incomplete.
+- Migration `010` live acceptance, physical-device acceptance, store
+  registration of the approved application IDs, release signing,
+  launcher/store assets, support path, and store configuration remain
+  incomplete.
 
 ## Verification
 
@@ -104,7 +113,7 @@ results:
 
 ```sh
 node --test tests/*.test.mjs
-# 39 passed
+# 40 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -126,7 +135,7 @@ flutter analyze --no-pub
 # no issues
 
 flutter test --no-pub --no-test-assets -j 1
-# 252 passed; 1 live-only test skipped without an explicit disposable target
+# 254 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -250,14 +259,39 @@ R5 release-safety local evidence:
 - Settings explains that participant counts are aggregate-only and hidden
   below the privacy threshold;
 - `docs/RELEASE_CONFIGURATION.md` records environment, signing, versioning,
-  secret-handling, and still-open owner approvals;
+  secret-handling, and still-open external approvals;
 - no package, lockfile, SDK, signing material, analytics, crash-reporting, or
   production flag changed;
 - Android/iOS release compilation, signing, install, and launch remain untested
   until an approved SDK/signing environment is provided.
-- [push CI run 29646587806](https://github.com/DanilaMasov/Mayhem/actions/runs/29646587806):
+- [final push CI run 29646666244](https://github.com/DanilaMasov/Mayhem/actions/runs/29646666244):
   repository contracts and Flutter format/analyze/test passed;
-- [pull-request CI run 29646599999](https://github.com/DanilaMasov/Mayhem/actions/runs/29646599999):
+- [final pull-request CI run 29646667487](https://github.com/DanilaMasov/Mayhem/actions/runs/29646667487):
+  repository contracts and Flutter format/analyze/test passed.
+
+R5 release-identity local evidence:
+
+- Android and iOS production identity is exactly `com.danilamasov.mayhem`;
+  staging is isolated as `com.danilamasov.mayhem.staging`;
+- Android exposes `production` and `staging` product flavors, while iOS exposes
+  matching shared schemes and build configurations;
+- Flutter derives runtime environment from the native flavor and rejects an
+  explicit `MAYHEM_ENVIRONMENT` that disagrees with it;
+- Android 10 / API 29 and iOS 16 are enforced as the supported OS floors;
+- staging installs are visibly labelled `MAYHEM STAGING`; a separately marked
+  staging icon remains part of the open final-asset gate;
+- the Android namespace and `MainActivity` package moved with the application
+  ID while preserving the native IANA timezone method channel;
+- Xcode project/plist and both schemes pass `plutil`/`xmllint`; repository
+  contracts, content/migration/SQLite/seed checks, Dart format, Flutter analyze,
+  and all 254 non-live Flutter tests pass locally;
+- no dependency, lockfile, SDK, signing material, telemetry, backend secret,
+  production flag, or launcher asset changed;
+- native Android/iOS compile, signing, install, and store registration remain
+  open external-toolchain gates;
+- [initial push CI run 29656281403](https://github.com/DanilaMasov/Mayhem/actions/runs/29656281403):
+  repository contracts and Flutter format/analyze/test passed;
+- [initial pull-request CI run 29656293884](https://github.com/DanilaMasov/Mayhem/actions/runs/29656293884):
   repository contracts and Flutter format/analyze/test passed.
 
 Post-R1 correction local evidence:
@@ -441,11 +475,17 @@ it does not affect the current green software gate.
 
 ## Next authorized slice
 
-Complete the next R3 slice with server-authoritative day completion and Boss
-participation, then add authoritative participation refresh for cross-device
-recovery. Keep every release flag false until its own specification gate is
-closed. R4 physical-device acceptance and R5-R6 release work remain separately
-gated.
+The bounded R5 release-identity software slice is complete in pull request #14.
+Next, stop at the external staging Supabase gate unless an authorized target is
+available. Migration `010` and two-account acceptance must pass before
+privacy-configured Sentry or signed staging distribution work begins.
+
+The delivery sequence distinguishes closed-alpha requirements from later store
+submission work. A preliminary R4 pass may start on two physical devices to
+find defects, but it does not close the four-device gate. After R6 changes any
+user-facing behavior or rendering, repeat the full R4 device regression on the
+final candidate before expanding the closed alpha. Keep every production flag
+false until its own specification gate is closed.
 
 Historical reports under `docs/phase-reports/` are evidence only and are not
 current authority.

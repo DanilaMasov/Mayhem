@@ -4,8 +4,17 @@ import test from "node:test";
 
 const androidBuild = read("mobile/android/app/build.gradle.kts");
 const androidManifest = read("mobile/android/app/src/main/AndroidManifest.xml");
+const androidActivity = read(
+  "mobile/android/app/src/main/kotlin/com/danilamasov/mayhem/MainActivity.kt"
+);
 const iosInfo = read("mobile/ios/Runner/Info.plist");
 const iosProject = read("mobile/ios/Runner.xcodeproj/project.pbxproj");
+const iosProductionScheme = read(
+  "mobile/ios/Runner.xcodeproj/xcshareddata/xcschemes/production.xcscheme"
+);
+const iosStagingScheme = read(
+  "mobile/ios/Runner.xcodeproj/xcshareddata/xcschemes/staging.xcscheme"
+);
 const mainDart = read("mobile/lib/main.dart");
 const pubspec = read("mobile/pubspec.yaml");
 const gitignore = read(".gitignore");
@@ -38,11 +47,46 @@ test("platform orientation declarations match portrait-only runtime", () => {
   ]);
 });
 
-test("mobile identifiers are explicit and not Flutter placeholders", () => {
-  assert.match(androidBuild, /applicationId = "com\.mayhem\./);
+test("production and staging identities are exact and isolated", () => {
+  assert.match(androidBuild, /applicationId = "com\.danilamasov\.mayhem"/);
+  assert.match(androidBuild, /create\("production"\)/);
+  assert.match(androidBuild, /create\("staging"\)/);
+  assert.match(androidBuild, /applicationIdSuffix = "\.staging"/);
+  assert.match(androidActivity, /^package com\.danilamasov\.mayhem$/m);
+  assert.match(androidActivity, /"mayhem\/timezone"/);
   assert.doesNotMatch(androidBuild, /com\.example/);
-  assert.match(iosProject, /PRODUCT_BUNDLE_IDENTIFIER = com\.mayhem\./);
+  assert.match(
+    iosProject,
+    /PRODUCT_BUNDLE_IDENTIFIER = com\.danilamasov\.mayhem;/
+  );
+  assert.match(
+    iosProject,
+    /PRODUCT_BUNDLE_IDENTIFIER = com\.danilamasov\.mayhem\.staging;/
+  );
   assert.doesNotMatch(iosProject, /com\.example/);
+  for (const mode of ["Debug", "Profile", "Release"]) {
+    assert.match(
+      iosProductionScheme,
+      new RegExp(`buildConfiguration="${mode}-production"`)
+    );
+    assert.match(
+      iosStagingScheme,
+      new RegExp(`buildConfiguration="${mode}-staging"`)
+    );
+    assert.match(iosProject, new RegExp(`name = "${mode}-production";`));
+    assert.match(iosProject, new RegExp(`name = "${mode}-staging";`));
+  }
+  assert.match(mainDart, /flavor: appFlavor \?\? ''/);
+});
+
+test("supported OS floors are iOS 16 and Android API 29", () => {
+  assert.match(androidBuild, /minSdk = 29/);
+  assert.doesNotMatch(androidBuild, /minSdk = (?:2[0-8]|1\d|\d)\b/);
+  const deploymentTargets = [
+    ...iosProject.matchAll(/IPHONEOS_DEPLOYMENT_TARGET = ([\d.]+);/g)
+  ].map((match) => match[1]);
+  assert.ok(deploymentTargets.length > 0);
+  assert.deepEqual(new Set(deploymentTargets), new Set(["16.0"]));
 });
 
 test("version default and signing-artifact exclusions are explicit", () => {

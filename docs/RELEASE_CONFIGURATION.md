@@ -1,8 +1,25 @@
 # Mayhem Release Configuration
 
-This document defines the checked-in release configuration policy. It does not
-claim that signing accounts, final store identifiers, launcher artwork, or a
-production backend have been approved.
+This document defines the checked-in release configuration policy. Application
+identifiers, supported OS floors, environment ownership, and alpha telemetry
+policy were approved on 2026-07-18. It does not claim that the identifiers are
+registered in either store, signing is configured, launcher artwork is final,
+or a production backend exists.
+
+## Application Identity
+
+| Target | Identifier | Display name |
+| --- | --- | --- |
+| Android production | `com.danilamasov.mayhem` | `MAYHEM` |
+| Android staging | `com.danilamasov.mayhem.staging` | `MAYHEM STAGING` |
+| iOS production | `com.danilamasov.mayhem` | `MAYHEM` |
+| iOS staging | `com.danilamasov.mayhem.staging` | `MAYHEM STAGING` |
+
+The minimum supported versions are Android 10 / API 29 and iOS 16. Before a
+signed upload, the owner must verify that both production identifiers can be
+registered in the personal Apple Developer and Google Play accounts. A store
+conflict is a blocking owner decision; the checked-in identifiers must not be
+silently replaced.
 
 ## Environments
 
@@ -16,16 +33,27 @@ Release builds reject `development`. Unknown or misspelled values fail at
 startup instead of creating a new secure-storage namespace or sending an
 unsupported backend environment.
 
+Native `production` and `staging` flavors set the corresponding runtime
+environment through Flutter's `appFlavor`. An explicit `MAYHEM_ENVIRONMENT`
+may be supplied as a defense-in-depth assertion, but a mismatch with the native
+flavor fails at startup. Staging and production must use fully separate
+Supabase projects; production remains unconfigured until staging acceptance is
+complete.
+
 Supabase values are supplied with Dart defines and must not be committed:
 
 ```sh
 flutter build appbundle --release --no-pub \
+  --flavor staging \
   --dart-define=MAYHEM_ENVIRONMENT=staging \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=STAGING_ANON_KEY \
   --build-name=1.0.0 \
   --build-number=1
 ```
+
+The equivalent iOS configuration is selected with `--flavor staging`. Use
+`--flavor production` only for an explicitly approved production build.
 
 The client may receive only the publishable anonymous key. A service-role key,
 database password, access token, or refresh token must never be passed through
@@ -67,11 +95,18 @@ bundle identifier, team, profile, entitlements, and export method are recorded.
 
 Before an external beta or store build, the owner must approve:
 
-- final Android application ID and iOS bundle ID;
-- Android and Apple signing ownership;
 - final launcher icon and store artwork;
 - support email or HTTPS support URL;
 - privacy/store metadata and production Supabase target.
 
-Crash reporting and analytics remain absent. They require a separate approved
-event, retention, consent, and privacy specification before any SDK is added.
+Signing ownership is assigned to the owner's personal Apple Developer and
+Google Play accounts, but certificates, provisioning, Play App Signing, the
+Android upload keystore, encrypted backups, and CI environments remain an
+external manual gate.
+
+Product analytics remain absent for the closed alpha. Sentry is the approved
+crash-reporting direction, but no SDK or DSN is added until staging exists and
+the privacy configuration is implemented and tested: no default PII, replay,
+screenshots, attachments, user notes, tokens, request/response bodies, or raw
+server payloads, plus a bounded `beforeSend` scrubber. Production telemetry
+stays disabled until the staging policy is accepted.

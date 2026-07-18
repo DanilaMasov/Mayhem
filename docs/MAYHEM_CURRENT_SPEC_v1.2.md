@@ -621,6 +621,11 @@ Commit a device acceptance report containing:
 
 Only after R4 passes may `new_feed_enabled` be enabled for an internal release cohort.
 
+A preliminary pass on two physical devices may be used to find defects before
+R6, but it does not close R4. Any R6 visual or interaction change invalidates
+the affected device evidence. The final candidate must repeat the complete R4
+matrix on all four required devices before the closed alpha is expanded.
+
 ---
 
 ## 9. Phase R5 — Release hardening
@@ -649,7 +654,8 @@ No release build may use the debug signing key.
 
 ## 10. Phase R6 — Visual and interaction refinement
 
-Do this after the composition and core Season flow are working end to end.
+Do this after the composition and core Season flow are working end to end and a
+preliminary physical-device pass has exposed obvious platform defects.
 
 Preserve the current product architecture and improve:
 

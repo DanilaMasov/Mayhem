@@ -41,7 +41,7 @@ void main() {
 
   test('iOS and Android hosts expose the timezone channel', () async {
     final android = await File(
-      'android/app/src/main/kotlin/com/mayhem/social/mayhem_mobile/'
+      'android/app/src/main/kotlin/com/danilamasov/mayhem/'
       'MainActivity.kt',
     ).readAsString();
     final ios = await File('ios/Runner/AppDelegate.swift').readAsString();

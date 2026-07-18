@@ -165,7 +165,7 @@ void main() {
     ).readAsStringSync();
 
     expect(androidManifest, contains('android:allowBackup="false"'));
-    expect(androidBuild, contains('minSdk = 23'));
+    expect(androidBuild, contains('minSdk = 29'));
     expect(iosProject, contains('Runner/DebugProfile.entitlements'));
     expect(iosProject, contains('Runner/Release.entitlements'));
     expect(debugEntitlements, contains('keychain-access-groups'));
