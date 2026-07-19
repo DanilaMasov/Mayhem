@@ -1,0 +1,67 @@
+name: Staging Release Smoke
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/staging-release-smoke.yml"
+      - "mobile/**"
+      - "tests/mobile-release-build-ci-contract.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-release-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-staging-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - name: Resolve locked Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Compile unsigned staging app bundle
+        run: >-
+          flutter build appbundle --release --flavor staging --no-pub
+          --dart-define=MAYHEM_ENVIRONMENT=staging
+          --build-name=0.1.0 --build-number=${{ github.run_number }}
+      - name: Verify Android release output
+        run: test -s build/app/outputs/bundle/stagingRelease/app-staging-release.aab
+
+  ios-staging-release:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - name: Resolve locked Flutter dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Compile unsigned staging iOS application
+        run: >-
+          flutter build ios --release --no-codesign --flavor staging --no-pub
+          --dart-define=MAYHEM_ENVIRONMENT=staging
+          --build-name=0.1.0 --build-number=${{ github.run_number }}
+      - name: Verify iOS release output
+        run: test -d build/ios/iphoneos/Runner.app

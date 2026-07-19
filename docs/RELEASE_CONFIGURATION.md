@@ -59,6 +59,18 @@ The client may receive only the publishable anonymous key. A service-role key,
 database password, access token, or refresh token must never be passed through
 Dart defines, source files, build logs, or store metadata.
 
+## Unsigned CI Smoke
+
+`.github/workflows/staging-release-smoke.yml` compiles an unsigned Android
+staging AAB and an unsigned iOS staging release application on hosted GitHub
+runners. It is pull-request/manual only, enforces the committed lockfile, uses
+no backend or signing secret, and never targets the production flavor.
+
+A successful smoke run proves that Flutter and the native toolchains can
+compile the checked-in staging configuration. It does not prove signing,
+installation, launch, runtime backend behavior, physical-device performance,
+accessibility, store registration, or distribution readiness.
+
 ## Android Signing
 
 Android release builds never fall back to the debug signing key. A signing
