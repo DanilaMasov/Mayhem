@@ -1,13 +1,48 @@
 # R2 Live Supabase Acceptance
 
 **Status:** ACCEPTED ON DISPOSABLE LIVE BACKEND
-**Main checkpoint:** `b50f36f` (merge commit for PR #6)
-**Branch:** `codex/r2-live-acceptance-completion`
-**Completion PR:** [PR #7](https://github.com/DanilaMasov/Mayhem/pull/7)
+**Latest main checkpoint:** `685934c` (merge commit for PR #19)
 **Specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`, section 6
-**Final evidence:** `docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`
+**Latest evidence:**
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-20_MIGRATION_011.json`
 
-## Environment
+## Migration 010-011 Reacceptance
+
+The original nine-migration evidence below remains valid historical evidence.
+After migration `010` was added, a protected GitHub staging gate reran the
+complete acceptance flow against project ref `wdkfszyymjegtswgcvdb`.
+
+[Run 29770143398](https://github.com/DanilaMasov/Mayhem/actions/runs/29770143398)
+connected successfully, reset the disposable target, applied migrations
+`001-010`, and passed migration, auth/session, and ownership/RLS probes. The
+grant-security probe then found ten public `SECURITY DEFINER` functions with
+direct `anon` execute permission. The project had Supabase automatic function
+grants enabled, unlike the original disposable project. This exposed a real
+deployment-portability defect rather than a credential or harness failure.
+
+[PR #19](https://github.com/DanilaMasov/Mayhem/pull/19) added forward migration
+`011`, which revokes execute from `PUBLIC`, `anon`, and `authenticated` on
+every public `SECURITY DEFINER` function, then restores `authenticated` access
+only for the explicit client RPC allowlist. The same PR binds the hosted API
+and PostgreSQL URLs to one project ref and adds a separately confirmed,
+transactional reset path for reused disposable acceptance databases.
+
+[Run 29771165967](https://github.com/DanilaMasov/Mayhem/actions/runs/29771165967)
+then completed from zero on merge checkpoint `685934c`:
+
+- eleven migrations applied in deterministic order;
+- nine of nine live probes passed;
+- eight of eight production Flutter client checks passed;
+- zero failed, blocked, or not-run checks;
+- the report verifier found no database URI, key, password, or session token;
+- total acceptance duration was 62,726 ms.
+
+This latest evidence supersedes the original report only for migration
+coverage. Production flags remain false, and this staging project must not be
+treated as a production environment. The successful test leaves deterministic
+acceptance fixtures and anonymous test accounts in the staging database.
+
+## Original 2026-07-17 Environment
 
 - disposable organization: `Mayhem R2 Disposable 2026-07-17`, Free plan;
 - disposable project: `mayhem-r2-disposable-20260717`;
@@ -26,7 +61,7 @@ never committed, added to shell profiles, added to GitHub Secrets, or printed
 by the runner. The file, disposable project, and disposable organization were
 deleted after PR and CI evidence completed.
 
-## Command
+## Original Command
 
 The package command is:
 
@@ -56,7 +91,7 @@ The runner decomposes the PostgreSQL URI into libpq variables and never places
 the URI or password in argv. Parameterized verification SQL is sent through
 stdin with `psql --file=-`, where psql variable substitution is active.
 
-## Findings And Fixes
+## Original Findings And Fixes
 
 1. Attempt 1 applied migrations and then failed with
    `anonymous_provider_disabled`. Anonymous sign-ins were enabled only on the
@@ -77,7 +112,7 @@ failed, and not-run probes. Before each clean rerun, the disposable `public`
 schema and test-only auth users were reset atomically. Failed reset commands
 were transactionally rolled back and verified by unchanged object counts.
 
-## Final Result
+## Original Final Result
 
 - nine migrations applied from zero in deterministic order;
 - nine live probes passed;
@@ -96,7 +131,7 @@ Season windows and idempotency, concurrent Boss submissions, server-owned
 artifacts, thresholded social proof, production Flutter adapters, and complete
 cross-user-safe deletion.
 
-## GitHub CI
+## Original GitHub CI
 
 Final live fixes and evidence at commit `6884ab6` passed both CI events:
 
@@ -107,11 +142,13 @@ Each run passed repository contracts and Flutter format/analyze/test.
 
 ## Remaining Gates
 
-The R2 live-backend gate is closed. Release flags remain false. Simulator and
-physical-device acceptance remain open and cannot be closed by this headless
-backend run. R3 may begin only after PR #7 is green and merged.
+The R2 live-backend gate, including migrations `010` and `011`, is closed.
+Release flags remain false. Production Supabase configuration, signed staging
+distribution, crash-reporting acceptance, and simulator/physical-device
+acceptance remain open. No headless backend run can close a physical-device
+gate.
 
-## Cleanup Record
+## Original Cleanup Record
 
 Installed locally for this acceptance only:
 
