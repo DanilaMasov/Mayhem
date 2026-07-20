@@ -19,7 +19,8 @@ const migrationVersions = [
   "202607170007",
   "202607170008",
   "202607170009",
-  "202607180010"
+  "202607180010",
+  "202607200011"
 ];
 
 test("staging Supabase acceptance is manual, disposable, and main-only", () => {
@@ -27,6 +28,8 @@ test("staging Supabase acceptance is manual, disposable, and main-only", () => {
   assert.doesNotMatch(workflow, /^\s{2}(?:push|pull_request):/m);
   assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /I_UNDERSTAND_THIS_IS_DISPOSABLE/);
+  assert.match(workflow, /DO_NOT_RESET/);
+  assert.match(workflow, /I_UNDERSTAND_THIS_RESETS_THE_DISPOSABLE_DATABASE/);
   assert.match(workflow, /environment: staging-acceptance/);
   assert.match(workflow, /permissions:\s+contents: read/);
   assert.doesNotMatch(workflow, /production|service_role|access_token/i);
@@ -47,14 +50,14 @@ test("staging acceptance uses protected inputs and emits bounded evidence", () =
   assert.match(workflow, /retention-days: 7/);
 });
 
-test("report verifier accepts the complete migration 010 evidence shape", () => {
+test("report verifier accepts the complete live evidence shape", () => {
   const report = passingReport();
   const result = verifyLiveSupabaseReport({
     report,
     expectedMigrationVersions: migrationVersions,
     environment: protectedEnvironment
   });
-  assert.deepEqual(result, { migrations: 10, probes: 9, clientChecks: 8 });
+  assert.deepEqual(result, { migrations: 11, probes: 9, clientChecks: 8 });
 });
 
 test("report verifier rejects missing migration or leaked credentials", () => {
@@ -92,7 +95,8 @@ function passingReport() {
       supabaseHost: "acceptance.supabase.co",
       transport: "https",
       databaseConfigured: true,
-      anonKeyConfigured: true
+      anonKeyConfigured: true,
+      resetExisting: true
     },
     migrationVersions,
     startedAt: "2026-07-20T10:00:00.000Z",

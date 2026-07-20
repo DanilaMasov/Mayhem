@@ -10,6 +10,7 @@ import {
   SupabaseAcceptanceClient,
   canonicalEvent,
   disposableConfirmation,
+  disposableResetConfirmation,
   loadLiveSupabaseConfig,
   migrationPlan,
   safeEnvironmentSummary
@@ -24,9 +25,10 @@ import {
 const validEnvironment = {
   MAYHEM_R2_ENVIRONMENT_ID: "mayhem-r2-disposable",
   MAYHEM_R2_CONFIRM_DISPOSABLE: disposableConfirmation,
-  SUPABASE_URL: "https://r2-test.supabase.co",
+  SUPABASE_URL: "https://abcdefghijklmnopqrst.supabase.co",
   SUPABASE_ANON_KEY: "anon-secret-value",
-  SUPABASE_DB_URL: "postgresql://postgres:database-secret@db.test:5432/postgres"
+  SUPABASE_DB_URL:
+    "postgresql://postgres.abcdefghijklmnopqrst:database-secret@aws-0-test.pooler.supabase.com:5432/postgres"
 };
 
 test("R2 preflight fails closed without every disposable credential", () => {
@@ -41,6 +43,21 @@ test("R2 preflight fails closed without every disposable credential", () => {
         MAYHEM_R2_CONFIRM_DISPOSABLE: "yes"
       }),
     /confirmation is missing/
+  );
+  assert.throws(
+    () =>
+      loadLiveSupabaseConfig({
+        ...validEnvironment,
+        MAYHEM_R2_RESET_EXISTING: "reset"
+      }),
+    /reset confirmation is invalid/
+  );
+  assert.equal(
+    loadLiveSupabaseConfig({
+      ...validEnvironment,
+      MAYHEM_R2_RESET_EXISTING: disposableResetConfirmation
+    }).resetExisting,
+    true
   );
 });
 
@@ -60,6 +77,15 @@ test("R2 preflight rejects production and insecure remote targets", () => {
         SUPABASE_URL: "http://remote.test"
       }),
     /must use HTTPS/
+  );
+  assert.throws(
+    () =>
+      loadLiveSupabaseConfig({
+        ...validEnvironment,
+        SUPABASE_DB_URL:
+          "postgresql://postgres.differentprojectrefxx:database-secret@aws-0-test.pooler.supabase.com:5432/postgres"
+      }),
+    /targets do not match/
   );
 });
 
@@ -117,7 +143,8 @@ test("R2 migration plan is deterministic and complete", async () => {
       "202607170007",
       "202607170008",
       "202607170009",
-      "202607180010"
+      "202607180010",
+      "202607200011"
     ]
   );
 });
@@ -153,14 +180,53 @@ test("psql receives decomposed credentials only through libpq environment", asyn
     JSON.stringify(calls[0].argumentsList),
     /database-secret/
   );
-  assert.equal(calls[0].options.env.PGHOST, "db.test");
+  assert.equal(calls[0].options.env.PGHOST, "aws-0-test.pooler.supabase.com");
   assert.equal(calls[0].options.env.PGPORT, "5432");
   assert.equal(calls[0].options.env.PGDATABASE, "postgres");
-  assert.equal(calls[0].options.env.PGUSER, "postgres");
+  assert.equal(
+    calls[0].options.env.PGUSER,
+    "postgres.abcdefghijklmnopqrst"
+  );
   assert.equal(calls[0].options.env.PGPASSWORD, "database-secret");
   assert.equal(calls[0].options.env.SUPABASE_ANON_KEY, undefined);
   assert.match(calls[0].argumentsList.join(" "), /--file=-/);
   assert.equal(calls[0].input, "select 0\n");
+});
+
+test("disposable reset is transactional and scoped to the confirmed target", async () => {
+  const calls = [];
+  const spawnProcess = (_executable, _argumentsList, options) => {
+    const call = { options, input: "" };
+    calls.push(call);
+    const child = new EventEmitter();
+    child.stdin = new PassThrough();
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    child.stdin.on("data", (chunk) => {
+      call.input += chunk;
+    });
+    queueMicrotask(() => {
+      child.stdout.end();
+      child.stderr.end();
+      child.emit("close", 0);
+    });
+    return child;
+  };
+  const runner = new PsqlRunner({
+    databaseUrl: validEnvironment.SUPABASE_DB_URL,
+    spawnProcess
+  });
+
+  await assert.rejects(
+    () => runner.resetDisposableTarget(),
+    /reset confirmation is missing/
+  );
+  await runner.resetDisposableTarget(disposableResetConfirmation);
+
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].input, /begin;[\s\S]+?drop schema if exists public cascade/);
+  assert.match(calls[0].input, /delete from auth\.users;[\s\S]+?commit;/);
+  assert.equal(calls[0].options.env.PGPASSWORD, "database-secret");
 });
 
 test("canonical R2 events match the v2 transport envelope", () => {

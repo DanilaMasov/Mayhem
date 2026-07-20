@@ -28,6 +28,7 @@ export function verifyLiveSupabaseReport({
   assert.equal(report?.result, "passed");
   assert.deepEqual(report.migrationVersions, expectedMigrationVersions);
   assert.ok(report.migrationVersions.includes("202607180010"));
+  assert.ok(report.migrationVersions.includes("202607200011"));
   assert.deepEqual(report.passed, r2ProbeNames);
   assert.deepEqual(report.failed, []);
   assert.deepEqual(report.blocked, []);
@@ -42,6 +43,7 @@ export function verifyLiveSupabaseReport({
   assert.equal(report.environment.transport, "https");
   assert.equal(report.environment.databaseConfigured, true);
   assert.equal(report.environment.anonKeyConfigured, true);
+  assert.equal(typeof report.environment.resetExisting, "boolean");
   assert.ok(Number.isFinite(Date.parse(report.startedAt)));
   assert.ok(Number.isFinite(Date.parse(report.completedAt)));
   assert.ok(Number.isInteger(report.durationMs) && report.durationMs >= 0);

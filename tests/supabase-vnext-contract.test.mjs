@@ -17,6 +17,9 @@ const privateNoteValidatorPath = migration(
 const seasonParticipationPath = migration(
   "202607180010_season_participation_snapshot.sql"
 );
+const functionGrantHardeningPath = migration(
+  "202607200011_explicit_function_execute_grants.sql"
+);
 const eventPath = new URL("../mobile/lib/core/sync/event_envelope_v2.dart", import.meta.url);
 const goldenPath = new URL("../contracts/v1/policy_golden.json", import.meta.url);
 
@@ -339,4 +342,34 @@ test("active Season snapshot exposes only authenticated participation", async ()
   ]) {
     assert.match(sql, new RegExp(field));
   }
+});
+
+test("function execute grants are explicit across Supabase defaults", async () => {
+  const sql = await readFile(functionGrantHardeningPath, "utf8");
+  assert.match(sql, /where namespace\.nspname = 'public' and proc\.prosecdef/);
+  assert.match(
+    sql,
+    /revoke all privileges on function %I\.%I\(%s\) from public, anon, authenticated/
+  );
+  for (const rpc of [
+    "ingest_quest_events",
+    "delete_my_cloud_data",
+    "register_installation",
+    "get_content_manifest",
+    "get_content_revisions",
+    "get_progress_projection",
+    "get_active_season",
+    "get_bootstrap_payload",
+    "get_feed_batch",
+    "ingest_events_v2",
+    "delete_my_data"
+  ]) {
+    assert.match(
+      sql,
+      new RegExp(`grant execute on function public\\.${rpc}\\([\\s\\S]+?to authenticated`),
+      rpc
+    );
+  }
+  assert.doesNotMatch(sql, /grant execute[\s\S]+?to anon/);
+  assert.doesNotMatch(sql, /drop table|truncate table/i);
 });

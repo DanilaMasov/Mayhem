@@ -3,6 +3,9 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 
 export const disposableConfirmation = "I_UNDERSTAND_THIS_IS_DISPOSABLE";
+export const disposableResetConfirmation =
+  "I_UNDERSTAND_THIS_RESETS_THE_DISPOSABLE_DATABASE";
+export const noDisposableReset = "DO_NOT_RESET";
 
 const requiredVariables = [
   "MAYHEM_R2_ENVIRONMENT_ID",
@@ -31,6 +34,14 @@ export function loadLiveSupabaseConfig(environment = process.env) {
   if (environment.MAYHEM_R2_CONFIRM_DISPOSABLE !== disposableConfirmation) {
     throw new Error("R2 disposable-environment confirmation is missing");
   }
+  const resetValue = (environment.MAYHEM_R2_RESET_EXISTING ?? "").trim();
+  if (
+    resetValue &&
+    resetValue !== noDisposableReset &&
+    resetValue !== disposableResetConfirmation
+  ) {
+    throw new Error("R2 disposable reset confirmation is invalid");
+  }
 
   const supabaseUrl = new URL(environment.SUPABASE_URL.trim());
   const localHttp =
@@ -43,13 +54,36 @@ export function loadLiveSupabaseConfig(environment = process.env) {
   if (!["postgres:", "postgresql:"].includes(database.protocol)) {
     throw new Error("R2 database URL must use PostgreSQL");
   }
+  assertMatchingHostedProject(supabaseUrl, database, localHttp);
 
   return Object.freeze({
     environmentId,
     supabaseUrl: supabaseUrl.toString().replace(/\/$/, ""),
     anonKey: environment.SUPABASE_ANON_KEY.trim(),
-    databaseUrl
+    databaseUrl,
+    resetExisting: resetValue === disposableResetConfirmation
   });
+}
+
+function assertMatchingHostedProject(supabaseUrl, databaseUrl, localHttp) {
+  if (localHttp) return;
+  const hostMatch = supabaseUrl.hostname.match(
+    /^([a-z0-9]{20})\.supabase\.co$/i
+  );
+  if (!hostMatch) {
+    throw new Error("R2 hosted Supabase URL does not expose a project ref");
+  }
+  const projectRef = hostMatch[1];
+  const databaseUser = decodeURIComponent(databaseUrl.username);
+  const directTarget =
+    databaseUrl.hostname === `db.${projectRef}.supabase.co` &&
+    databaseUser === "postgres";
+  const poolerTarget =
+    databaseUrl.hostname.endsWith(".pooler.supabase.com") &&
+    databaseUser === `postgres.${projectRef}`;
+  if (!directTarget && !poolerTarget) {
+    throw new Error("R2 Supabase and database targets do not match");
+  }
 }
 
 export function safeEnvironmentSummary(config) {
@@ -59,7 +93,8 @@ export function safeEnvironmentSummary(config) {
     supabaseHost: url.hostname,
     transport: url.protocol.replace(":", ""),
     databaseConfigured: true,
-    anonKeyConfigured: true
+    anonKeyConfigured: true,
+    resetExisting: config.resetExisting
   });
 }
 
@@ -88,6 +123,22 @@ export class PsqlRunner {
 
   async verifyAvailable() {
     await this.#run(["--version"], { connect: false });
+  }
+
+  async resetDisposableTarget(confirmation) {
+    if (confirmation !== disposableResetConfirmation) {
+      throw new Error("R2 disposable reset confirmation is missing");
+    }
+    await this.query(`
+begin;
+drop schema if exists public cascade;
+create schema public;
+grant all on schema public to postgres, service_role;
+grant usage on schema public to anon, authenticated;
+delete from auth.users;
+commit;
+notify pgrst, 'reload schema';
+`);
   }
 
   async assertMayhemSchemaIsEmpty() {
