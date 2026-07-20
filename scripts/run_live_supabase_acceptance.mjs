@@ -763,6 +763,32 @@ async function writeReport(reportPath, report) {
   });
 }
 
+export function safeFailureDiagnostic(error, environment = process.env) {
+  const parts = [error?.message, error?.cause?.message].filter(
+    (value, index, values) => value && values.indexOf(value) === index
+  );
+  let diagnostic = parts.join(": ") || "unknown failure";
+  const protectedValues = [
+    environment.SUPABASE_URL,
+    environment.SUPABASE_ANON_KEY,
+    environment.SUPABASE_DB_URL,
+    databasePassword(environment.SUPABASE_DB_URL)
+  ].filter((value) => typeof value === "string" && value.length >= 4);
+  for (const value of protectedValues) {
+    diagnostic = diagnostic.replaceAll(value, "<redacted>");
+  }
+  return diagnostic.replace(/[\r\n]+/g, " ").trim().slice(0, 240);
+}
+
+function databasePassword(databaseUrl) {
+  if (!databaseUrl) return null;
+  try {
+    return decodeURIComponent(new URL(databaseUrl).password);
+  } catch {
+    return null;
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const reportPath = process.env.MAYHEM_R2_REPORT_PATH?.trim();
   try {
@@ -775,7 +801,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } catch {
       process.stderr.write("R2 acceptance report could not be written\n");
     }
-    process.stderr.write(`R2 acceptance failed: ${error.message}\n`);
+    process.stderr.write(
+      `R2 acceptance failed: ${safeFailureDiagnostic(error)}\n`
+    );
     process.exitCode = 1;
   }
 }
