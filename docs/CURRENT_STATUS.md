@@ -3,8 +3,8 @@
 **Status date:** 2026-07-20
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current evidence branch:** `codex/r2-migration-011-evidence`
-**Current main checkpoint:** `685934c` (merge commit for PR #19)
+**Current branch:** `codex/r5-launcher-assets`
+**Current main checkpoint:** `5b97b1a` (merge commit for PR #20)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -85,12 +85,16 @@ portability defect with forward migration `011` and is merged as `685934c`.
 The final protected run
 [29771165967](https://github.com/DanilaMasov/Mayhem/actions/runs/29771165967)
 applied all eleven migrations from zero and passed all nine live probes plus
-eight production Flutter client checks.
+eight production Flutter client checks. The current R5 launcher slice replaces
+the remaining default Flutter artwork with separate production and visibly
+marked staging icon sets for Android and iOS; it does not alter dependencies,
+signing, backend configuration, telemetry, or release flags.
 
 ## Open software gates
 
-- R5 store registration, signing, assets, support path, privacy-safe staging
-  crash reporting, signed install/launch acceptance, and release records.
+- R5 store registration, signing, store artwork, support path, privacy-safe
+  staging crash reporting, signed install/launch and launcher-appearance
+  acceptance, and release records.
 - R6 visual refinement, gated behind a signed staging candidate and a
   preliminary two-device R4 defect-finding pass.
 
@@ -120,8 +124,8 @@ eight production Flutter client checks.
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
 - Physical-device acceptance, store registration of the approved application
-  IDs, release signing, launcher/store assets, support path, crash reporting,
-  and store configuration remain incomplete.
+  IDs, release signing, store artwork, signed launcher appearance, support
+  path, crash reporting, and store configuration remain incomplete.
 
 ## Verification
 
@@ -131,7 +135,7 @@ latest applicable results:
 
 ```sh
 node --test tests/*.test.mjs
-# 51 passed
+# 54 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -147,10 +151,13 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 254 files, 0 changed
+# 255 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
+
+flutter test --no-pub --no-test-assets tool/generate_launcher_icons_test.dart
+# 1 generator test passed; RGB platform assets reproduced
 
 flutter test --no-pub --no-test-assets -j 1
 # 254 passed; 1 live-only test skipped without an explicit disposable target
@@ -297,8 +304,9 @@ R5 release-identity local evidence:
 - Flutter derives runtime environment from the native flavor and rejects an
   explicit `MAYHEM_ENVIRONMENT` that disagrees with it;
 - Android 10 / API 29 and iOS 16 are enforced as the supported OS floors;
-- staging installs are visibly labelled `MAYHEM STAGING`; a separately marked
-  staging icon remains part of the open final-asset gate;
+- staging installs are visibly labelled `MAYHEM STAGING`; at this historical
+  checkpoint a separately marked staging icon remained open and is now supplied
+  by the R5 launcher-asset slice;
 - the Android namespace and `MainActivity` package moved with the application
   ID while preserving the native IANA timezone method channel;
 - Xcode project/plist and both schemes pass `plutil`/`xmllint`; repository
@@ -329,6 +337,24 @@ R5 staging release-smoke evidence:
   Android release compilation passed in 4m46s and iOS in 4m34s;
 - [ordinary pull-request CI run 29657632614](https://github.com/DanilaMasov/Mayhem/actions/runs/29657632614):
   repository contracts and Flutter format/analyze/test passed.
+
+R5 launcher-asset local evidence:
+
+- production uses an opaque RGB Mayhem monogram master instead of Flutter
+  template artwork; staging adds a persistent amber warning marker;
+- Android provides distinct production/staging PNGs at all five launcher
+  densities plus adaptive foreground/background and monochrome resources;
+- iOS provides complete production `AppIcon` and staging `AppIconStaging`
+  catalogs, and every staging build configuration selects the staging set;
+- repository contracts parse PNG headers, verify every declared native size,
+  reject alpha in iOS artwork, require adaptive resources, and prove production
+  and staging masters differ;
+- all 54 repository contracts and 254 non-live Flutter tests pass locally;
+  the explicit disposable live test remains skipped in the ordinary suite;
+- no dependency, lockfile, SDK, signing material, backend value, telemetry, or
+  production flag changed;
+- signed installation and real launcher-mask appearance remain physical-device
+  gates; store marketing artwork remains a separate owner deliverable.
 
 Post-R1 correction local evidence:
 
