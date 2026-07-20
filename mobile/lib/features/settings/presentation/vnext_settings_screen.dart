@@ -99,39 +99,6 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
                 ),
               ),
               const _SectionDivider(),
-              _SectionTitle(strings.feedback),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(strings.haptics),
-                value: preferences.hapticsEnabled,
-                onChanged: (value) => widget.controller.update(
-                  preferences.copyWith(hapticsEnabled: value),
-                ),
-              ),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(strings.sound),
-                value: preferences.soundEnabled,
-                onChanged: (value) => widget.controller.update(
-                  preferences.copyWith(soundEnabled: value),
-                ),
-              ),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(strings.ceremonies),
-                value: preferences.ceremoniesEnabled,
-                onChanged: (value) => widget.controller.update(
-                  preferences.copyWith(ceremoniesEnabled: value),
-                ),
-              ),
-              const _SectionDivider(),
-              _SectionTitle(strings.notifications),
-              _StatusLine(
-                icon: Icons.notifications_off_outlined,
-                title: strings.disabled,
-                body: strings.notificationsUnavailable,
-              ),
-              const _SectionDivider(),
               _SectionTitle(strings.privacy),
               MayhemText(
                 strings.privacyBody,

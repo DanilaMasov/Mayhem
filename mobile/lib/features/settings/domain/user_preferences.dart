@@ -10,6 +10,8 @@ class UserPreferences {
 
   final bool reduceMotion;
   final bool reduceTransparency;
+
+  // Retained for backward-compatible reads of pre-R5 preference snapshots.
   final bool hapticsEnabled;
   final bool soundEnabled;
   final bool ceremoniesEnabled;

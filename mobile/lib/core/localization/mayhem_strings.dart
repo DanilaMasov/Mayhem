@@ -145,17 +145,11 @@ abstract interface class MayhemStrings {
   String get settings;
   String get settingsTitle;
   String get account;
-  String get notifications;
-  String get notificationsUnavailable;
   String get accessibility;
   String get reduceMotion;
   String get reduceMotionBody;
   String get reduceTransparency;
   String get reduceTransparencyBody;
-  String get feedback;
-  String get haptics;
-  String get sound;
-  String get ceremonies;
   String get privacy;
   String get privacyBody;
   String get dataAndSync;
@@ -556,11 +550,6 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get account => 'АККАУНТ';
   @override
-  String get notifications => 'Уведомления';
-  @override
-  String get notificationsUnavailable =>
-      'Выключены до отдельного запроса разрешения и production gate.';
-  @override
   String get accessibility => 'ДОСТУПНОСТЬ';
   @override
   String get reduceMotion => 'Уменьшить движение';
@@ -570,14 +559,6 @@ class MayhemStringsRu implements MayhemStrings {
   String get reduceTransparency => 'Уменьшить прозрачность';
   @override
   String get reduceTransparencyBody => 'Использует непрозрачные поверхности.';
-  @override
-  String get feedback => 'ОТКЛИК';
-  @override
-  String get haptics => 'Тактильный отклик';
-  @override
-  String get sound => 'Звук';
-  @override
-  String get ceremonies => 'Сцены награды';
   @override
   String get privacy => 'ПРИВАТНОСТЬ';
   @override
