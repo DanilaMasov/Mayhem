@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/app/composition/remote_runtime_diagnostics.dart';
@@ -11,6 +13,60 @@ import 'package:mayhem_mobile/features/settings/presentation/vnext_settings_scre
 import 'package:mayhem_mobile/presentation/theme/mayhem_theme.dart';
 
 void main() {
+  testWidgets('release settings exposes only controls with a real effect', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final metadata = _MemoryMetadata()
+      ..values[LocalUserPreferencesRepository.metadataKey] = jsonEncode({
+        'reduceMotion': false,
+        'reduceTransparency': false,
+        'hapticsEnabled': false,
+        'soundEnabled': false,
+        'ceremoniesEnabled': false,
+        'locale': 'ru-RU',
+      });
+    final controller = SettingsController(
+      LocalUserPreferencesRepository(metadata),
+    );
+    await controller.initialize();
+    final flags = FeatureFlagRuntime.safe();
+    addTearDown(flags.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MayhemTheme.dark,
+        builder: (context, child) =>
+            MayhemStringsScope(strings: const MayhemStringsRu(), child: child!),
+        home: VNextSettingsScreen(
+          controller: controller,
+          featureFlags: flags,
+          onResetLocalData: () async {},
+        ),
+      ),
+    );
+
+    expect(controller.preferences.hapticsEnabled, isFalse);
+    expect(controller.preferences.soundEnabled, isFalse);
+    expect(controller.preferences.ceremoniesEnabled, isFalse);
+    expect(find.byType(SwitchListTile), findsNWidgets(2));
+    expect(find.text('ОТКЛИК'), findsNothing);
+    expect(find.text('Тактильный отклик'), findsNothing);
+    expect(find.text('Звук'), findsNothing);
+    expect(find.text('Сцены награды'), findsNothing);
+    expect(find.text('Уведомления'), findsNothing);
+
+    await tester.tap(find.text('Уменьшить движение'));
+    await tester.pump();
+
+    expect(controller.preferences.reduceMotion, isTrue);
+    final persisted =
+        jsonDecode(metadata.values[LocalUserPreferencesRepository.metadataKey]!)
+            as Map<String, dynamic>;
+    expect(persisted['reduceMotion'], isTrue);
+  });
+
   testWidgets('privacy section discloses thresholded social aggregates', (
     tester,
   ) async {

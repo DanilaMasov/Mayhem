@@ -324,26 +324,40 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pumpAndSettle();
-    await tester.drag(
-      find.byKey(const PageStorageKey('settings-scroll')),
-      const Offset(0, -1500),
+    const resetLabel = 'СБРОСИТЬ ДАННЫЕ НА ЭТОМ УСТРОЙСТВЕ';
+    const deleteLabel = 'УДАЛИТЬ АККАУНТ И ДАННЫЕ ВЕЗДЕ';
+    final settingsScroll = find.descendant(
+      of: find.byKey(const PageStorageKey('settings-scroll')),
+      matching: find.byType(Scrollable),
     );
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text(resetLabel),
+      300,
+      scrollable: settingsScroll,
+    );
+    expect(find.text(resetLabel), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(deleteLabel),
+      300,
+      scrollable: settingsScroll,
+    );
 
-    expect(find.text('СБРОСИТЬ ДАННЫЕ НА ЭТОМ УСТРОЙСТВЕ'), findsOneWidget);
-    expect(find.text('УДАЛИТЬ АККАУНТ И ДАННЫЕ ВЕЗДЕ'), findsOneWidget);
+    expect(find.text(deleteLabel), findsOneWidget);
     final unavailable = tester.widget<MayhemSecondaryButton>(
       find
           .ancestor(
-            of: find.text('УДАЛИТЬ АККАУНТ И ДАННЫЕ ВЕЗДЕ'),
+            of: find.text(deleteLabel),
             matching: find.byType(MayhemSecondaryButton),
           )
           .first,
     );
     expect(unavailable.enabled, isFalse);
 
-    await tester.ensureVisible(find.text('Диагностика'));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Диагностика'),
+      300,
+      scrollable: settingsScroll,
+    );
     await tester.tap(find.text('Диагностика'));
     await tester.pumpAndSettle();
     expect(find.text('ДИАГНОСТИКА'), findsOneWidget);

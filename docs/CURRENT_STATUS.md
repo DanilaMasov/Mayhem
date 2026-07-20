@@ -3,8 +3,8 @@
 **Status date:** 2026-07-20
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-launcher-assets`
-**Current main checkpoint:** `5b97b1a` (merge commit for PR #20)
+**Current branch:** `codex/r5-settings-honesty`
+**Current main checkpoint:** `0f1281e` (merge commit for PR #21)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -85,10 +85,14 @@ portability defect with forward migration `011` and is merged as `685934c`.
 The final protected run
 [29771165967](https://github.com/DanilaMasov/Mayhem/actions/runs/29771165967)
 applied all eleven migrations from zero and passed all nine live probes plus
-eight production Flutter client checks. The current R5 launcher slice replaces
+eight production Flutter client checks. The R5 launcher slice replaces
 the remaining default Flutter artwork with separate production and visibly
 marked staging icon sets for Android and iOS; it does not alter dependencies,
-signing, backend configuration, telemetry, or release flags.
+signing, backend configuration, telemetry, or release flags. Pull request
+[#21](https://github.com/DanilaMasov/Mayhem/pull/21) is merged into `main` as
+`0f1281e`. The current R5 settings-honesty slice removes controls and status
+copy for capabilities that have no production implementation while preserving
+the persisted preference schema for backward-compatible reads.
 
 ## Open software gates
 
@@ -356,6 +360,24 @@ R5 launcher-asset local evidence:
 - signed installation and real launcher-mask appearance remain physical-device
   gates; store marketing artwork remains a separate owner deliverable.
 
+R5 settings-honesty local evidence:
+
+- release Settings exposes only the two accessibility switches whose values are
+  consumed by the live application: reduced motion and reduced transparency;
+- haptics, sound, and reward-ceremony switches are hidden because their stored
+  values were not connected to those capabilities; push notification status is
+  hidden because notifications are an explicit current-cycle non-goal;
+- pre-R5 `user_preferences_v1` snapshots retain their legacy fields and still
+  deserialize without migration or data loss;
+- widget coverage proves legacy snapshots remain readable, placeholder controls
+  remain absent, and an effective accessibility change is persisted;
+- the shell integration test locates Reset, Delete Everywhere, and Diagnostics
+  semantically instead of relying on a fixed scroll distance;
+- all 54 repository contracts and 255 non-live Flutter tests pass locally; the
+  explicit disposable live test remains skipped in the ordinary suite;
+- content, migration, SQLite, and seed checks, Dart format, and Flutter analyze
+  pass without dependency, lockfile, SDK, backend, telemetry, or flag changes.
+
 Post-R1 correction local evidence:
 
 - Delete Everywhere models server deletion, cloud confirmation, secure-session
@@ -553,12 +575,13 @@ checkout/setup actions; it does not affect the current green software gate.
 
 ## Next authorized slice
 
-The bounded R5 release-identity slice is merged, unsigned staging release
-compilation is green in pull request #15, and the external staging Supabase
-gate through migrations `010-011` is closed by run 29771165967. The next
-bounded software/external slice is privacy-configured staging crash reporting
-or signed staging distribution, subject to the corresponding credentials and
-owner approvals. Production backend values and release flags remain unset.
+The R5 release-identity and launcher slices are merged, unsigned staging release
+compilation is green, and the external staging Supabase gate through migrations
+`010-011` is closed. After the current Settings honesty slice is merged, the
+remaining R5 work requires an approved support path, privacy-configured staging
+crash reporting, store/signing ownership, or signed staging distribution. These
+are external owner/credential gates rather than safe local implementation work.
+Production backend values and release flags remain unset.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to
