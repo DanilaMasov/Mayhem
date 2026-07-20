@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import test from "node:test";
 
+import { safeFailureDiagnostic } from "../scripts/run_live_supabase_acceptance.mjs";
 import {
   FlutterLiveClientRunner,
   PsqlRunner,
@@ -82,6 +83,24 @@ test("R2 summary and errors never expose credentials", async () => {
       return true;
     }
   );
+});
+
+test("R2 CLI diagnostic preserves bounded cause without credentials", () => {
+  const failure = new Error("R2 probe failed: migrations_from_zero (Error)");
+  failure.cause = new Error(
+    `database rejected ${validEnvironment.SUPABASE_DB_URL} ` +
+      `${validEnvironment.SUPABASE_ANON_KEY} database-secret\nserver detail`
+  );
+  const diagnostic = safeFailureDiagnostic(failure, validEnvironment);
+
+  assert.match(diagnostic, /migrations_from_zero/);
+  assert.match(diagnostic, /<redacted>/);
+  assert.doesNotMatch(
+    diagnostic,
+    /database-secret|anon-secret-value|postgresql:\/\//
+  );
+  assert.ok(diagnostic.length <= 240);
+  assert.doesNotMatch(diagnostic, /[\r\n]/);
 });
 
 test("R2 migration plan is deterministic and complete", async () => {
