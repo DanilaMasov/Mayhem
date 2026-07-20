@@ -9,6 +9,7 @@ import {
   PsqlRunner,
   SupabaseAcceptanceClient,
   canonicalEvent,
+  disposableResetConfirmation,
   loadLiveSupabaseConfig,
   migrationPlan,
   safeEnvironmentSummary
@@ -63,6 +64,9 @@ export async function runLiveSupabaseAcceptance({
   try {
     await recorder.run("migrations_from_zero", async () => {
       await database.verifyAvailable();
+      if (config.resetExisting) {
+        await database.resetDisposableTarget(disposableResetConfirmation);
+      }
       await database.assertMayhemSchemaIsEmpty();
       for (const migration of migrations) {
         await database.applyMigration(migration.path);

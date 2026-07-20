@@ -9,6 +9,13 @@ on:
         type: choice
         options:
           - I_UNDERSTAND_THIS_IS_DISPOSABLE
+      reset_existing:
+        description: Reset the already-used disposable database before testing
+        required: true
+        type: choice
+        options:
+          - DO_NOT_RESET
+          - I_UNDERSTAND_THIS_RESETS_THE_DISPOSABLE_DATABASE
 
 permissions:
   contents: read
@@ -28,6 +35,7 @@ jobs:
     env:
       MAYHEM_R2_ENVIRONMENT_ID: ${{ vars.MAYHEM_R2_ENVIRONMENT_ID }}
       MAYHEM_R2_CONFIRM_DISPOSABLE: ${{ vars.MAYHEM_R2_CONFIRM_DISPOSABLE }}
+      MAYHEM_R2_RESET_EXISTING: ${{ inputs.reset_existing }}
       MAYHEM_R2_REPORT_PATH: /tmp/mayhem-r2-live-report.json
       SUPABASE_URL: >-
         ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -49,6 +57,8 @@ jobs:
         run: |
           test -n "$MAYHEM_R2_ENVIRONMENT_ID"
           test "$MAYHEM_R2_CONFIRM_DISPOSABLE" = "I_UNDERSTAND_THIS_IS_DISPOSABLE"
+          test "$MAYHEM_R2_RESET_EXISTING" = "DO_NOT_RESET" ||
+            test "$MAYHEM_R2_RESET_EXISTING" = "I_UNDERSTAND_THIS_RESETS_THE_DISPOSABLE_DATABASE"
           test -n "$SUPABASE_URL"
           test -n "$SUPABASE_ANON_KEY"
           test -n "$SUPABASE_DB_URL"
