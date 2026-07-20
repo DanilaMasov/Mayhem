@@ -3,8 +3,8 @@
 This document defines the checked-in release configuration policy. Application
 identifiers, supported OS floors, environment ownership, and alpha telemetry
 policy were approved on 2026-07-18. It does not claim that the identifiers are
-registered in either store, signing is configured, launcher artwork is final,
-or a production backend exists.
+registered in either store, signing is configured, store marketing artwork is
+approved, or a production backend exists.
 
 ## Application Identity
 
@@ -71,6 +71,25 @@ compile the checked-in staging configuration. It does not prove signing,
 installation, launch, runtime backend behavior, physical-device performance,
 accessibility, store registration, or distribution readiness.
 
+## Launcher Assets
+
+Mayhem-owned production and staging launcher masters live under
+`mobile/assets/brand/`. They are opaque RGB artwork with no embedded text or
+external trademark:
+
+- production uses the dark Mayhem monogram with a coral action signal;
+- staging adds a persistent amber corner warning and is not a silent copy of
+  production;
+- Android provides density PNGs, an adaptive foreground/background, and a
+  monochrome themed icon;
+- iOS provides complete production `AppIcon` and staging `AppIconStaging`
+  catalogs; all staging build configurations select the staging catalog.
+
+The committed asset contract checks dimensions, color type, platform
+completeness, adaptive resources, staging separation, and native assignments.
+Launcher assets do not close store screenshot, feature-graphic, promotional
+artwork, or signed-device appearance gates.
+
 ## Android Signing
 
 Android release builds never fall back to the debug signing key. A signing
@@ -107,7 +126,7 @@ bundle identifier, team, profile, entitlements, and export method are recorded.
 
 Before an external beta or store build, the owner must approve:
 
-- final launcher icon and store artwork;
+- launcher appearance on signed physical-device installs and store artwork;
 - support email or HTTPS support URL;
 - privacy/store metadata and production Supabase target.
 
