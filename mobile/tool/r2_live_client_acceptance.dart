@@ -270,6 +270,18 @@ Future<Map<String, Object?>> runR2LiveClientAcceptance() async {
   );
   final season = seasonBootstrap.activeSeason;
   _require(season != null, 'Live Season bootstrap is unavailable');
+  final remoteParticipation = season!.participation;
+  _require(
+    remoteParticipation != null &&
+        remoteParticipation.seasonId == 'r2-live-season' &&
+        remoteParticipation.seasonRevision == 1 &&
+        remoteParticipation.completedDays.isEmpty &&
+        remoteParticipation.bossParticipatedAt != null &&
+        !remoteParticipation.bossParticipatedAt!.isBefore(
+          remoteParticipation.joinedAt,
+        ),
+    'Live Season participation snapshot is incomplete',
+  );
   _require(
     seasonBootstrap.projection.projectionRevision > 0 &&
         seasonBootstrap.projection.ownedArtifacts.length == 1,
@@ -298,6 +310,16 @@ Future<Map<String, Object?>> runR2LiveClientAcceptance() async {
   _require(
     await localStore.season.loadActivePackage(DateTime.now().toUtc()) != null,
     'Season package was not persisted',
+  );
+  final persistedParticipation = await localStore.seasonParticipation.load(
+    'r2-live-season',
+  );
+  _require(
+    persistedParticipation != null &&
+        persistedParticipation.serverConfirmed &&
+        persistedParticipation.completedDays.isEmpty &&
+        persistedParticipation.bossParticipatedAt != null,
+    'Authoritative Season participation was not persisted',
   );
   final reconciled = const ProjectionReconciler().reconcile(
     local: seasonBootstrap.projection.projection,

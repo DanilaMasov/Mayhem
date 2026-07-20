@@ -228,6 +228,13 @@ export async function runLiveSupabaseAcceptance({
     );
 
     await recorder.run("season_join_day_and_window_rules", async () => {
+      const firstBeforeJoin = await supabase.rpc(
+        "get_active_season",
+        {},
+        firstSession.accessToken
+      );
+      assert.equal(firstBeforeJoin.value.participation, null);
+
       const preJoinBoss = await ingestOne(
         supabase,
         firstSession,
@@ -322,6 +329,16 @@ export async function runLiveSupabaseAcceptance({
       );
       assertAccepted(duplicateDay);
 
+      const firstAfterDay = await supabase.rpc(
+        "get_active_season",
+        {},
+        firstSession.accessToken
+      );
+      assertParticipationSnapshot(firstAfterDay.value, {
+        completedDays: [1],
+        bossParticipated: false
+      });
+
       const futureBoss = await ingestOne(
         supabase,
         firstSession,
@@ -361,6 +378,16 @@ export async function runLiveSupabaseAcceptance({
         })
       );
       assertAccepted(secondJoin);
+
+      const secondAfterJoin = await supabase.rpc(
+        "get_active_season",
+        {},
+        second.accessToken
+      );
+      assertParticipationSnapshot(secondAfterJoin.value, {
+        completedDays: [],
+        bossParticipated: false
+      });
 
       const belowThreshold = await supabase.rpc(
         "get_active_season",
@@ -419,6 +446,19 @@ export async function runLiveSupabaseAcceptance({
           })
         );
         assertAccepted(duplicateBoss);
+
+        const [firstSeasonSnapshot, secondSeasonSnapshot] = await Promise.all([
+          supabase.rpc("get_active_season", {}, firstSession.accessToken),
+          supabase.rpc("get_active_season", {}, second.accessToken)
+        ]);
+        assertParticipationSnapshot(firstSeasonSnapshot.value, {
+          completedDays: [1],
+          bossParticipated: true
+        });
+        assertParticipationSnapshot(secondSeasonSnapshot.value, {
+          completedDays: [],
+          bossParticipated: true
+        });
 
         const state = JSON.parse(
           await database.query(seasonVerificationSql, {
@@ -693,6 +733,27 @@ function assertRejected(ack, disposition) {
   assert.equal(ack.results[0].accepted, false);
   assert.equal(ack.results[0].disposition, disposition);
   assert.deepEqual(ack.acceptedIds, []);
+}
+
+function assertParticipationSnapshot(
+  snapshot,
+  { completedDays, bossParticipated }
+) {
+  assert.equal(snapshot.seasonId, r2Fixture.seasonId);
+  assert.equal(snapshot.revision, 1);
+  const participation = snapshot.participation;
+  assert.equal(participation.seasonId, r2Fixture.seasonId);
+  assert.equal(participation.seasonRevision, 1);
+  assert.deepEqual(participation.completedDays, completedDays);
+  const joinedAt = Date.parse(participation.joinedAt);
+  assert.ok(Number.isFinite(joinedAt));
+  if (!bossParticipated) {
+    assert.equal(participation.bossParticipatedAt, null);
+    return;
+  }
+  const bossParticipatedAt = Date.parse(participation.bossParticipatedAt);
+  assert.ok(Number.isFinite(bossParticipatedAt));
+  assert.ok(bossParticipatedAt >= joinedAt);
 }
 
 async function writeReport(reportPath, report) {

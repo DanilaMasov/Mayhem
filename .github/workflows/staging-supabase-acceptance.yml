@@ -1,0 +1,70 @@
+name: Staging Supabase Acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Confirm that the selected backend is disposable
+        required: true
+        type: choice
+        options:
+          - I_UNDERSTAND_THIS_IS_DISPOSABLE
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-supabase-acceptance
+  cancel-in-progress: false
+
+jobs:
+  live-acceptance:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirmation == 'I_UNDERSTAND_THIS_IS_DISPOSABLE'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging-acceptance
+    env:
+      MAYHEM_R2_ENVIRONMENT_ID: ${{ vars.MAYHEM_R2_ENVIRONMENT_ID }}
+      MAYHEM_R2_CONFIRM_DISPOSABLE: ${{ vars.MAYHEM_R2_CONFIRM_DISPOSABLE }}
+      MAYHEM_R2_REPORT_PATH: /tmp/mayhem-r2-live-report.json
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - name: Validate protected configuration
+        run: |
+          test -n "$MAYHEM_R2_ENVIRONMENT_ID"
+          test "$MAYHEM_R2_CONFIRM_DISPOSABLE" = "I_UNDERSTAND_THIS_IS_DISPOSABLE"
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_ANON_KEY"
+          test -n "$SUPABASE_DB_URL"
+      - name: Verify PostgreSQL client
+        run: psql --version
+      - name: Resolve locked Flutter dependencies
+        working-directory: mobile
+        run: flutter pub get --enforce-lockfile
+      - name: Run disposable live acceptance
+        run: >-
+          node scripts/run_live_supabase_acceptance.mjs
+          > /tmp/mayhem-r2-live-stdout.json
+      - name: Verify secret-free acceptance report
+        run: node scripts/verify_live_supabase_report.mjs
+      - name: Upload secret-free evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-live-report-${{ github.run_id }}
+          path: /tmp/mayhem-r2-live-report.json
+          if-no-files-found: warn
+          retention-days: 7
