@@ -34,8 +34,11 @@ test("staging Supabase acceptance is manual, disposable, and main-only", () => {
 
 test("staging acceptance uses protected inputs and emits bounded evidence", () => {
   assert.match(workflow, /secrets\.SUPABASE_URL/);
+  assert.match(workflow, /secrets\.NEXT_PUBLIC_SUPABASE_URL/);
   assert.match(workflow, /secrets\.SUPABASE_ANON_KEY/);
+  assert.match(workflow, /secrets\.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
   assert.match(workflow, /secrets\.SUPABASE_DB_URL/);
+  assert.match(workflow, /secrets\.DATABASE_URL/);
   assert.match(workflow, /vars\.MAYHEM_R2_ENVIRONMENT_ID/);
   assert.match(workflow, /flutter pub get --enforce-lockfile/);
   assert.match(workflow, /node scripts\/run_live_supabase_acceptance\.mjs/);
