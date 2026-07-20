@@ -29,9 +29,12 @@ jobs:
       MAYHEM_R2_ENVIRONMENT_ID: ${{ vars.MAYHEM_R2_ENVIRONMENT_ID }}
       MAYHEM_R2_CONFIRM_DISPOSABLE: ${{ vars.MAYHEM_R2_CONFIRM_DISPOSABLE }}
       MAYHEM_R2_REPORT_PATH: /tmp/mayhem-r2-live-report.json
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: >-
+        ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: >-
+        ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_DB_URL: >-
+        ${{ secrets.SUPABASE_DB_URL || secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
