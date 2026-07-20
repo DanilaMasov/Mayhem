@@ -1,10 +1,10 @@
 # Mayhem Current Status
 
-**Status date:** 2026-07-18
+**Status date:** 2026-07-20
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-staging-release-smoke`
-**Current main checkpoint:** `814be9b` (merge commit for PR #14)
+**Current evidence branch:** `codex/r2-migration-011-evidence`
+**Current main checkpoint:** `685934c` (merge commit for PR #19)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -41,7 +41,7 @@ The bounded post-R1 correction pass in pull request
 [#6](https://github.com/DanilaMasov/Mayhem/pull/6) is merged into `main` as
 `b50f36f`. Phase R2 live acceptance in pull request
 [#7](https://github.com/DanilaMasov/Mayhem/pull/7) is merged into `main` as
-`ccdd12d`. The final disposable Supabase run applied nine migrations from zero
+`ccdd12d`. The original disposable Supabase run applied nine migrations from zero
 and passed all nine backend probes plus eight production Flutter client checks.
 Its secret-free report is
 `docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. R3 state foundation
@@ -70,8 +70,22 @@ configuration, dependencies, or release flags. Pull request
 [#14](https://github.com/DanilaMasov/Mayhem/pull/14) is merged into `main` as
 `814be9b`. Pull request
 [#15](https://github.com/DanilaMasov/Mayhem/pull/15) adds unsigned Android and
-iOS staging release compilation in CI without backend or signing secrets; its
-initial native and ordinary CI checks are green.
+iOS staging release compilation in CI without backend or signing secrets; it
+is merged into `main` as `1bc90cb`. Pull requests
+[#16](https://github.com/DanilaMasov/Mayhem/pull/16),
+[#17](https://github.com/DanilaMasov/Mayhem/pull/17), and
+[#18](https://github.com/DanilaMasov/Mayhem/pull/18) add the protected
+migration-`010` staging acceptance workflow, accepted secret aliases, and
+redacted failure diagnostics. Live run
+[29770143398](https://github.com/DanilaMasov/Mayhem/actions/runs/29770143398)
+then exposed implicit `anon` execute grants on ten `SECURITY DEFINER`
+functions. Pull request
+[#19](https://github.com/DanilaMasov/Mayhem/pull/19) closes that deployment
+portability defect with forward migration `011` and is merged as `685934c`.
+The final protected run
+[29771165967](https://github.com/DanilaMasov/Mayhem/actions/runs/29771165967)
+applied all eleven migrations from zero and passed all nine live probes plus
+eight production Flutter client checks.
 
 ## Open software gates
 
@@ -82,12 +96,14 @@ initial native and ordinary CI checks are green.
 
 ## Live-backend gates
 
-- R2 disposable Supabase/PostgreSQL migration, RLS, grants, RPC, concurrency,
-  deletion, auth, sync, Season/Boss, artifact, social-proof, and production
-  Flutter client acceptance is closed by the 2026-07-17 live report.
-- Migration `202607180010_season_participation_snapshot.sql` has local static
-  contract coverage but still requires an authorized disposable/live
-  PostgreSQL migration and RPC acceptance run.
+- R2 disposable Supabase/PostgreSQL migration, RLS, explicit function grants,
+  RPC, concurrency, deletion, auth, sync, Season/Boss, artifact, social-proof,
+  and production Flutter client acceptance is closed through migrations
+  `001-011` by the 2026-07-20 protected live run.
+- Migration `202607180010_season_participation_snapshot.sql` and forward
+  grant-hardening migration
+  `202607200011_explicit_function_execute_grants.sql` both passed from-zero
+  live acceptance against the authorized staging project.
 - No production Supabase environment has been configured or authorized.
 
 ## Open device gates
@@ -103,19 +119,19 @@ initial native and ordinary CI checks are green.
 - Production remote auth/sync remains unavailable in builds without
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
-- Migration `010` live acceptance, physical-device acceptance, store
-  registration of the approved application IDs, release signing,
-  launcher/store assets, support path, and store configuration remain
-  incomplete.
+- Physical-device acceptance, store registration of the approved application
+  IDs, release signing, launcher/store assets, support path, crash reporting,
+  and store configuration remain incomplete.
 
 ## Verification
 
-Clean-clone local verification completed on 2026-07-18. Commands and local
-results:
+The broad clean-clone verification was completed on 2026-07-18. Repository
+contracts and live-backend evidence were repeated on 2026-07-20. Commands and
+latest applicable results:
 
 ```sh
 node --test tests/*.test.mjs
-# 44 passed
+# 51 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -218,8 +234,9 @@ R3 cross-device participation local evidence:
 - package and participation persistence remain backward-compatible with
   snapshots written before the participation field existed;
 - no dependency, lockfile, production flag, or SDK changed;
-- migration `010` remains unapplied until an authorized backend target is
-  provided, and all associated production flags remain false.
+- at this historical R3 checkpoint migration `010` was still unapplied; it
+  later passed the protected 2026-07-20 live gate, while all associated
+  production flags remain false.
 - [push CI run 29643920613](https://github.com/DanilaMasov/Mayhem/actions/runs/29643920613):
   repository contracts and Flutter format/analyze/test passed;
 - [pull-request CI run 29643930964](https://github.com/DanilaMasov/Mayhem/actions/runs/29643930964):
@@ -336,8 +353,10 @@ R2 harness evidence:
   confirmation before reading the database target;
 - keeps DB URL, anon key, access tokens, refresh tokens, and server bodies out
   of argv, logs, diagnostics, and reports;
-- refuses a target containing existing Mayhem tables and applies nine
-  migrations from zero in deterministic order through `psql`;
+- refuses a target containing existing Mayhem tables unless a separately
+  confirmed reset is requested, binds API and DB URLs to the same project ref,
+  and applies eleven migrations from zero in deterministic order through
+  `psql`;
 - prepares two-user auth/refresh, ownership/RLS, grants, direct-write denial,
   exact/duplicate/partial ACK, private-note rejection, and auth recovery;
 - covers Season join/day/closed-window rules, concurrent Boss submission,
@@ -346,15 +365,18 @@ R2 harness evidence:
 - invokes production Flutter auth/backend/content/Feed/Season/reconciliation
   and Delete Everywhere adapters in a headless opt-in live test;
 - adds migration `007` to close legacy security-definer search paths and
-  decrement social proof during deletion, plus migration `008` to advance the
-  projection revision only for newly issued artifacts, and migration `009` to
-  repair recursive private-note validation found by the live run;
+  decrement social proof during deletion, migration `008` to advance the
+  projection revision only for newly issued artifacts, migration `009` to
+  repair recursive private-note validation, migration `010` for
+  account-scoped Season participation, and migration `011` to revoke implicit
+  Data API function grants before restoring the authenticated RPC allowlist;
 - decomposes PostgreSQL credentials into libpq environment fields and sends
   parameterized verification SQL through stdin instead of argv;
-- the final disposable run passed all nine probes in 64,526 ms with no failed,
-  blocked, or not-run checks;
-- the disposable Supabase project/organization, temporary credentials and
-  reports, and acceptance-only Homebrew formulas were removed after evidence;
+- the latest protected staging run passed all nine probes and eight Flutter
+  client checks in 62,726 ms with no failed, blocked, or not-run checks;
+- the original 2026-07-17 disposable project and local acceptance tooling were
+  removed after evidence; the current protected staging project remains
+  configured and contains only deterministic acceptance fixtures;
 - `docs/R2_LIVE_SUPABASE_ACCEPTANCE.md` records the reproducible command,
   attempt history, cleanup contract, and final secret-free evidence.
 
@@ -486,19 +508,31 @@ The complete R2 live acceptance is merged from pull request
 - [final pull-request CI run 29603353592](https://github.com/DanilaMasov/Mayhem/actions/runs/29603353592):
   repository contracts and Flutter format/analyze/test passed.
 
-The R2 live-backend gate is closed by
-`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-17.json`. Simulator/emulator
-and physical-device gates remain open. GitHub Actions also emits a non-blocking
-Node 20 action-runtime deprecation warning for the v4 checkout/setup actions;
-it does not affect the current green software gate.
+Migration-`011` hardening commit `d6d02ce` and merged pull request
+[#19](https://github.com/DanilaMasov/Mayhem/pull/19) passed:
+
+- [push CI run 29770972191](https://github.com/DanilaMasov/Mayhem/actions/runs/29770972191):
+  repository contracts and Flutter format/analyze/test passed;
+- [pull-request CI run 29770991600](https://github.com/DanilaMasov/Mayhem/actions/runs/29770991600):
+  repository contracts and Flutter format/analyze/test passed;
+- [protected live run 29771165967](https://github.com/DanilaMasov/Mayhem/actions/runs/29771165967):
+  eleven migrations, nine live probes, eight Flutter client checks, and
+  secret-free report verification passed.
+
+The latest R2 live-backend gate is closed by
+`docs/R2_LIVE_SUPABASE_ACCEPTANCE_REPORT_2026-07-20_MIGRATION_011.json`.
+Simulator/emulator and physical-device gates remain open. GitHub Actions also
+emits a non-blocking Node 20 action-runtime deprecation warning for the v4
+checkout/setup actions; it does not affect the current green software gate.
 
 ## Next authorized slice
 
-The bounded R5 release-identity slice is merged and unsigned staging release
-compilation is green in pull request #15. Next, stop at the external staging
-Supabase gate unless an authorized target is available. Migration `010` and
-two-account acceptance must pass before privacy-configured Sentry or signed
-staging distribution work begins.
+The bounded R5 release-identity slice is merged, unsigned staging release
+compilation is green in pull request #15, and the external staging Supabase
+gate through migrations `010-011` is closed by run 29771165967. The next
+bounded software/external slice is privacy-configured staging crash reporting
+or signed staging distribution, subject to the corresponding credentials and
+owner approvals. Production backend values and release flags remain unset.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to
