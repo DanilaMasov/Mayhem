@@ -14,7 +14,8 @@ functionality.
 - [Agent contract](AGENTS.md) - mandatory boundaries for future Codex sessions.
 - [Mobile documentation](mobile/README.md) - Flutter project details.
 - [Release configuration](docs/RELEASE_CONFIGURATION.md) - environments,
-  identities, signing, telemetry, and external ownership gates.
+  identities, support contact, signing, telemetry, and external ownership
+  gates.
 - [R5 live Sentry acceptance](docs/R5_LIVE_SENTRY_ACCEPTANCE.md) - protected
   staging ingestion/privacy runbook and bounded evidence contract.
 

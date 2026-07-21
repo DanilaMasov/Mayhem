@@ -19,6 +19,7 @@ const mainDart = read("mobile/lib/main.dart");
 const crashReporting = read(
   "mobile/lib/infrastructure/telemetry/staging_crash_reporting.dart"
 );
+const supportContact = read("mobile/lib/core/support/support_contact.dart");
 const pubspec = read("mobile/pubspec.yaml");
 const gitignore = read(".gitignore");
 
@@ -127,6 +128,19 @@ test("crash reporting is staging-only and privacy locked", () => {
     `${mainDart}\n${crashReporting}`,
     /https:\/\/[^\s@]+@[^\s/]+\/\d+/
   );
+});
+
+test("support contact is compile-time configured and rejects unsafe schemes", () => {
+  assert.match(
+    mainDart,
+    /String\.fromEnvironment\(\s*'MAYHEM_SUPPORT_CONTACT'/
+  );
+  assert.match(pubspec, /^\s+url_launcher: \^6\.3\.2$/m);
+  assert.match(supportContact, /'https'/);
+  assert.match(supportContact, /'mailto'/);
+  assert.doesNotMatch(supportContact, /'http'/);
+  assert.doesNotMatch(supportContact, /'tel'/);
+  assert.match(supportContact, /uri\.userInfo\.isEmpty/);
 });
 
 function read(path) {

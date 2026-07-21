@@ -6,6 +6,8 @@ import 'package:mayhem_mobile/app/composition/remote_runtime_diagnostics.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flag_runtime.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
 import 'package:mayhem_mobile/core/metadata/local_metadata_repository.dart';
+import 'package:mayhem_mobile/core/support/support_contact.dart';
+import 'package:mayhem_mobile/core/support/support_contact_scope.dart';
 import 'package:mayhem_mobile/features/settings/application/settings_controller.dart';
 import 'package:mayhem_mobile/features/settings/application/remote_account_controller.dart';
 import 'package:mayhem_mobile/features/settings/data/local_user_preferences_repository.dart';
@@ -56,6 +58,7 @@ void main() {
     expect(find.text('Звук'), findsNothing);
     expect(find.text('Сцены награды'), findsNothing);
     expect(find.text('Уведомления'), findsNothing);
+    expect(find.text('СВЯЗАТЬСЯ С ПОДДЕРЖКОЙ'), findsNothing);
 
     await tester.tap(find.text('Уменьшить движение'));
     await tester.pump();
@@ -65,6 +68,99 @@ void main() {
         jsonDecode(metadata.values[LocalUserPreferencesRepository.metadataKey]!)
             as Map<String, dynamic>;
     expect(persisted['reduceMotion'], isTrue);
+  });
+
+  testWidgets('configured support contact opens the exact validated URI', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = SettingsController(
+      LocalUserPreferencesRepository(_MemoryMetadata()),
+    );
+    await controller.initialize();
+    final flags = FeatureFlagRuntime.safe();
+    addTearDown(flags.dispose);
+    final contact = SupportContact.resolve(
+      'https://support.example.com/mayhem',
+    )!;
+    Uri? opened;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MayhemTheme.dark,
+        builder: (context, child) => MayhemStringsScope(
+          strings: const MayhemStringsRu(),
+          child: MayhemSupportContactScope(
+            contact: contact,
+            opener: (uri) async {
+              opened = uri;
+              return true;
+            },
+            child: child!,
+          ),
+        ),
+        home: VNextSettingsScreen(
+          controller: controller,
+          featureFlags: flags,
+          onResetLocalData: () async {},
+        ),
+      ),
+    );
+
+    const label = 'СВЯЗАТЬСЯ С ПОДДЕРЖКОЙ';
+    await tester.scrollUntilVisible(find.text(label), 300);
+    expect(
+      find.text('Откроется внешний канал поддержки: support.example.com.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text(label));
+    await tester.pump();
+
+    expect(opened, contact.uri);
+    expect(find.byType(SnackBar), findsNothing);
+  });
+
+  testWidgets('support launch failure remains recoverable and explicit', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = SettingsController(
+      LocalUserPreferencesRepository(_MemoryMetadata()),
+    );
+    await controller.initialize();
+    final flags = FeatureFlagRuntime.safe();
+    addTearDown(flags.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MayhemTheme.dark,
+        builder: (context, child) => MayhemStringsScope(
+          strings: const MayhemStringsRu(),
+          child: MayhemSupportContactScope(
+            contact: SupportContact.resolve('help@example.com'),
+            opener: (_) async => false,
+            child: child!,
+          ),
+        ),
+        home: VNextSettingsScreen(
+          controller: controller,
+          featureFlags: flags,
+          onResetLocalData: () async {},
+        ),
+      ),
+    );
+
+    const label = 'СВЯЗАТЬСЯ С ПОДДЕРЖКОЙ';
+    await tester.scrollUntilVisible(find.text(label), 300);
+    await tester.tap(find.text(label));
+    await tester.pump();
+
+    expect(
+      find.text('Не удалось открыть канал поддержки на этом устройстве.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('privacy section discloses thresholded social aggregates', (

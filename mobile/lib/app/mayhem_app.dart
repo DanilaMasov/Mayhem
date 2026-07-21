@@ -6,6 +6,8 @@ import '../core/design_system/accessibility/mayhem_motion_preferences.dart';
 import '../core/feature_flags/feature_flag_runtime.dart';
 import '../core/feature_flags/feature_flags.dart';
 import '../core/localization/mayhem_strings.dart';
+import '../core/support/support_contact.dart';
+import '../core/support/support_contact_scope.dart';
 import '../dev/motion_lab/motion_lab.dart';
 import '../presentation/onboarding/boundaries_screen.dart';
 import '../presentation/onboarding/onboarding_quest_screen.dart';
@@ -22,12 +24,16 @@ class MayhemApp extends StatelessWidget {
     this.featureFlags,
     this.vnextRuntime,
     this.remoteDiagnostics,
+    this.supportContact,
+    this.supportContactOpener,
   });
 
   final TodayController controller;
   final FeatureFlagRuntime? featureFlags;
   final VNextRuntime? vnextRuntime;
   final RemoteRuntimeDiagnostics? remoteDiagnostics;
+  final SupportContact? supportContact;
+  final SupportContactOpener? supportContactOpener;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +50,13 @@ class MayhemApp extends StatelessWidget {
           theme: MayhemTheme.dark,
           builder: (context, child) => MayhemStringsScope(
             strings: const MayhemStringsRu(),
-            child: MayhemAccessibility(
-              preferences: const MayhemMotionPreferences(),
-              child: child ?? const SizedBox.shrink(),
+            child: MayhemSupportContactScope(
+              contact: supportContact,
+              opener: supportContactOpener,
+              child: MayhemAccessibility(
+                preferences: const MayhemMotionPreferences(),
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
           routes: mayhemInternalRoutes(debug: kDebugMode),

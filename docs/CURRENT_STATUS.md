@@ -3,9 +3,8 @@
 **Status date:** 2026-07-21
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-sentry-live-acceptance`
-**Current main checkpoint:** `7aee0da` (merge commit for PR #22)
-**Stacked local crash-client commit:** `9af7fad`
+**Current branch:** `codex/r5-support-path`
+**Current main checkpoint:** `d1327f5` (merge commit for PR #25)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -34,6 +33,8 @@
   privacy scrubber; production telemetry remains disabled.
 - Manual main-only Sentry ingestion/privacy acceptance harness with bounded,
   secret-free evidence; no live run has been claimed.
+- Owner-configurable support contact parsing and platform handoff shared by
+  legacy and vNext Settings; no public destination has been approved.
 
 ## Active work item
 
@@ -101,19 +102,24 @@ signing, backend configuration, telemetry, or release flags. Pull request
 [#22](https://github.com/DanilaMasov/Mayhem/pull/22) removes controls and status
 copy for capabilities that have no production implementation while preserving
 the persisted preference schema for backward-compatible reads; it is merged
-into `main` as `7aee0da`. Local commit `9af7fad` adds crash-only Sentry reporting
-for release staging builds. It is disabled for development and production,
-requires an injected public HTTPS staging DSN, and keeps app launch local-first
-when telemetry is missing, invalid, or unavailable. The current stacked R5
-slice adds a protected manual workflow that submits one synthetic event,
-retrieves that exact event and its attachments through the Sentry API, validates
-the server-visible privacy contract, and emits only bounded secret-free
-evidence. No staging project, DSN, API token, or successful live run is claimed.
+into `main` as `7aee0da`. Pull request
+[#23](https://github.com/DanilaMasov/Mayhem/pull/23) adds crash-only staging
+Sentry reporting and is merged as `d526219`. Pull request
+[#25](https://github.com/DanilaMasov/Mayhem/pull/25) adds its protected live
+ingestion/privacy harness directly to `main` and is merged as `d1327f5`; it
+corrects pull request #24 having targeted the already-merged crash-client
+branch. No staging project, DSN, API token, or successful live run is claimed.
+The current R5 support-path slice adds a strict compile-time email/HTTPS
+configuration boundary, one shared external action in both Settings
+implementations, recoverable launch failure, semantic widget coverage, and a
+repository release contract. No public support destination is invented or
+approved by this slice.
 
 ## Open software gates
 
-- R5 store registration, signing, store artwork, support path, live staging
-  Sentry provisioning/ingestion inspection, signed install/launch and
+- R5 store registration, signing, store artwork, owner approval/injection and
+  signed-device verification of the support destination, live staging Sentry
+  provisioning/ingestion inspection, signed install/launch,
   launcher-appearance acceptance, and release records.
 - R6 visual refinement, gated behind a signed staging candidate and a
   preliminary two-device R4 defect-finding pass.
@@ -144,9 +150,9 @@ evidence. No staging project, DSN, API token, or successful live run is claimed.
   `SUPABASE_URL` and `SUPABASE_ANON_KEY`; no production target is configured.
 - `new_feed_enabled` and all dependent release capabilities remain false.
 - Physical-device acceptance, store registration of the approved application
-  IDs, release signing, store artwork, signed launcher appearance, support
-  path, live staging crash-reporting acceptance, and store configuration remain
-  incomplete.
+  IDs, release signing, store artwork, signed launcher appearance, approval and
+  device verification of the support destination, live staging crash-reporting
+  acceptance, and store configuration remain incomplete.
 
 ## Verification
 
@@ -157,7 +163,7 @@ repeated on 2026-07-21; the latest live-backend evidence remains dated
 
 ```sh
 node --test tests/*.test.mjs
-# 61 passed
+# 62 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -173,7 +179,7 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 258 files, 0 changed
+# 262 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
@@ -182,7 +188,7 @@ flutter test --no-pub --no-test-assets tool/generate_launcher_icons_test.dart
 # 1 generator test passed; RGB platform assets reproduced
 
 flutter test --no-pub --no-test-assets -j 1
-# 259 passed; 2 live-only tests skipped without protected targets
+# 264 passed; 2 live-only tests skipped without protected targets
 ```
 
 R3 state-foundation local evidence:
@@ -645,16 +651,15 @@ checkout/setup actions; it does not affect the current green software gate.
 
 ## Next authorized slice
 
-The R5 release-identity and launcher slices are merged, unsigned staging release
-compilation is green, and the external staging Supabase gate through migrations
-`010-011` is closed. Settings honesty is merged at `7aee0da`. The privacy-locked
-crash client is committed locally at `9af7fad`; the current stacked slice makes
-its live ingestion/privacy gate reproducible without provisioning or shipping
-credentials. After both slices are merged, further R5 progress requires an
-approved support path plus an owner-provisioned staging Sentry project, DSN,
-`project:read` token, protected live run, signed candidate, and physical-device
-native-crash/symbolication acceptance. These are external owner/credential
-gates rather than safe local implementation work.
+The R5 release-identity, launcher, Settings honesty, privacy-locked crash client,
+and protected ingestion/privacy harness are merged through `d1327f5`. The
+current support-path slice prepares strict email/HTTPS validation and working
+Settings actions without inventing the owner's public destination. Once this
+slice is merged, remaining R5 progress requires an approved support value, an
+owner-provisioned staging Sentry project, DSN, `project:read` token, protected
+live run, signed candidate, and physical-device support/native-crash/
+symbolication acceptance. These are external owner, credential, signing, or
+device gates rather than safe local implementation work.
 Production backend values, production telemetry, and release flags remain
 unset.
 

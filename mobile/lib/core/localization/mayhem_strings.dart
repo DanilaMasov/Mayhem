@@ -177,6 +177,10 @@ abstract interface class MayhemStrings {
   String get russian;
   String get safetyResources;
   String get safetyResourcesBody;
+  String get support;
+  String get contactSupport;
+  String supportBody(String destination);
+  String get supportUnavailable;
   String get about;
   String get aboutBody;
   String get diagnostics;
@@ -627,6 +631,16 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get safetyResourcesBody =>
       'Не продолжай контакт после отказа. В небезопасной ситуации обращайся к подходящей экстренной или профессиональной помощи.';
+  @override
+  String get support => 'ПОДДЕРЖКА';
+  @override
+  String get contactSupport => 'СВЯЗАТЬСЯ С ПОДДЕРЖКОЙ';
+  @override
+  String supportBody(String destination) =>
+      'Откроется внешний канал поддержки: $destination.';
+  @override
+  String get supportUnavailable =>
+      'Не удалось открыть канал поддержки на этом устройстве.';
   @override
   String get about => 'О ПРИЛОЖЕНИИ';
   @override

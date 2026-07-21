@@ -4,6 +4,7 @@ import 'package:mayhem_mobile/app/mayhem_app.dart';
 import 'package:mayhem_mobile/application/today_controller.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flag_runtime.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
+import 'package:mayhem_mobile/core/support/support_contact.dart';
 import 'package:mayhem_mobile/domain/models/game_event.dart';
 import 'package:mayhem_mobile/domain/models/game_state.dart';
 import 'package:mayhem_mobile/domain/services/game_engine.dart';
@@ -108,7 +109,18 @@ void main() {
       clock: () => DateTime(2026, 7, 12, 13),
     );
     await controller.initialize();
-    await tester.pumpWidget(MayhemApp(controller: controller));
+    Uri? openedSupport;
+    final supportContact = SupportContact.resolve('help@example.com')!;
+    await tester.pumpWidget(
+      MayhemApp(
+        controller: controller,
+        supportContact: supportContact,
+        supportContactOpener: (uri) async {
+          openedSupport = uri;
+          return true;
+        },
+      ),
+    );
 
     expect(find.text('ЗАДАНИЕ 1'), findsOneWidget);
     await _completeOnboardingQuest(tester);
@@ -134,6 +146,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('НАСТРОЙКИ'), findsOneWidget);
     expect(find.text('ДАННЫЕ НА УСТРОЙСТВЕ'), findsOneWidget);
+    const supportLabel = 'СВЯЗАТЬСЯ С ПОДДЕРЖКОЙ';
+    await tester.scrollUntilVisible(find.text(supportLabel), 200);
+    await tester.tap(find.text(supportLabel));
+    await tester.pump();
+    expect(openedSupport, supportContact.uri);
     await tester.tap(find.text('УДАЛИТЬ ЛОКАЛЬНЫЕ ДАННЫЕ'));
     await tester.pumpAndSettle();
     expect(find.text('Удалить прогресс?'), findsOneWidget);
