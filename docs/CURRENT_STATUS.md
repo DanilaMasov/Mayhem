@@ -3,8 +3,9 @@
 **Status date:** 2026-07-21
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-support-path`
-**Current main checkpoint:** `d1327f5` (merge commit for PR #25)
+**Status handoff branch:** `main`
+**Current implementation checkpoint:** `7eca27a` (merged by PR #26 as
+`1849525`)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -109,11 +110,12 @@ Sentry reporting and is merged as `d526219`. Pull request
 ingestion/privacy harness directly to `main` and is merged as `d1327f5`; it
 corrects pull request #24 having targeted the already-merged crash-client
 branch. No staging project, DSN, API token, or successful live run is claimed.
-The current R5 support-path slice adds a strict compile-time email/HTTPS
-configuration boundary, one shared external action in both Settings
-implementations, recoverable launch failure, semantic widget coverage, and a
-repository release contract. No public support destination is invented or
-approved by this slice.
+Pull request [#26](https://github.com/DanilaMasov/Mayhem/pull/26) adds a strict
+compile-time email/HTTPS support configuration boundary, one shared external
+action in both Settings implementations, recoverable launch failure, semantic
+widget coverage, and a repository release contract. It is merged into `main`
+as `1849525`. No public support destination is invented or approved by this
+slice.
 
 ## Open software gates
 
@@ -652,14 +654,13 @@ checkout/setup actions; it does not affect the current green software gate.
 ## Next authorized slice
 
 The R5 release-identity, launcher, Settings honesty, privacy-locked crash client,
-and protected ingestion/privacy harness are merged through `d1327f5`. The
-current support-path slice prepares strict email/HTTPS validation and working
-Settings actions without inventing the owner's public destination. Once this
-slice is merged, remaining R5 progress requires an approved support value, an
-owner-provisioned staging Sentry project, DSN, `project:read` token, protected
-live run, signed candidate, and physical-device support/native-crash/
-symbolication acceptance. These are external owner, credential, signing, or
-device gates rather than safe local implementation work.
+protected ingestion/privacy harness, and support-path software boundary are
+merged through PR #26 (`1849525`). The remaining R5 progress requires an
+approved support value, an owner-provisioned staging Sentry project, DSN,
+`project:read` token, protected live run, signed candidate, and physical-device
+support/native-crash/symbolication acceptance. These are external owner,
+credential, signing, or device gates rather than safe local implementation
+work.
 Production backend values, production telemetry, and release flags remain
 unset.
 
