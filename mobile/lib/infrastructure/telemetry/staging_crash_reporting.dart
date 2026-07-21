@@ -135,12 +135,19 @@ class StagingCrashReportingConfiguration {
 
   static bool _isValidPublicDsn(String value) {
     final uri = Uri.tryParse(value);
+    String decodedUserInfo;
+    try {
+      decodedUserInfo = Uri.decodeComponent(uri?.userInfo ?? '');
+    } on FormatException {
+      return false;
+    }
     if (uri == null ||
         uri.scheme != 'https' ||
         !uri.hasAuthority ||
         uri.host.isEmpty ||
-        uri.userInfo.isEmpty ||
-        uri.userInfo.contains(':') ||
+        decodedUserInfo.isEmpty ||
+        decodedUserInfo.contains(':') ||
+        decodedUserInfo.contains('@') ||
         uri.query.isNotEmpty ||
         uri.fragment.isNotEmpty ||
         uri.pathSegments.isEmpty) {
