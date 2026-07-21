@@ -16,6 +16,9 @@ const iosStagingScheme = read(
   "mobile/ios/Runner.xcodeproj/xcshareddata/xcschemes/staging.xcscheme"
 );
 const mainDart = read("mobile/lib/main.dart");
+const crashReporting = read(
+  "mobile/lib/infrastructure/telemetry/staging_crash_reporting.dart"
+);
 const pubspec = read("mobile/pubspec.yaml");
 const gitignore = read(".gitignore");
 
@@ -96,6 +99,34 @@ test("version default and signing-artifact exclusions are explicit", () => {
   for (const pattern of ["*.jks", "*.keystore", "*.p12", "*.mobileprovision"]) {
     assert.match(gitignore, new RegExp(`^${escapeRegex(pattern)}$`, "m"));
   }
+});
+
+test("crash reporting is staging-only and privacy locked", () => {
+  assert.match(pubspec, /^\s+sentry_flutter: \^9\.24\.0$/m);
+  assert.match(mainDart, /String\.fromEnvironment\('MAYHEM_SENTRY_DSN'\)/);
+  assert.match(mainDart, /StagingCrashReportingConfiguration\.resolve/);
+  assert.match(
+    crashReporting,
+    /environment != MayhemRuntimeEnvironment\.staging/
+  );
+  assert.match(crashReporting, /if \(!releaseMode\)/);
+  for (const privacyLock of [
+    "sendDefaultPii = false",
+    "maxBreadcrumbs = 0",
+    "captureFailedRequests = false",
+    "captureNativeFailedRequests = false",
+    "enableLogs = false",
+    "enableMetrics = false",
+    "attachScreenshot = false",
+    "attachViewHierarchy = false",
+    "beforeBreadcrumb = ((_, _) => null)"
+  ]) {
+    assert.match(crashReporting, new RegExp(escapeRegex(privacyLock)));
+  }
+  assert.doesNotMatch(
+    `${mainDart}\n${crashReporting}`,
+    /https:\/\/[^\s@]+@[^\s/]+\/\d+/
+  );
 });
 
 function read(path) {

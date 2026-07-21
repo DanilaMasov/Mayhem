@@ -30,6 +30,7 @@ Production-oriented Flutter implementation for iOS and Android. The web app in t
 - production identity `com.danilamasov.mayhem` and isolated staging identity
   `com.danilamasov.mayhem.staging` on Android and iOS;
 - Android 10 / API 29 and iOS 16 minimum supported versions;
+- release-staging-only crash reporting with a privacy-locked Sentry adapter;
 - portrait phone orientation.
 
 ## Architecture
@@ -62,17 +63,21 @@ flutter test --no-pub --no-test-assets -j 1
 flutter run --no-pub --flavor staging
 ```
 
+Crash reporting remains disabled in debug and production builds. An approved
+staging release may opt in with
+`--dart-define=MAYHEM_SENTRY_DSN=<public-staging-dsn>`; the DSN must never be
+committed or printed in logs. Missing or invalid configuration cannot block the
+local-first launch path.
+
 The root JS catalog is a temporary legacy migration source. `content:export`
 still updates all four mobile JSON assets during the compatibility window;
 `content:check` fails when committed assets differ from a deterministic export.
 Production content will move to immutable versioned JSON records with schema
 validation before remote content is enabled.
 
-`--no-test-assets` is a temporary workaround for this host's incomplete Flutter
-3.44.6 engine cache while the framework compiles its standard
-`ink_sparkle.frag` test asset. The project does not invoke or require a separate
-`impellerc` binary; application shaders and assets remain on Flutter's standard
-pipeline. Domain and widget tests themselves pass.
+`--no-test-assets` keeps the repository gate independent of optional Flutter
+test-asset compilation. Application shaders and assets remain on Flutter's
+standard pipeline; the complete ordinary domain/widget suite passes locally.
 
 ## Toolchain status
 
@@ -91,10 +96,11 @@ in [`../docs/RELEASE_CONFIGURATION.md`](../docs/RELEASE_CONFIGURATION.md).
 The July 2026 master specification supersedes the previous incremental Today
 roadmap. The local-first Feed, production composition, live Supabase acceptance,
 and R3 Season/Boss software flow are implemented behind fail-closed production
-flags. Physical-device R4 evidence, migration `010` live acceptance, and R5
-release approvals remain open. See `../docs/CURRENT_STATUS.md` for the current
-checkpoint and `../docs/feed-vnext-execution-plan.md` for historical execution
-context.
+flags. Supabase migrations `001-011` have passed the protected staging gate;
+physical-device R4 evidence, signing/store ownership, live Sentry acceptance,
+and remaining R5 release approvals stay open. See `../docs/CURRENT_STATUS.md`
+for the current checkpoint and `../docs/feed-vnext-execution-plan.md` for
+historical execution context.
 
 ### Domain vNext foundation
 
@@ -132,9 +138,9 @@ Run the isolated gallery with:
 flutter run --no-pub --flavor staging -t lib/dev/motion_lab/main.dart
 ```
 
-The current local Flutter SDK cannot launch it because its engine cache is
-incomplete; no SDK repair or download was attempted. Widget tests and goldens
-cover the four required phone sizes and text scale through 1.6.
+Widget tests and goldens cover the four required phone sizes and text scale
+through 1.6. Simulator/emulator and physical-device execution remain separate
+acceptance gates.
 
 The Phase 2 software/design-system gate is passed. Simulator/emulator smoke
 remains a functional and visual check only. Physical iOS and Android performance

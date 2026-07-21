@@ -71,6 +71,35 @@ compile the checked-in staging configuration. It does not prove signing,
 installation, launch, runtime backend behavior, physical-device performance,
 accessibility, store registration, or distribution readiness.
 
+## Staging Crash Reporting
+
+The Flutter client includes `sentry_flutter 9.24.0` solely for crash reporting.
+It initializes only when all three conditions are true:
+
+- the native/runtime environment is exactly `staging`;
+- the app is compiled in release mode;
+- `MAYHEM_SENTRY_DSN` contains a valid public HTTPS Sentry DSN.
+
+Development and production builds remain fail-closed even if a DSN is passed
+accidentally. A missing, malformed, insecure, or secret-bearing DSN disables
+the adapter without blocking local-first app launch. The DSN is supplied as a
+Dart define by the approved CI/signing environment and must not be committed or
+printed in logs.
+
+The staging policy captures crashes only. Default PII, breadcrumbs, HTTP
+failures, request/response bodies, logs, metrics, performance traces, profiling,
+session replay, screenshots, view hierarchy, user-interaction data, package
+inventory, ANR/app-hang reports, and automatic session tracking are disabled.
+The final `beforeSend` scrubber also removes users, requests, attachments,
+arbitrary contexts, exception values, source context, local absolute paths, and
+mechanism data before an event can leave the process.
+
+No Sentry project or DSN is checked in. Live staging ingestion, symbolication,
+offline delivery, native crash capture, and privacy inspection remain open
+acceptance gates until the owner provisions an approved staging project and a
+signed staging build is exercised. Production crash reporting remains disabled
+until that staging policy is reviewed and explicitly approved for production.
+
 ## Launcher Assets
 
 Mayhem-owned production and staging launcher masters live under
@@ -135,9 +164,7 @@ Google Play accounts, but certificates, provisioning, Play App Signing, the
 Android upload keystore, encrypted backups, and CI environments remain an
 external manual gate.
 
-Product analytics remain absent for the closed alpha. Sentry is the approved
-crash-reporting direction, but no SDK or DSN is added until staging exists and
-the privacy configuration is implemented and tested: no default PII, replay,
-screenshots, attachments, user notes, tokens, request/response bodies, or raw
-server payloads, plus a bounded `beforeSend` scrubber. Production telemetry
-stays disabled until the staging policy is accepted.
+Product analytics remain absent for the closed alpha. The privacy-locked Sentry
+client is implemented for staging, but project provisioning, DSN injection,
+live event inspection, and signed-device acceptance remain external gates.
+Production telemetry stays disabled until the staging policy is accepted.

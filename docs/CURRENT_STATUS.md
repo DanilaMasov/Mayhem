@@ -1,10 +1,10 @@
 # Mayhem Current Status
 
-**Status date:** 2026-07-20
+**Status date:** 2026-07-21
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-settings-honesty`
-**Current main checkpoint:** `0f1281e` (merge commit for PR #21)
+**Current branch:** `codex/r5-staging-crash-reporting`
+**Current main checkpoint:** `7aee0da` (merge commit for PR #22)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -27,6 +27,10 @@
 - Production Supabase composition for anonymous auth, installation bootstrap,
   exact-ACK sync, cached/server flags, remote content, remote Feed, Season
   activation, reconciliation, manual retry, and confirmed global deletion.
+- Production/staging application identities, supported OS floors, unsigned
+  release-smoke CI, distinct launcher assets, and honest release Settings.
+- Release-staging-only Sentry crash client with a fail-closed DSN boundary and
+  privacy scrubber; production telemetry remains disabled.
 
 ## Active work item
 
@@ -90,15 +94,20 @@ the remaining default Flutter artwork with separate production and visibly
 marked staging icon sets for Android and iOS; it does not alter dependencies,
 signing, backend configuration, telemetry, or release flags. Pull request
 [#21](https://github.com/DanilaMasov/Mayhem/pull/21) is merged into `main` as
-`0f1281e`. The current R5 settings-honesty slice removes controls and status
+`0f1281e`. Pull request
+[#22](https://github.com/DanilaMasov/Mayhem/pull/22) removes controls and status
 copy for capabilities that have no production implementation while preserving
-the persisted preference schema for backward-compatible reads.
+the persisted preference schema for backward-compatible reads; it is merged
+into `main` as `7aee0da`. The current R5 slice adds crash-only Sentry reporting
+for release staging builds. It is disabled for development and production,
+requires an injected public HTTPS staging DSN, and keeps app launch local-first
+when telemetry is missing, invalid, or unavailable.
 
 ## Open software gates
 
-- R5 store registration, signing, store artwork, support path, privacy-safe
-  staging crash reporting, signed install/launch and launcher-appearance
-  acceptance, and release records.
+- R5 store registration, signing, store artwork, support path, live staging
+  Sentry provisioning/ingestion inspection, signed install/launch and
+  launcher-appearance acceptance, and release records.
 - R6 visual refinement, gated behind a signed staging candidate and a
   preliminary two-device R4 defect-finding pass.
 
@@ -129,17 +138,19 @@ the persisted preference schema for backward-compatible reads.
 - `new_feed_enabled` and all dependent release capabilities remain false.
 - Physical-device acceptance, store registration of the approved application
   IDs, release signing, store artwork, signed launcher appearance, support
-  path, crash reporting, and store configuration remain incomplete.
+  path, live staging crash-reporting acceptance, and store configuration remain
+  incomplete.
 
 ## Verification
 
 The broad clean-clone verification was completed on 2026-07-18. Repository
-contracts and live-backend evidence were repeated on 2026-07-20. Commands and
-latest applicable results:
+contracts, Flutter static/runtime checks, and generated-data checks were
+repeated on 2026-07-21; the latest live-backend evidence remains dated
+2026-07-20. Commands and latest applicable results:
 
 ```sh
 node --test tests/*.test.mjs
-# 54 passed
+# 55 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -155,7 +166,7 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 255 files, 0 changed
+# 257 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
@@ -164,7 +175,7 @@ flutter test --no-pub --no-test-assets tool/generate_launcher_icons_test.dart
 # 1 generator test passed; RGB platform assets reproduced
 
 flutter test --no-pub --no-test-assets -j 1
-# 254 passed; 1 live-only test skipped without an explicit disposable target
+# 259 passed; 1 live-only test skipped without an explicit disposable target
 ```
 
 R3 state-foundation local evidence:
@@ -373,10 +384,39 @@ R5 settings-honesty local evidence:
   remain absent, and an effective accessibility change is persisted;
 - the shell integration test locates Reset, Delete Everywhere, and Diagnostics
   semantically instead of relying on a fixed scroll distance;
-- all 54 repository contracts and 255 non-live Flutter tests pass locally; the
-  explicit disposable live test remains skipped in the ordinary suite;
+- all 54 repository contracts and 255 non-live Flutter tests passed for that
+  slice; the explicit disposable live test remained skipped in the ordinary
+  suite;
 - content, migration, SQLite, and seed checks, Dart format, and Flutter analyze
   pass without dependency, lockfile, SDK, backend, telemetry, or flag changes.
+
+R5 staging crash-reporting local evidence:
+
+- `sentry_flutter 9.24.0` is the only new direct dependency and is used solely
+  for crash capture; product analytics remain absent;
+- initialization requires release mode, the staging runtime/flavor, and a
+  valid public HTTPS `MAYHEM_SENTRY_DSN`; development, production, missing,
+  insecure, malformed, and secret-bearing configurations all fail closed;
+- default PII, breadcrumbs, HTTP capture, logs, metrics, tracing, profiling,
+  replay, screenshots, view hierarchy, user interactions, package inventory,
+  ANR/app-hang reporting, and automatic session tracking are disabled;
+- the final `beforeSend` scrubber removes users, requests, attachments,
+  arbitrary contexts, exception text, response/mechanism data, source context,
+  frame variables/registers, and local absolute paths;
+- Sentry initialization failure cannot block the local-first launch path, and
+  bootstrap diagnostics report only a bounded runtime type;
+- focused Flutter behavior tests and repository release contracts cover the
+  activation boundary, option policy, payload scrubbing, and absence of a
+  committed DSN;
+- all 55 repository contracts and 259 non-live Flutter tests pass locally; the
+  explicit disposable live test remains skipped in the ordinary suite;
+- an Android staging AAB attempt stopped before compilation because this host's
+  Android SDK directory contains no platforms or build tools; `flutter doctor`
+  also confirms that Xcode is incomplete and CocoaPods is absent, so native
+  Android/iOS compilation must be repeated in the hosted release-smoke gate;
+- no Sentry project/DSN, signing material, backend value, production telemetry,
+  product analytics, or release feature flag is added. Live ingestion,
+  symbolication, native crash capture, and privacy inspection remain open.
 
 Post-R1 correction local evidence:
 
@@ -577,11 +617,14 @@ checkout/setup actions; it does not affect the current green software gate.
 
 The R5 release-identity and launcher slices are merged, unsigned staging release
 compilation is green, and the external staging Supabase gate through migrations
-`010-011` is closed. After the current Settings honesty slice is merged, the
-remaining R5 work requires an approved support path, privacy-configured staging
-crash reporting, store/signing ownership, or signed staging distribution. These
-are external owner/credential gates rather than safe local implementation work.
-Production backend values and release flags remain unset.
+`010-011` is closed. Settings honesty is merged at `7aee0da`. The current slice
+implements the privacy-locked staging crash client without provisioning or
+shipping a DSN. After it is merged, the remaining R5 work requires an approved
+support path, an owner-provisioned staging Sentry project/DSN and live event
+inspection, store/signing ownership, or signed staging distribution. These are
+external owner/credential gates rather than safe local implementation work.
+Production backend values, production telemetry, and release flags remain
+unset.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to

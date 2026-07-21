@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import 'app/composition/app_composition_root.dart';
@@ -27,12 +28,41 @@ import 'features/settings/application/delete_everywhere_recovery_store.dart';
 import 'infrastructure/sqlite/sqflite_game_store.dart';
 import 'infrastructure/security/flutter_secure_session_store.dart';
 import 'infrastructure/supabase/supabase_runtime_config.dart';
+import 'infrastructure/telemetry/staging_crash_reporting.dart';
 import 'presentation/theme/mayhem_theme.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+const _configuredEnvironment = String.fromEnvironment('MAYHEM_ENVIRONMENT');
+const _configuredSentryDsn = String.fromEnvironment('MAYHEM_SENTRY_DSN');
+const _appVersion = String.fromEnvironment(
+  'MAYHEM_APP_VERSION',
+  defaultValue: '1.0.0+1',
+);
 
+Future<void> main() async {
+  SentryWidgetsFlutterBinding.ensureInitialized();
+  try {
+    final runtimeEnvironment = MayhemRuntimeEnvironment.resolve(
+      configured: _configuredEnvironment,
+      releaseMode: kReleaseMode,
+      flavor: appFlavor ?? '',
+    );
+    final crashReporting = StagingCrashReportingConfiguration.resolve(
+      environment: runtimeEnvironment,
+      releaseMode: kReleaseMode,
+      configuredDsn: _configuredSentryDsn,
+      appVersion: _appVersion,
+    );
+    await StagingCrashReporting.run(
+      configuration: crashReporting,
+      appRunner: () => _launchMayhem(runtimeEnvironment.name),
+    );
+  } catch (error, stackTrace) {
+    _showBootstrapFailure(error, stackTrace);
+  }
+}
+
+Future<void> _launchMayhem(String environment) async {
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   try {
     final catalog = await BundledQuestCatalog.load(rootBundle);
     final guides = await BundledGuideCatalog.load(rootBundle);
@@ -60,12 +90,6 @@ Future<void> main() async {
     );
     await controller.initialize();
     final featureFlags = FeatureFlagRuntime.fromEnvironment();
-    const configuredEnvironment = String.fromEnvironment('MAYHEM_ENVIRONMENT');
-    final environment = MayhemRuntimeEnvironment.resolve(
-      configured: configuredEnvironment,
-      releaseMode: kReleaseMode,
-      flavor: appFlavor ?? '',
-    ).name;
     final secureStorage = FlutterSecureKeyValueStore();
     final secureSessions = FlutterSecureSessionStore(
       storage: secureStorage,
@@ -141,10 +165,7 @@ Future<void> main() async {
         store: vnextStore,
         featureFlags: featureFlags,
         platform: Platform.operatingSystem,
-        appVersion: const String.fromEnvironment(
-          'MAYHEM_APP_VERSION',
-          defaultValue: '1.0.0+1',
-        ),
+        appVersion: _appVersion,
         environment: environment,
         clock: DateTime.now,
         clearLocalData: () async {
@@ -179,15 +200,19 @@ Future<void> main() async {
     runApp(composition.buildApp());
     unawaited(composition.startRemoteBootstrap());
   } catch (error, stackTrace) {
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stackTrace,
-        library: 'mayhem bootstrap',
-      ),
-    );
-    runApp(const _BootstrapFailureApp());
+    _showBootstrapFailure(error, stackTrace);
   }
+}
+
+void _showBootstrapFailure(Object error, StackTrace stackTrace) {
+  FlutterError.reportError(
+    FlutterErrorDetails(
+      exception: StateError('mayhem_bootstrap_${error.runtimeType}'),
+      stack: stackTrace,
+      library: 'mayhem bootstrap',
+    ),
+  );
+  runApp(const _BootstrapFailureApp());
 }
 
 class _BootstrapFailureApp extends StatelessWidget {
