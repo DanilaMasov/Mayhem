@@ -100,6 +100,16 @@ acceptance gates until the owner provisions an approved staging project and a
 signed staging build is exercised. Production crash reporting remains disabled
 until that staging policy is reviewed and explicitly approved for production.
 
+The manual, main-only
+`.github/workflows/staging-sentry-acceptance.yml` gate submits one synthetic
+release-staging event, retrieves the exact event and its attachment list with a
+least-privileged `project:read` token, and uploads only a bounded secret-free
+report. Its protected configuration and evidence contract are documented in
+[`R5_LIVE_SENTRY_ACCEPTANCE.md`](R5_LIVE_SENTRY_ACCEPTANCE.md). A passing hosted
+probe validates Dart-event ingestion and the server-visible privacy scrubber;
+it does not close native crash, symbolication, signed-build, or physical-device
+acceptance.
+
 ## Launcher Assets
 
 Mayhem-owned production and staging launcher masters live under

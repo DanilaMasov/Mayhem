@@ -37,6 +37,7 @@ void main() {
     for (final invalid in [
       _validDsn.replaceFirst('https', 'http'),
       _validDsn.replaceFirst('public-key', 'public-key:client-secret'),
+      _validDsn.replaceFirst('public-key', 'public-key%3Aclient-secret'),
       _validDsn.replaceFirst('/456', '/project-name'),
     ]) {
       final configuration = _configuration(dsn: invalid);
