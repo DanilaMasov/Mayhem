@@ -5,6 +5,7 @@ import '../../../core/design_system/tokens/tokens.dart';
 import '../../../core/feature_flags/feature_flag_runtime.dart';
 import '../../../core/feature_flags/feature_flags.dart';
 import '../../../core/localization/mayhem_strings.dart';
+import '../../../core/support/support_contact_scope.dart';
 import '../../../app/composition/remote_runtime_diagnostics.dart';
 import '../../challenge/domain/reward_policy.dart';
 import '../../onboarding/domain/onboarding_models.dart';
@@ -48,6 +49,7 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final support = MayhemSupportContactScope.maybeOf(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.settingsTitle),
@@ -169,6 +171,19 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
                 variant: MayhemTextVariant.bodySmall,
               ),
               const _SectionDivider(),
+              if (support?.isConfigured == true) ...[
+                _SectionTitle(strings.support),
+                MayhemText(
+                  strings.supportBody(support!.contact!.displayValue),
+                  variant: MayhemTextVariant.bodyMedium,
+                ),
+                const SizedBox(height: MayhemSpacing.x3),
+                MayhemSecondaryButton(
+                  label: strings.contactSupport,
+                  onPressed: _openSupport,
+                ),
+                const _SectionDivider(),
+              ],
               _SectionTitle(strings.safetyResources),
               MayhemText(
                 strings.safetyResourcesBody,
@@ -224,6 +239,20 @@ class _VNextSettingsScreenState extends State<VNextSettingsScreen> {
     } finally {
       if (mounted) setState(() => _resetting = false);
     }
+  }
+
+  Future<void> _openSupport() async {
+    final support = MayhemSupportContactScope.maybeOf(context);
+    var opened = false;
+    try {
+      opened = await support?.open() ?? false;
+    } catch (_) {
+      opened = false;
+    }
+    if (!mounted || opened) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.strings.supportUnavailable)));
   }
 
   Future<void> _retryRemoteSync() async {

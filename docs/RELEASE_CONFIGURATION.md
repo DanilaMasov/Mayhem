@@ -110,6 +110,36 @@ probe validates Dart-event ingestion and the server-visible privacy scrubber;
 it does not close native crash, symbolication, signed-build, or physical-device
 acceptance.
 
+## Support Contact
+
+Both the legacy and vNext Settings screens consume one compile-time
+`MAYHEM_SUPPORT_CONTACT` value. An approved release build may provide either:
+
+- a plain email address or canonical `mailto:` address without query data;
+- a public `https://` support page without embedded user credentials.
+
+Missing, malformed, insecure, credential-bearing, or unsupported schemes are
+ignored, so they cannot create a dead control or block local-first startup. A
+valid value exposes one user-initiated external action and a bounded public
+destination label. Failure to hand the URI to the platform is shown in-app and
+does not log or persist the URI.
+
+The implementation adds the Flutter-owned `url_launcher 6.3.2` plugin solely
+for this platform handoff. It calls `launchUrl` directly and handles failure;
+it does not probe installed applications or require Android package-visibility
+or iOS query-scheme declarations.
+
+Example release input:
+
+```sh
+--dart-define=MAYHEM_SUPPORT_CONTACT=support@example.com
+```
+
+This software boundary does not approve or provision the public destination.
+Before a signed beta, the owner must select the email or HTTPS page, inject the
+same approved value into both platform builds, and verify the action on signed
+physical-device installs. Until then the Settings entry remains absent.
+
 ## Launcher Assets
 
 Mayhem-owned production and staging launcher masters live under

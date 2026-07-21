@@ -31,6 +31,7 @@ Production-oriented Flutter implementation for iOS and Android. The web app in t
   `com.danilamasov.mayhem.staging` on Android and iOS;
 - Android 10 / API 29 and iOS 16 minimum supported versions;
 - release-staging-only crash reporting with a privacy-locked Sentry adapter;
+- release-configurable support contact shared by legacy and vNext Settings;
 - portrait phone orientation.
 
 ## Architecture
@@ -68,6 +69,14 @@ staging release may opt in with
 `--dart-define=MAYHEM_SENTRY_DSN=<public-staging-dsn>`; the DSN must never be
 committed or printed in logs. Missing or invalid configuration cannot block the
 local-first launch path.
+
+An approved release may expose a support email or HTTPS page in both Settings
+implementations with
+`--dart-define=MAYHEM_SUPPORT_CONTACT=<email-or-https-url>`. Empty, malformed,
+insecure, credential-bearing, and unsupported values create no dead control.
+The `url_launcher 6.3.2` dependency delegates the user-initiated action to the
+platform; a launch failure is reported in-app without affecting local use.
+Selecting and testing the public destination remains an owner/device gate.
 
 The protected live-ingestion test under `test/live/` is skipped in the ordinary
 suite. It runs only through the manual main-only Sentry acceptance workflow and

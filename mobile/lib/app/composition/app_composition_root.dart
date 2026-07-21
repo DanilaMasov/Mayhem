@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../../application/today_controller.dart';
 import '../../core/auth/secure_session_store.dart';
 import '../../core/feature_flags/feature_flag_runtime.dart';
+import '../../core/support/support_contact.dart';
 import '../mayhem_app.dart';
 import '../vnext/vnext_runtime.dart';
 import 'app_remote_orchestrator.dart';
@@ -22,6 +23,8 @@ class AppCompositionRoot extends ChangeNotifier
     required this.secureSessions,
     required this.remote,
     required this.closeLocalStore,
+    this.supportContact,
+    this.supportContactOpener,
     this.telemetry = const NoOpAppTelemetry(),
     WidgetsBinding? binding,
   }) : _binding = binding ?? WidgetsBinding.instance;
@@ -32,6 +35,8 @@ class AppCompositionRoot extends ChangeNotifier
   final SecureSessionStore secureSessions;
   final AppRemoteOrchestrator remote;
   final Future<void> Function() closeLocalStore;
+  final SupportContact? supportContact;
+  final SupportContactOpener? supportContactOpener;
   final AppTelemetry telemetry;
   final WidgetsBinding _binding;
   final AppCancellationSignal _cancellation = AppCancellationSignal();
@@ -58,6 +63,8 @@ class AppCompositionRoot extends ChangeNotifier
       featureFlags: featureFlags,
       vnextRuntime: vnextRuntime,
       remoteDiagnostics: this,
+      supportContact: supportContact,
+      supportContactOpener: supportContactOpener,
     );
   }
 

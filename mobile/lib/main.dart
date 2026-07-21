@@ -23,16 +23,21 @@ import 'core/clock/mayhem_clock.dart';
 import 'core/clock/platform_timezone_id.dart';
 import 'core/feature_flags/feature_flag_runtime.dart';
 import 'core/environment/runtime_environment.dart';
+import 'core/support/support_contact.dart';
 import 'features/sync/application/vnext_sync_coordinator.dart';
 import 'features/settings/application/delete_everywhere_recovery_store.dart';
 import 'infrastructure/sqlite/sqflite_game_store.dart';
 import 'infrastructure/security/flutter_secure_session_store.dart';
 import 'infrastructure/supabase/supabase_runtime_config.dart';
 import 'infrastructure/telemetry/staging_crash_reporting.dart';
+import 'infrastructure/support/url_launcher_support_contact.dart';
 import 'presentation/theme/mayhem_theme.dart';
 
 const _configuredEnvironment = String.fromEnvironment('MAYHEM_ENVIRONMENT');
 const _configuredSentryDsn = String.fromEnvironment('MAYHEM_SENTRY_DSN');
+const _configuredSupportContact = String.fromEnvironment(
+  'MAYHEM_SUPPORT_CONTACT',
+);
 const _appVersion = String.fromEnvironment(
   'MAYHEM_APP_VERSION',
   defaultValue: '1.0.0+1',
@@ -64,6 +69,7 @@ Future<void> main() async {
 Future<void> _launchMayhem(String environment) async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   try {
+    final supportContact = SupportContact.resolve(_configuredSupportContact);
     final catalog = await BundledQuestCatalog.load(rootBundle);
     final guides = await BundledGuideCatalog.load(rootBundle);
     final dialogs = await BundledDialogCatalog.load(rootBundle);
@@ -195,6 +201,10 @@ Future<void> _launchMayhem(String environment) async {
       vnextRuntime: vnextRuntime,
       secureSessions: secureSessions,
       remote: remote,
+      supportContact: supportContact,
+      supportContactOpener: supportContact == null
+          ? null
+          : openSupportContactWithPlatform,
       closeLocalStore: store.close,
     );
     runApp(composition.buildApp());

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../application/today_controller.dart';
+import '../../core/localization/mayhem_strings.dart';
+import '../../core/support/support_contact_scope.dart';
 import '../theme/mayhem_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final support = MayhemSupportContactScope.maybeOf(context);
     return Scaffold(
       appBar: AppBar(title: const Text('НАСТРОЙКИ')),
       body: ListView(
@@ -33,6 +36,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Любой вызов можно отложить без штрафа. Не продолжай контакт без взаимного комфорта. В кризисной или небезопасной ситуации используй подходящую профессиональную или экстренную помощь.',
             style: TextStyle(color: MayhemTheme.muted, height: 1.5),
           ),
+          if (support?.isConfigured == true) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Divider(color: MayhemTheme.line),
+            ),
+            const _SectionTitle('ПОДДЕРЖКА'),
+            const SizedBox(height: 12),
+            Text(
+              context.strings.supportBody(support!.contact!.displayValue),
+              style: const TextStyle(color: MayhemTheme.muted, height: 1.5),
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: _openSupport,
+              icon: const Icon(Icons.support_agent_outlined),
+              label: Text(context.strings.contactSupport),
+            ),
+          ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Divider(color: MayhemTheme.line),
@@ -97,6 +118,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SnackBar(content: Text('Не удалось удалить локальные данные.')),
       );
     }
+  }
+
+  Future<void> _openSupport() async {
+    final support = MayhemSupportContactScope.maybeOf(context);
+    var opened = false;
+    try {
+      opened = await support?.open() ?? false;
+    } catch (_) {
+      opened = false;
+    }
+    if (!mounted || opened) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.strings.supportUnavailable)));
   }
 }
 
