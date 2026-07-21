@@ -13,6 +13,10 @@ functionality.
   gates, latest evidence, and next authorized slice.
 - [Agent contract](AGENTS.md) - mandatory boundaries for future Codex sessions.
 - [Mobile documentation](mobile/README.md) - Flutter project details.
+- [Release configuration](docs/RELEASE_CONFIGURATION.md) - environments,
+  identities, signing, telemetry, and external ownership gates.
+- [R5 live Sentry acceptance](docs/R5_LIVE_SENTRY_ACCEPTANCE.md) - protected
+  staging ingestion/privacy runbook and bounded evidence contract.
 
 Kira and `.hatch-pets/` are not part of Mayhem. They must remain untracked and
 must never be imported into the product or used as product/design requirements.

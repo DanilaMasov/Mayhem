@@ -3,8 +3,9 @@
 **Status date:** 2026-07-21
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
-**Current branch:** `codex/r5-staging-crash-reporting`
+**Current branch:** `codex/r5-sentry-live-acceptance`
 **Current main checkpoint:** `7aee0da` (merge commit for PR #22)
+**Stacked local crash-client commit:** `9af7fad`
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -31,6 +32,8 @@
   release-smoke CI, distinct launcher assets, and honest release Settings.
 - Release-staging-only Sentry crash client with a fail-closed DSN boundary and
   privacy scrubber; production telemetry remains disabled.
+- Manual main-only Sentry ingestion/privacy acceptance harness with bounded,
+  secret-free evidence; no live run has been claimed.
 
 ## Active work item
 
@@ -98,10 +101,14 @@ signing, backend configuration, telemetry, or release flags. Pull request
 [#22](https://github.com/DanilaMasov/Mayhem/pull/22) removes controls and status
 copy for capabilities that have no production implementation while preserving
 the persisted preference schema for backward-compatible reads; it is merged
-into `main` as `7aee0da`. The current R5 slice adds crash-only Sentry reporting
+into `main` as `7aee0da`. Local commit `9af7fad` adds crash-only Sentry reporting
 for release staging builds. It is disabled for development and production,
 requires an injected public HTTPS staging DSN, and keeps app launch local-first
-when telemetry is missing, invalid, or unavailable.
+when telemetry is missing, invalid, or unavailable. The current stacked R5
+slice adds a protected manual workflow that submits one synthetic event,
+retrieves that exact event and its attachments through the Sentry API, validates
+the server-visible privacy contract, and emits only bounded secret-free
+evidence. No staging project, DSN, API token, or successful live run is claimed.
 
 ## Open software gates
 
@@ -150,7 +157,7 @@ repeated on 2026-07-21; the latest live-backend evidence remains dated
 
 ```sh
 node --test tests/*.test.mjs
-# 55 passed
+# 61 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -166,7 +173,7 @@ node scripts/export_supabase_seed.mjs --check
 
 cd mobile
 dart format --output=none --set-exit-if-changed lib test tool
-# 257 files, 0 changed
+# 258 files, 0 changed
 
 flutter analyze --no-pub
 # no issues
@@ -175,7 +182,7 @@ flutter test --no-pub --no-test-assets tool/generate_launcher_icons_test.dart
 # 1 generator test passed; RGB platform assets reproduced
 
 flutter test --no-pub --no-test-assets -j 1
-# 259 passed; 1 live-only test skipped without an explicit disposable target
+# 259 passed; 2 live-only tests skipped without protected targets
 ```
 
 R3 state-foundation local evidence:
@@ -418,6 +425,29 @@ R5 staging crash-reporting local evidence:
   product analytics, or release feature flag is added. Live ingestion,
   symbolication, native crash capture, and privacy inspection remain open.
 
+R5 Sentry live-acceptance scaffold local evidence:
+
+- `.github/workflows/staging-sentry-acceptance.yml` is manual, main-only,
+  approval-environment protected, read-only at the GitHub permission layer, and
+  requires an explicit synthetic-event confirmation;
+- the staging DSN and least-privileged Sentry API token enter only through
+  protected environment secrets and are never passed in command arguments;
+- the Flutter-test probe explicitly activates the separately tested
+  release-staging configuration, sends one synthetic event through the exact
+  checked-in scrubber, then writes only a runner-local event descriptor; it is
+  skipped without the protected confirmation;
+- the Node runner polls the exact event ID, retrieves the attachment list, and
+  proves nine bounded conditions covering ingestion, environment/release/policy
+  identity, marker removal, user/request/breadcrumb removal, exception
+  redaction, and attachment absence;
+- the uploaded seven-day report excludes the synthetic marker, DSN, API token,
+  organization/project slugs, and raw Sentry response; verifier and runner tests
+  reject protected-value leakage and unsafe production/insecure configuration;
+- all checks in this paragraph are local/static only. No Sentry project or
+  protected credentials are configured, and native crash capture,
+  symbolication, offline delivery, Sentry-UI review, signed builds, and devices
+  remain open live gates.
+
 Post-R1 correction local evidence:
 
 - Delete Everywhere models server deletion, cloud confirmation, secure-session
@@ -617,12 +647,14 @@ checkout/setup actions; it does not affect the current green software gate.
 
 The R5 release-identity and launcher slices are merged, unsigned staging release
 compilation is green, and the external staging Supabase gate through migrations
-`010-011` is closed. Settings honesty is merged at `7aee0da`. The current slice
-implements the privacy-locked staging crash client without provisioning or
-shipping a DSN. After it is merged, the remaining R5 work requires an approved
-support path, an owner-provisioned staging Sentry project/DSN and live event
-inspection, store/signing ownership, or signed staging distribution. These are
-external owner/credential gates rather than safe local implementation work.
+`010-011` is closed. Settings honesty is merged at `7aee0da`. The privacy-locked
+crash client is committed locally at `9af7fad`; the current stacked slice makes
+its live ingestion/privacy gate reproducible without provisioning or shipping
+credentials. After both slices are merged, further R5 progress requires an
+approved support path plus an owner-provisioned staging Sentry project, DSN,
+`project:read` token, protected live run, signed candidate, and physical-device
+native-crash/symbolication acceptance. These are external owner/credential
+gates rather than safe local implementation work.
 Production backend values, production telemetry, and release flags remain
 unset.
 

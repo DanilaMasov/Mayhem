@@ -69,6 +69,11 @@ staging release may opt in with
 committed or printed in logs. Missing or invalid configuration cannot block the
 local-first launch path.
 
+The protected live-ingestion test under `test/live/` is skipped in the ordinary
+suite. It runs only through the manual main-only Sentry acceptance workflow and
+never receives the project API token. See
+[`../docs/R5_LIVE_SENTRY_ACCEPTANCE.md`](../docs/R5_LIVE_SENTRY_ACCEPTANCE.md).
+
 The root JS catalog is a temporary legacy migration source. `content:export`
 still updates all four mobile JSON assets during the compatibility window;
 `content:check` fails when committed assets differ from a deterministic export.

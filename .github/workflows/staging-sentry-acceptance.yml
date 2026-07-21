@@ -1,0 +1,88 @@
+name: Staging Sentry Acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Confirm that one synthetic privacy probe may be sent to staging
+        required: true
+        type: choice
+        options:
+          - I_UNDERSTAND_THIS_SENDS_A_SYNTHETIC_STAGING_EVENT
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-sentry-acceptance
+  cancel-in-progress: false
+
+jobs:
+  live-acceptance:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirmation == 'I_UNDERSTAND_THIS_SENDS_A_SYNTHETIC_STAGING_EVENT'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging-acceptance
+    env:
+      MAYHEM_R5_SENTRY_CONFIRM: ${{ inputs.confirmation }}
+      MAYHEM_R5_SENTRY_ENVIRONMENT_ID: ${{ vars.MAYHEM_R5_SENTRY_ENVIRONMENT_ID }}
+      MAYHEM_R5_SENTRY_SUBMISSION_PATH: /tmp/mayhem-r5-sentry-submission.json
+      MAYHEM_R5_SENTRY_REPORT_PATH: /tmp/mayhem-r5-sentry-report.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - name: Validate protected configuration
+        env:
+          MAYHEM_SENTRY_DSN: ${{ secrets.MAYHEM_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_API_BASE_URL: ${{ vars.SENTRY_API_BASE_URL || 'https://sentry.io' }}
+        run: |
+          test "$MAYHEM_R5_SENTRY_CONFIRM" = "I_UNDERSTAND_THIS_SENDS_A_SYNTHETIC_STAGING_EVENT"
+          test -n "$MAYHEM_R5_SENTRY_ENVIRONMENT_ID"
+          test -n "$MAYHEM_SENTRY_DSN"
+          test -n "$SENTRY_AUTH_TOKEN"
+          test -n "$SENTRY_ORG"
+          test -n "$SENTRY_PROJECT"
+          test -n "$SENTRY_API_BASE_URL"
+      - name: Resolve locked Flutter dependencies
+        working-directory: mobile
+        run: flutter pub get --enforce-lockfile
+      - name: Submit one scrubbed staging privacy probe
+        working-directory: mobile
+        env:
+          MAYHEM_SENTRY_DSN: ${{ secrets.MAYHEM_SENTRY_DSN }}
+        run: >-
+          flutter test --no-pub --no-test-assets -j 1
+          test/live/r5_live_sentry_test.dart
+      - name: Inspect live event and attachments
+        env:
+          MAYHEM_SENTRY_DSN: ${{ secrets.MAYHEM_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_API_BASE_URL: ${{ vars.SENTRY_API_BASE_URL || 'https://sentry.io' }}
+        run: node scripts/run_live_sentry_acceptance.mjs
+      - name: Verify secret-free acceptance report
+        env:
+          MAYHEM_SENTRY_DSN: ${{ secrets.MAYHEM_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: node scripts/verify_live_sentry_report.mjs
+      - name: Upload secret-free evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r5-sentry-live-report-${{ github.run_id }}
+          path: /tmp/mayhem-r5-sentry-report.json
+          if-no-files-found: warn
+          retention-days: 7
