@@ -27,6 +27,7 @@ abstract final class MayhemTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: MayhemTypography.bodyFontFamily,
       colorScheme: scheme,
       scaffoldBackgroundColor: MayhemColors.canvasBase,
       dividerColor: MayhemColors.lineSubtle,
@@ -47,6 +48,7 @@ abstract final class MayhemTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: MayhemColors.canvasBase,
         foregroundColor: MayhemColors.textPrimary,
+        titleTextStyle: MayhemTypography.navigationTitle,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),

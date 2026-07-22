@@ -24,11 +24,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: MayhemTheme.dark.copyWith(
-          textTheme: MayhemTheme.dark.textTheme.apply(
-            fontFamily: 'MayhemGoldenRoboto',
-          ),
-        ),
+        theme: MayhemTheme.dark,
         home: MediaQuery(
           data: const MediaQueryData(
             size: Size(390, 844),
@@ -165,11 +161,7 @@ void main() {
 Future<void> _pumpApp(WidgetTester tester, VNextRuntime runtime) async {
   await tester.pumpWidget(
     MaterialApp(
-      theme: MayhemTheme.dark.copyWith(
-        textTheme: MayhemTheme.dark.textTheme.apply(
-          fontFamily: 'MayhemGoldenRoboto',
-        ),
-      ),
+      theme: MayhemTheme.dark,
       home: MediaQuery(
         data: const MediaQueryData(
           size: Size(390, 844),

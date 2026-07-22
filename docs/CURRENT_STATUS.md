@@ -48,6 +48,10 @@
   balanced-trait thresholds, current progress, and recent real actions.
 - A readable skill-map legend plus a persistent sixteen-style arena collection
   that unlocks cumulatively from the frozen local rank ladder.
+- Offline-bundled Cyrillic typography using Manrope for interface copy and
+  Unbounded for display/rank moments, with pinned upstream licenses and hashes.
+- Layered deterministic background atmosphere across the vNext shell plus a
+  richer trait-colored Feed scene without network-fetched artwork.
 
 ## Active work item
 
@@ -293,6 +297,33 @@ remains open.
   repository contracts and Flutter passed, including Linux golden comparison;
 - [pull-request release-smoke run 29941700592](https://github.com/DanilaMasov/Mayhem/actions/runs/29941700592):
   unsigned Android and iOS staging compilation passed.
+
+The local `codex/typography-backgrounds` software gate passed on 2026-07-22:
+
+```sh
+node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+flutter pub get --offline --enforce-lockfile
+# locked dependencies restored; lockfile unchanged
+
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 275 passed; 2 protected live-only tests skipped
+```
+
+The suite now loads the exact bundled font files for visual baselines instead
+of substituting SDK Roboto. It verifies display/body family assignment, the
+existing no-fallback-underline contract, four phone viewports, 1.6x text, the
+challenge-result keyboard case, rank path, skill legend, style collection, and
+updated Feed/Journey/You and Motion Lab goldens. macOS goldens were inspected
+at 390x844; physical-device visual and interaction acceptance remains open.
 
 ```sh
 node --test tests/*.test.mjs
@@ -798,10 +829,11 @@ unset.
 The readable local rating path is merged through PR #33 (`632e136`) and handed
 off in preview 4. The skill-map legend plus persistent per-rank visual style
 collection is merged through PR #35 (`68ebc3c`) and handed off in preview 5;
-custom font refinement and broader Feed/background art direction follow as
-their own visually testable slice. A real public leaderboard per rank is not a
-local-only UI feature; it remains gated on an explicit server, privacy, abuse,
-and account-identity design instead of being simulated with fake users.
+the current typography/background slice bundles pinned Cyrillic fonts and
+refreshes vNext/Feed atmosphere as its own visually testable change. A real
+public leaderboard per rank is not a local-only UI feature; it remains gated
+on an explicit server, privacy, abuse, and account-identity design instead of
+being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR

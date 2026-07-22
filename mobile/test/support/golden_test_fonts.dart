@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import 'package:mayhem_mobile/core/debug/debug_visual_overlays.dart';
+import 'package:mayhem_mobile/core/design_system/tokens/tokens.dart';
 
 String goldenTestPath(String fileName) {
   if (Platform.isLinux) {
@@ -14,17 +15,41 @@ String goldenTestPath(String fileName) {
 Future<void> loadGoldenTestFonts() async {
   resetMayhemDebugVisualOverlays();
   final materialFonts = _findMaterialFontsDirectory();
+  final projectRoot = _findProjectRoot();
 
-  final text = FontLoader('MayhemGoldenRoboto')
-    ..addFont(_fontData(File('${materialFonts.path}/Roboto-Regular.ttf')))
-    ..addFont(_fontData(File('${materialFonts.path}/Roboto-Medium.ttf')))
-    ..addFont(_fontData(File('${materialFonts.path}/Roboto-Bold.ttf')));
+  final body = FontLoader(MayhemTypography.bodyFontFamily)
+    ..addFont(
+      _fontData(
+        File(
+          '${projectRoot.path}/assets/fonts/manrope/'
+          'Manrope-VariableFont_wght.ttf',
+        ),
+      ),
+    );
+  final display = FontLoader(MayhemTypography.displayFontFamily)
+    ..addFont(
+      _fontData(
+        File(
+          '${projectRoot.path}/assets/fonts/unbounded/'
+          'Unbounded-VariableFont_wght.ttf',
+        ),
+      ),
+    );
   final icons = FontLoader('MaterialIcons')
     ..addFont(
       _fontData(File('${materialFonts.path}/MaterialIcons-Regular.otf')),
     );
 
-  await Future.wait([text.load(), icons.load()]);
+  await Future.wait([body.load(), display.load(), icons.load()]);
+}
+
+Directory _findProjectRoot() {
+  var cursor = Directory.current;
+  while (cursor.parent.path != cursor.path) {
+    if (File('${cursor.path}/pubspec.yaml').existsSync()) return cursor;
+    cursor = cursor.parent;
+  }
+  throw StateError('Mayhem Flutter project root was not found.');
 }
 
 Directory _findMaterialFontsDirectory() {

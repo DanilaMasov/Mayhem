@@ -19,6 +19,28 @@ void main() {
     expect(text.style?.decoration, isNull);
   });
 
+  testWidgets('Mayhem text uses the bundled display and body families', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Column(
+          children: [
+            MayhemText(
+              'СИЛЬНЫЙ ЗАГОЛОВОК',
+              variant: MayhemTextVariant.displayMedium,
+            ),
+            MayhemText('Спокойный текст'),
+          ],
+        ),
+      ),
+    );
+
+    final texts = tester.widgetList<Text>(find.byType(Text)).toList();
+    expect(texts[0].style?.fontFamily, MayhemTypography.displayFontFamily);
+    expect(texts[1].style?.fontFamily, MayhemTypography.bodyFontFamily);
+  });
+
   group('design tokens', () {
     test('match the master specification', () {
       expect(MayhemColors.canvasDeep, const Color(0xFF050608));
@@ -29,6 +51,18 @@ void main() {
       expect(MayhemRadii.mediumValue, 18);
       expect(MayhemDurations.slow, const Duration(milliseconds: 620));
       expect(MayhemTypography.displayHero.fontSize, 48);
+      expect(
+        MayhemTypography.displayHero.fontFamily,
+        MayhemTypography.displayFontFamily,
+      );
+      expect(
+        MayhemTypography.bodyLarge.fontFamily,
+        MayhemTypography.bodyFontFamily,
+      );
+      expect(
+        MayhemTypography.navigationTitle.fontFamily,
+        MayhemTypography.bodyFontFamily,
+      );
       expect(MayhemTypography.bodyLarge.height, 1.45);
     });
 
