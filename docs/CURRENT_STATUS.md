@@ -325,6 +325,10 @@ challenge-result keyboard case, rank path, skill legend, style collection, and
 updated Feed/Journey/You and Motion Lab goldens. macOS goldens were inspected
 at 390x844; physical-device visual and interaction acceptance remains open.
 
+- [Linux baseline generation run 29947144700](https://github.com/DanilaMasov/Mayhem/actions/runs/29947144700):
+  both visual suites regenerated successfully on Flutter 3.44.6; the
+  one-off workflow remains isolated from the product branch.
+
 ```sh
 node --test tests/*.test.mjs
 # 66 passed
