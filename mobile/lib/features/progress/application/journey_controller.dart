@@ -133,11 +133,13 @@ class JourneyController extends ChangeNotifier {
     MomentumState momentumState,
   ) {
     final rank = DevelopmentRankConfig.policy().resolve(
-      totalXp: current.totalXp,
+      ratingScore: current.ratingScore,
       traitXp: current.traitXp,
     );
     return ProgressProjection(
       totalXp: current.totalXp,
+      ratingScore: current.ratingScore,
+      peakRatingScore: current.peakRatingScore,
       traitXp: current.traitXp,
       rank: rank.rank,
       rankProgress: rank.progressToNext,
@@ -154,11 +156,13 @@ class JourneyController extends ChangeNotifier {
     final now = _clock().toUtc();
     final traitXp = {for (final trait in Trait.values) trait: 0};
     final rank = DevelopmentRankConfig.policy().resolve(
-      totalXp: 0,
+      ratingScore: DevelopmentRankConfig.startingRating,
       traitXp: traitXp,
     );
     return ProgressProjection(
       totalXp: 0,
+      ratingScore: DevelopmentRankConfig.startingRating,
+      peakRatingScore: DevelopmentRankConfig.startingRating,
       traitXp: traitXp,
       rank: rank.rank,
       rankProgress: rank.progressToNext,

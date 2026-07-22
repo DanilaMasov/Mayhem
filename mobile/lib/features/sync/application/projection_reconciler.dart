@@ -3,6 +3,7 @@ import '../../challenge/domain/challenge_models.dart';
 import '../../progress/domain/development_rank_config.dart';
 import '../../progress/domain/difficulty_update_policy.dart';
 import '../../progress/domain/progress_models.dart';
+import '../../progress/domain/rating_update_policy.dart';
 import '../../season/domain/artifact_ownership.dart';
 import '../../streak/domain/momentum_policy.dart';
 import '../domain/backend_models.dart';
@@ -12,10 +13,12 @@ class ProjectionReconciler {
   const ProjectionReconciler({
     this.difficultyPolicy = const DifficultyUpdatePolicy(),
     this.momentumPolicy = const MomentumPolicy(),
+    this.ratingPolicy = const RatingUpdatePolicy(),
   });
 
   final DifficultyUpdatePolicy difficultyPolicy;
   final MomentumPolicy momentumPolicy;
+  final RatingUpdatePolicy ratingPolicy;
 
   ReconciledState reconcile({
     required ProgressProjection local,
@@ -39,6 +42,8 @@ class ProjectionReconciler {
         (left, right) => left.clientSequence.compareTo(right.clientSequence),
       );
     var totalXp = server.projection.totalXp;
+    var ratingScore = server.projection.ratingScore;
+    var peakRatingScore = server.projection.peakRatingScore;
     final traitXp = Map<Trait, int>.from(server.projection.traitXp);
     final difficulty = Map<Trait, DifficultyState>.from(
       server.projection.difficulty,
@@ -57,7 +62,14 @@ class ProjectionReconciler {
         }
         final reward = event.payload['rewardXp'];
         final felt = event.payload['felt'];
-        if (reward is! int || reward < 0 || reward > 10000 || felt is! String) {
+        final route = event.payload['route'];
+        final repeatMultiplier = event.payload['rewardRepeatMultiplierPercent'];
+        if (reward is! int ||
+            reward < 0 ||
+            reward > 10000 ||
+            felt is! String ||
+            route is! String ||
+            repeatMultiplier is! int) {
           throw const FormatException('Pending reward event is invalid');
         }
         final outcome =
@@ -90,6 +102,16 @@ class ProjectionReconciler {
           ),
           event.occurredAtUtc,
         );
+        final rating = ratingPolicy.update(
+          currentScore: ratingScore,
+          outcome: outcome,
+          felt: FeltComparedToExpected.values.byName(felt),
+          route: ChallengeRouteType.values.byName(route),
+          intensity: descriptor.intensity,
+          repeatMultiplierPercent: repeatMultiplier,
+        );
+        ratingScore = rating.score;
+        if (ratingScore > peakRatingScore) peakRatingScore = ratingScore;
         if (outcome == AttemptOutcome.completed) {
           completedCount += 1;
         } else {
@@ -113,11 +135,13 @@ class ProjectionReconciler {
     }
 
     final rank = DevelopmentRankConfig.policy().resolve(
-      totalXp: totalXp,
+      ratingScore: ratingScore,
       traitXp: traitXp,
     );
     final projection = ProgressProjection(
       totalXp: totalXp,
+      ratingScore: ratingScore,
+      peakRatingScore: peakRatingScore,
       traitXp: traitXp,
       rank: rank.rank,
       rankProgress: rank.progressToNext,
@@ -129,7 +153,8 @@ class ProjectionReconciler {
       source: ProjectionSource.serverReconciled,
     );
     final reasons = <CorrectionReason>{};
-    if (projection.totalXp != local.totalXp) {
+    if (projection.totalXp != local.totalXp ||
+        projection.ratingScore != local.ratingScore) {
       reasons.add(CorrectionReason.serverProjectionCorrected);
     }
     if (projection.rank.label != local.rank.label) {

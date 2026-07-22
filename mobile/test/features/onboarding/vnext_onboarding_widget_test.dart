@@ -75,7 +75,7 @@ void main() {
         await tester.tap(find.text('Я ПОНИМАЮ'));
         await tester.pumpAndSettle();
         expect(find.text('СТАРТОВЫЙ СИГНАЛ'), findsOneWidget);
-        expect(find.text('SPARK I'), findsOneWidget);
+        expect(find.text('ИСКРА'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
         await tester.scrollUntilVisible(

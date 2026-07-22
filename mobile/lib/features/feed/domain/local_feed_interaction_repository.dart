@@ -20,4 +20,11 @@ abstract interface class LocalFeedInteractionRepository {
     required FeedSkipReason reason,
     required EventDraftV2 event,
   });
+
+  Future<bool> commitScenarioChoice({
+    required String assignmentId,
+    required int choiceIndex,
+    required DateTime answeredAtUtc,
+    required EventDraftV2 event,
+  });
 }

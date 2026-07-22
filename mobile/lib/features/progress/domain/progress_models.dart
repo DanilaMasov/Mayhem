@@ -42,20 +42,34 @@ class PrestigeRank {
   final int tier;
   final String configRevision;
 
-  String get label => family == RankFamily.mayhem
-      ? 'MAYHEM'
-      : '${family.name.toUpperCase()} ${_roman(tier)}';
+  String get stableId => '${family.name}.$tier';
 
-  static String _roman(int value) => switch (value) {
-    1 => 'I',
-    2 => 'II',
-    _ => 'III',
+  String get label => switch ((family, tier)) {
+    (RankFamily.spark, 1) => 'ИСКРА',
+    (RankFamily.spark, 2) => 'ИМПУЛЬС',
+    (RankFamily.spark, 3) => 'РАЗРЯД',
+    (RankFamily.mover, 1) => 'ВЕКТОР',
+    (RankFamily.mover, 2) => 'ДРАЙВЕР',
+    (RankFamily.mover, 3) => 'ПРОРЫВ',
+    (RankFamily.catalyst, 1) => 'КАТАЛИЗАТОР',
+    (RankFamily.catalyst, 2) => 'РЕЗОНАНС',
+    (RankFamily.catalyst, 3) => 'СИНЕРГИЯ',
+    (RankFamily.maverick, 1) => 'МАВЕРИК',
+    (RankFamily.maverick, 2) => 'АВАНГАРД',
+    (RankFamily.maverick, 3) => 'ПЕРВОПРОХОДЕЦ',
+    (RankFamily.icon, 1) => 'МАГНИТ',
+    (RankFamily.icon, 2) => 'ИКОНА',
+    (RankFamily.icon, 3) => 'ЛЕГЕНДА',
+    (RankFamily.mayhem, 1) => 'MAYHEM',
+    _ => throw StateError('Unsupported prestige rank'),
   };
 }
 
 class ProgressProjection {
   ProgressProjection({
     required this.totalXp,
+    required this.ratingScore,
+    required int peakRatingScore,
     required Map<Trait, int> traitXp,
     required this.rank,
     required this.rankProgress,
@@ -65,9 +79,14 @@ class ProgressProjection {
     required this.attemptedCount,
     required this.updatedAt,
     required this.source,
-  }) : traitXp = Map.unmodifiable(traitXp),
+  }) : peakRatingScore = peakRatingScore,
+       traitXp = Map.unmodifiable(traitXp),
        difficulty = Map.unmodifiable(difficulty) {
-    if (totalXp < 0 || completedCount < 0 || attemptedCount < 0) {
+    if (totalXp < 0 ||
+        ratingScore < 0 ||
+        peakRatingScore < ratingScore ||
+        completedCount < 0 ||
+        attemptedCount < 0) {
       throw const FormatException('Progress values must not be negative');
     }
     if (rankProgress < 0 || rankProgress > 1) {
@@ -76,6 +95,8 @@ class ProgressProjection {
   }
 
   final int totalXp;
+  final int ratingScore;
+  final int peakRatingScore;
   final Map<Trait, int> traitXp;
   final PrestigeRank rank;
   final double rankProgress;

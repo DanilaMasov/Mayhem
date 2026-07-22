@@ -121,8 +121,17 @@ class FeedSessionCoordinator {
       }
     }
 
+    final visibleAssignments = <FeedAssignment>[];
+    for (final assignment in assignments) {
+      final attempt = await attempts.findByAssignment(assignment.assignmentId);
+      if (attempt?.isTerminal == true ||
+          assignment.boundedMetadata['_scenarioChoiceIndex'] is num) {
+        continue;
+      }
+      visibleAssignments.add(assignment);
+    }
     final revisions = await Future.wait([
-      for (final assignment in assignments)
+      for (final assignment in visibleAssignments)
         content.findRevision(
           contentId: assignment.contentId,
           revision: assignment.contentRevision,
@@ -130,17 +139,17 @@ class FeedSessionCoordinator {
         ),
     ]);
     final items = <FeedSessionItem>[];
-    for (var index = 0; index < assignments.length; index += 1) {
+    for (var index = 0; index < visibleAssignments.length; index += 1) {
       final revision = revisions[index];
-      if (revision == null || !assignments[index].matches(revision)) {
+      if (revision == null || !visibleAssignments[index].matches(revision)) {
         throw StateError(
           'Feed assignment content is unavailable: '
-          '${assignments[index].assignmentId}',
+          '${visibleAssignments[index].assignmentId}',
         );
       }
       items.add(
         FeedSessionItem(
-          assignment: assignments[index],
+          assignment: visibleAssignments[index],
           revision: revision,
           challenge: revision.type == ContentItemType.challenge
               ? bundled.challenges[revision.contentId]

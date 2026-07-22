@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../content/domain/content_item_revision.dart';
 import '../../features/challenge/domain/challenge_models.dart';
 import '../../features/feed/domain/feed_models.dart';
+import '../../features/progress/domain/development_rank_config.dart';
 import '../../features/progress/domain/progress_models.dart';
 import '../../features/reflection/domain/private_reflection.dart';
 import '../../features/streak/domain/momentum_state.dart';
@@ -263,6 +264,8 @@ abstract final class SqliteReflectionMapper {
 abstract final class SqliteProjectionMapper {
   static Map<String, Object?> progressToJson(ProgressProjection projection) => {
     'totalXp': projection.totalXp,
+    'ratingScore': projection.ratingScore,
+    'peakRatingScore': projection.peakRatingScore,
     'traitXp': {
       for (final entry in projection.traitXp.entries)
         entry.key.name: entry.value,
@@ -298,24 +301,38 @@ abstract final class SqliteProjectionMapper {
     final rankJson = json['rank'] as Map<String, dynamic>?;
     final difficultyJson =
         json['difficulty'] as Map<String, dynamic>? ?? const {};
+    final storedRank = rankJson == null
+        ? PrestigeRank(
+            family: RankFamily.spark,
+            tier: 1,
+            configRevision: 'local_v1',
+          )
+        : PrestigeRank(
+            family: RankFamily.values.byName(rankJson['family'] as String),
+            tier: (rankJson['tier'] as num).toInt(),
+            configRevision: rankJson['configRevision'] as String,
+          );
+    final rankProgress = (json['rankProgress'] as num?)?.toDouble() ?? 0;
+    final ratingScore =
+        (json['ratingScore'] as num?)?.toInt() ??
+        DevelopmentRankConfig.migrateLegacyRating(
+          rank: storedRank,
+          rankProgress: rankProgress,
+        );
+    final peakRatingScore =
+        (json['peakRatingScore'] as num?)?.toInt() ?? ratingScore;
     return ProgressProjection(
       totalXp: (json['totalXp'] as num?)?.toInt() ?? 0,
+      ratingScore: ratingScore,
+      peakRatingScore: peakRatingScore < ratingScore
+          ? ratingScore
+          : peakRatingScore,
       traitXp: {
         for (final trait in Trait.values)
           trait: (traitJson[trait.name] as num?)?.toInt() ?? 0,
       },
-      rank: rankJson == null
-          ? PrestigeRank(
-              family: RankFamily.spark,
-              tier: 1,
-              configRevision: 'local_v1',
-            )
-          : PrestigeRank(
-              family: RankFamily.values.byName(rankJson['family'] as String),
-              tier: (rankJson['tier'] as num).toInt(),
-              configRevision: rankJson['configRevision'] as String,
-            ),
-      rankProgress: (json['rankProgress'] as num?)?.toDouble() ?? 0,
+      rank: storedRank,
+      rankProgress: rankProgress,
       momentum: json['momentum'] is Map<String, dynamic>
           ? momentumFromJson(json['momentum'] as Map<String, dynamic>)
           : MomentumState.empty(),

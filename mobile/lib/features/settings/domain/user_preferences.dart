@@ -17,6 +17,9 @@ class UserPreferences {
   final bool soundEnabled;
   final bool ceremoniesEnabled;
   final String locale;
+
+  // Retained only so snapshots written by the retired rank-style collection
+  // continue to deserialize. The release UI intentionally ignores this field.
   final String? rankStyleId;
 
   UserPreferences copyWith({

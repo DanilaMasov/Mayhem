@@ -44,7 +44,7 @@ void main() {
         progress.value?.rank.configRevision,
         DevelopmentRankConfig.revision,
       );
-      expect(progress.value?.rank.label, 'SPARK I');
+      expect(progress.value?.rank.label, 'ИСКРА');
       expect(
         progress.value?.difficulty[CalibrationPolicy.traitOrder.first]?.rating,
         3.5,

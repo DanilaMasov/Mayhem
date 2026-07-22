@@ -299,7 +299,12 @@ EventEnvelopeV2 _event(String eventId, int sequence) => EventEnvelopeV2(
   attemptId: 'attempt-id',
   contentId: 'challenge',
   contentRevision: 1,
-  payload: const {'rewardXp': 100, 'felt': 'aboutAsExpected'},
+  payload: const {
+    'rewardXp': 100,
+    'felt': 'aboutAsExpected',
+    'route': 'normal',
+    'rewardRepeatMultiplierPercent': 100,
+  },
 );
 
 ServerProjectionSnapshot _serverProjection() =>

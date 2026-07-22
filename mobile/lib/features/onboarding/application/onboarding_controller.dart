@@ -132,12 +132,14 @@ class OnboardingController extends ChangeNotifier {
     final now = _clock().toUtc();
     final traitXp = {for (final trait in Trait.values) trait: 0};
     final rank = DevelopmentRankConfig.policy().resolve(
-      totalXp: 0,
+      ratingScore: DevelopmentRankConfig.startingRating,
       traitXp: traitXp,
     );
     await progressRepository.saveProjection(
       ProgressProjection(
         totalXp: 0,
+        ratingScore: DevelopmentRankConfig.startingRating,
+        peakRatingScore: DevelopmentRankConfig.startingRating,
         traitXp: traitXp,
         rank: rank.rank,
         rankProgress: rank.progressToNext,

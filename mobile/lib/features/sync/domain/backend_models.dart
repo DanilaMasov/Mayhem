@@ -535,18 +535,42 @@ class ServerProjectionSnapshot {
       for (final trait in Trait.values) trait: _integer(traitJson, trait.name),
     };
     final totalXp = _integer(json, 'totalXp');
-    final resolved = DevelopmentRankConfig.policy().resolve(
-      totalXp: totalXp,
-      traitXp: traitXp,
-    );
     final rankJson = _object(json, 'rank');
     final serverRank = PrestigeRank(
       family: RankFamily.values.byName(_string(rankJson, 'family')),
       tier: _integer(rankJson, 'tier'),
       configRevision: _string(rankJson, 'configRevision'),
     );
-    if (serverRank.label != resolved.rank.label ||
-        serverRank.configRevision != DevelopmentRankConfig.revision) {
+    final hasDynamicRating = json['ratingScore'] != null;
+    if (hasDynamicRating &&
+        json['ratingModelRevision'] != 'rating_model_dev_v1') {
+      throw const FormatException('Server rating revision is unsupported');
+    }
+    final ratingScore = switch (json['ratingScore']) {
+      final num value when value.toInt() == value && value >= 0 =>
+        value.toInt(),
+      null when serverRank.configRevision == 'rank_config_dev_v1' =>
+        DevelopmentRankConfig.migrateLegacyRating(
+          rank: serverRank,
+          rankProgress: 0,
+        ),
+      _ => throw const FormatException('Server rating score is invalid'),
+    };
+    final peakRatingScore = switch (json['peakRatingScore']) {
+      final num value when value.toInt() == value && value >= ratingScore =>
+        value.toInt(),
+      null => ratingScore,
+      _ => throw const FormatException('Server peak rating is invalid'),
+    };
+    final resolved = DevelopmentRankConfig.policy().resolve(
+      ratingScore: ratingScore,
+      traitXp: traitXp,
+    );
+    final supportedRankRevision =
+        serverRank.configRevision == DevelopmentRankConfig.revision ||
+        serverRank.configRevision == 'rank_config_dev_v1';
+    if (serverRank.stableId != resolved.rank.stableId ||
+        !supportedRankRevision) {
       throw const FormatException('Server rank diverges from frozen config');
     }
     final updatedAt = _utcDate(json, 'updatedAt');
@@ -595,8 +619,10 @@ class ServerProjectionSnapshot {
       ownedArtifacts: ownedArtifacts,
       projection: ProgressProjection(
         totalXp: totalXp,
+        ratingScore: ratingScore,
+        peakRatingScore: peakRatingScore,
         traitXp: traitXp,
-        rank: serverRank,
+        rank: resolved.rank,
         rankProgress: resolved.progressToNext,
         momentum: localMomentum,
         difficulty: difficulty,

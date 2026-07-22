@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/app/vnext/vnext_runtime.dart';
 import 'package:mayhem_mobile/app/vnext/vnext_shell.dart';
+import 'package:mayhem_mobile/content/domain/content_item_revision.dart';
 import 'package:mayhem_mobile/core/design_system/accessibility/mayhem_motion_preferences.dart';
 import 'package:mayhem_mobile/core/design_system/components/components.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
@@ -29,6 +30,8 @@ void main() {
     await first.store.progress.saveProjection(
       ProgressProjection(
         totalXp: 250,
+        ratingScore: 1125,
+        peakRatingScore: 1125,
         traitXp: current.traitXp,
         rank: current.rank,
         rankProgress: current.rankProgress,
@@ -48,9 +51,51 @@ void main() {
       restored.feed.snapshot!.items[3].assignment.assignmentId,
       first.feed.snapshot!.items[3].assignment.assignmentId,
     );
-    expect(restored.journey.snapshot!.projection.rank.label, 'SPARK II');
-    expect(restored.pendingRankUp, 'SPARK II');
+    expect(restored.journey.snapshot!.projection.rank.label, 'ИМПУЛЬС');
+    expect(restored.pendingRankUp?.currentRank.label, 'ИМПУЛЬС');
   });
+
+  test(
+    'demotion checkpoints silently and the next promotion starts there',
+    () async {
+      final runtime = await buildVNextTestRuntime();
+
+      Future<void> setRating(int rating) async {
+        final current = runtime.journey.snapshot!.projection;
+        await runtime.store.progress.saveProjection(
+          ProgressProjection(
+            totalXp: current.totalXp,
+            ratingScore: rating,
+            peakRatingScore: rating > current.peakRatingScore
+                ? rating
+                : current.peakRatingScore,
+            traitXp: current.traitXp,
+            rank: current.rank,
+            rankProgress: current.rankProgress,
+            momentum: current.momentum,
+            difficulty: current.difficulty,
+            completedCount: current.completedCount,
+            attemptedCount: current.attemptedCount,
+            updatedAt: DateTime.utc(2026, 7, 22, 12),
+            source: ProjectionSource.localCheckpoint,
+          ),
+        );
+        await runtime.refreshAfterChallengeAction();
+      }
+
+      await setRating(1250);
+      expect(runtime.pendingRankUp?.currentRank.label, 'РАЗРЯД');
+      await runtime.consumeRankUp();
+
+      await setRating(1000);
+      expect(runtime.journey.snapshot!.projection.rank.label, 'ИСКРА');
+      expect(runtime.pendingRankUp, isNull);
+
+      await setRating(1125);
+      expect(runtime.pendingRankUp?.previousRank.label, 'ИСКРА');
+      expect(runtime.pendingRankUp?.currentRank.label, 'ИМПУЛЬС');
+    },
+  );
 
   test('fresh onboarding opens the first bundled challenge offline', () async {
     final runtime = await buildVNextTestRuntime(
@@ -310,6 +355,61 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('scenario choice persists once and removes its Feed card', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final database = buildVNextTestDatabase();
+    final runtime = (await tester.runAsync(
+      () => buildVNextTestRuntime(database: database),
+    ))!;
+    final items = runtime.feed.snapshot!.items;
+    final scenarioIndex = items.indexWhere(
+      (item) => item.revision.type == ContentItemType.scenarioPoll,
+    );
+    expect(scenarioIndex, greaterThanOrEqualTo(0));
+    final assignmentId = items[scenarioIndex].assignment.assignmentId;
+    final itemCount = items.length;
+    await runtime.feed.setCurrentIndex(scenarioIndex);
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scenario-option-0')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('scenario-option-0')));
+    await tester.pumpAndSettle();
+
+    expect(runtime.feed.snapshot!.items, hasLength(itemCount - 1));
+    expect(
+      runtime.feed.snapshot!.items.map((item) => item.assignment.assignmentId),
+      isNot(contains(assignmentId)),
+    );
+    final assignment = database.executor
+        .rows('feed_assignments')
+        .singleWhere((row) => row['assignment_id'] == assignmentId);
+    expect(
+      jsonDecode(assignment['metadata_json'] as String),
+      containsPair('_scenarioChoiceIndex', 0),
+    );
+    expect(
+      database.executor
+          .rows('event_log_v2')
+          .where((row) => row['event_type'] == 'feed_item_saved'),
+      hasLength(1),
+    );
+
+    final restored = (await tester.runAsync(
+      () => buildVNextTestRuntime(database: database),
+    ))!;
+    expect(
+      restored.feed.snapshot!.items.map((item) => item.assignment.assignmentId),
+      isNot(contains(assignmentId)),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('settings exposes honest deletion and diagnostics states', (
     tester,
   ) async {
@@ -547,6 +647,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+    final completedAssignmentId =
+        runtime.feed.snapshot!.items.first.assignment.assignmentId;
+    final itemCount = runtime.feed.snapshot!.items.length;
 
     await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
     await tester.pumpAndSettle();
@@ -580,6 +683,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(runtime.feedChallenge.activeAttempt, isNull);
     expect(runtime.journey.snapshot!.projection.totalXp, greaterThan(0));
+    expect(runtime.feed.snapshot!.items, hasLength(itemCount - 1));
+    expect(
+      runtime.feed.snapshot!.items.map((item) => item.assignment.assignmentId),
+      isNot(contains(completedAssignmentId)),
+    );
     expect(find.text('ЗАПИСАТЬ РЕЗУЛЬТАТ'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -661,7 +769,7 @@ void main() {
       expect(find.text('РЕЙТИНГОВЫЙ ПУТЬ'), findsOneWidget);
       expect(find.text('ПОСЛЕДНИЕ ДЕЙСТВИЯ НА ПУТИ'), findsOneWidget);
       expect(find.text(item.challenge!.title), findsOneWidget);
-      expect(find.text('SPARK I'), findsWidgets);
+      expect(find.text('ИСКРА'), findsWidgets);
 
       final scrollable = find
           .descendant(
@@ -675,13 +783,13 @@ void main() {
         scrollable: scrollable,
       );
       expect(find.text('MAYHEM'), findsOneWidget);
-      expect(find.text('25000 XP'), findsOneWidget);
+      expect(find.text('Рейтинг 4200'), findsOneWidget);
       expect(find.text('2200 XP в каждом навыке'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets('rank path names both XP and weakest-trait deficits', (
+  testWidgets('rank path names both rating and weakest-trait deficits', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -694,6 +802,8 @@ void main() {
       await runtime.store.progress.saveProjection(
         ProgressProjection(
           totalXp: 1000,
+          ratingScore: 1400,
+          peakRatingScore: 1400,
           traitXp: {for (final trait in Trait.values) trait: 100},
           rank: current.rank,
           rankProgress: current.rankProgress,
@@ -708,7 +818,7 @@ void main() {
       await runtime.journey.initialize();
     });
 
-    expect(runtime.journey.snapshot!.projection.rank.label, 'MOVER I');
+    expect(runtime.journey.snapshot!.projection.rank.label, 'ВЕКТОР');
     await tester.pumpWidget(_TestApp(runtime: runtime));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Путь'));
@@ -716,8 +826,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
     await tester.pumpAndSettle();
 
-    expect(find.text('ДО MOVER II'), findsOneWidget);
-    expect(find.text('Ещё 500 XP'), findsOneWidget);
+    expect(find.text('ДО ДРАЙВЕР'), findsOneWidget);
+    expect(find.text('Ещё 150 рейтинга'), findsOneWidget);
     expect(find.text('Ещё 50 XP в слабейшем навыке'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -769,70 +879,107 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('unlocked arena style persists and locked styles stay gated', (
+  testWidgets('Journey detail bottoms stay above floating navigation', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final database = buildVNextTestDatabase();
-    final runtime = (await tester.runAsync(
-      () => buildVNextTestRuntime(database: database),
-    ))!;
+    final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.text('ТВОЙ ПУТЬ')),
+    ).pushNamed('/journey/traits');
+    await tester.pumpAndSettle();
+
+    final traitsScroll = find
+        .descendant(
+          of: find.byKey(const PageStorageKey('traits-detail-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    for (var step = 0; step < 6; step += 1) {
+      await tester.drag(traitsScroll, const Offset(0, -260));
+      await tester.pump();
+    }
+    final traitsState = tester.state<ScrollableState>(traitsScroll);
+    traitsState.position.jumpTo(traitsState.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final lastTrait = find.byKey(const ValueKey('trait-legend-presence'));
+    expect(lastTrait, findsOneWidget);
+    expect(tester.getBottomRight(lastTrait).dy, lessThan(744));
+
+    await tester.tap(find.byTooltip('Назад'));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.text('ТВОЙ ПУТЬ')),
+    ).pushNamed('/journey/ranks');
+    await tester.pumpAndSettle();
+    final rankScroll = find
+        .descendant(
+          of: find.byKey(const PageStorageKey('rank-path-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final rankState = tester.state<ScrollableState>(rankScroll);
+    rankState.position.jumpTo(rankState.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final bottomRank = find.byKey(const ValueKey('rank-card-ИСКРА'));
+    expect(bottomRank, findsOneWidget);
+    expect(tester.getBottomRight(bottomRank).dy, lessThan(744));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('rank rail exposes continuous progress to the next title', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
     final current = runtime.journey.snapshot!.projection;
     await tester.runAsync(() async {
       await runtime.store.progress.saveProjection(
         ProgressProjection(
-          totalXp: 1000,
-          traitXp: {for (final trait in Trait.values) trait: 100},
+          totalXp: 125,
+          ratingScore: 1062,
+          peakRatingScore: 1062,
+          traitXp: current.traitXp,
           rank: current.rank,
           rankProgress: current.rankProgress,
           momentum: current.momentum,
           difficulty: current.difficulty,
           completedCount: current.completedCount,
           attemptedCount: current.attemptedCount,
-          updatedAt: DateTime.utc(2026, 7, 22),
+          updatedAt: DateTime.utc(2026, 7, 13, 10),
           source: ProjectionSource.localCheckpoint,
         ),
       );
       await runtime.journey.initialize();
     });
 
-    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpWidget(_TestApp(runtime: runtime));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Путь'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('rank-style-preview')));
+    await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
     await tester.pumpAndSettle();
 
-    expect(find.text('4 из 16 открыто'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('rank-style-spark.2')));
-    await tester.pumpAndSettle();
-    expect(runtime.settings.preferences.rankStyleId, 'spark.2');
-    expect(find.text('ИСПОЛЬЗУЕТСЯ'), findsOneWidget);
-
-    final scrollable = find
-        .descendant(
-          of: find.byKey(const PageStorageKey('rank-style-collection-scroll')),
-          matching: find.byType(Scrollable),
-        )
-        .first;
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('rank-style-mayhem.1')),
-      320,
-      scrollable: scrollable,
+    expect(
+      find.bySemanticsLabel('Прогресс до следующего звания: 50%'),
+      findsOneWidget,
     );
-    await tester.tap(find.byKey(const ValueKey('rank-style-mayhem.1')));
-    await tester.pump();
-    expect(runtime.settings.preferences.rankStyleId, 'spark.2');
-    expect(find.text('ОТКРОЕТСЯ НА MAYHEM'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('rank-progress-rail-current')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
-
-    final restored = (await tester.runAsync(
-      () => buildVNextTestRuntime(database: database),
-    ))!;
-    expect(restored.settings.preferences.rankStyleId, 'spark.2');
   });
 }
 

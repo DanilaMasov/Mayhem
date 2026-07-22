@@ -181,6 +181,57 @@ class SqliteFeedRepository
     skipReason: reason,
   );
 
+  @override
+  Future<bool> commitScenarioChoice({
+    required String assignmentId,
+    required int choiceIndex,
+    required DateTime answeredAtUtc,
+    required EventDraftV2 event,
+  }) {
+    if (choiceIndex < 0) {
+      throw ArgumentError.value(choiceIndex, 'choiceIndex');
+    }
+    if (event.eventType != CanonicalEventTypeV2.feedItemSaved ||
+        event.assignmentId != assignmentId ||
+        event.payload['kind'] != 'scenarioPollResponse' ||
+        event.payload['choiceIndex'] != choiceIndex) {
+      throw const FormatException('Scenario response event does not match');
+    }
+    return context.database.transaction((db) async {
+      final rows = await db.query(
+        'feed_assignments',
+        columns: ['content_id', 'content_revision', 'metadata_json'],
+        where: 'assignment_id = ?',
+        whereArgs: [assignmentId],
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        throw StateError('Unknown feed assignment: $assignmentId');
+      }
+      final row = rows.single;
+      if (event.contentId != row['content_id'] ||
+          event.contentRevision != row['content_revision']) {
+        throw const FormatException('Scenario response content does not match');
+      }
+      final metadata = _metadata(row['metadata_json'] as String);
+      if (metadata.containsKey('_scenarioChoiceIndex')) return false;
+      if (metadata.length > 22) {
+        throw const FormatException('Feed assignment metadata is full');
+      }
+      metadata['_scenarioChoiceIndex'] = choiceIndex;
+      metadata['_scenarioAnsweredAt'] = answeredAtUtc.toUtc().toIso8601String();
+      final changed = await db.update(
+        'feed_assignments',
+        {'metadata_json': jsonEncode(metadata)},
+        where: 'assignment_id = ?',
+        whereArgs: [assignmentId],
+      );
+      if (changed != 1) return false;
+      await context.appendEvents(db, [event]);
+      return true;
+    });
+  }
+
   Future<void> _markOnce(String assignmentId, String column, DateTime atUtc) {
     if (column != 'impressed_at' && column != 'opened_at') {
       throw ArgumentError.value(column, 'column');

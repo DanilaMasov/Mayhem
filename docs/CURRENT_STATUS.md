@@ -4,8 +4,8 @@
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
-**Current implementation checkpoint:** `6006a62` (merged by PR #37 as
-`7d140a8`)
+**Current implementation checkpoint:** `47b8570` (preview-6 feedback audit
+merged by PR #38)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -44,14 +44,23 @@
   retry copy.
 - Invariant Mayhem typography that cannot inherit Flutter's yellow double-
   underline fallback style when rendered outside a Material ancestor.
-- A local arena-style rank path exposing all sixteen frozen ranks, XP and
-  balanced-trait thresholds, current progress, and recent real actions.
-- A readable skill-map legend plus a persistent sixteen-style arena collection
-  that unlocks cumulatively from the frozen local rank ladder.
+- A dynamic competitive rating that can rise or fall after terminal challenge
+  results while XP remains permanent; sixteen unique named titles retain
+  balanced-trait promotion gates.
+- A rating path exposing score thresholds, weakest-trait requirements,
+  continuous current progress, and recent real actions.
+- A readable skill-map legend. The experimental rank-owned style collection is
+  retired; its persisted preference remains read-compatible but has no UI
+  effect.
 - Offline-bundled Cyrillic typography using Manrope for interface copy and
   Unbounded for display/rank moments, with pinned upstream licenses and hashes.
 - Layered deterministic background atmosphere across the vNext shell plus a
   richer trait-colored Feed scene without network-fetched artwork.
+- Actionable scenario polls with atomic local persistence, terminal challenge
+  removal from the active and restored Feed, and deterministic per-card Feed
+  field variations.
+- Journey detail viewports that stop above floating navigation plus a rating
+  rail that fills continuously from the current rank toward the next one.
 
 ## Active work item
 
@@ -167,6 +176,34 @@ baselines load the actual shipped fonts, deepens the shared vNext atmosphere
 and trait-colored Feed field, and preserves readable navigation titles. It
 does not add runtime font downloads or generated raster artwork.
 
+The `codex/feed-scenario-lifecycle` slice makes each scenario option a real,
+accessible action. A choice writes one idempotent `feed_item_saved` event and
+bounded assignment metadata in the same SQLite transaction, then removes the
+resolved card. Terminal challenge assignments are also removed immediately
+after the committed result and filtered when a stored batch is restored.
+Five deterministic field compositions vary Feed backgrounds by immutable
+content identity while keeping the existing first-card visual baseline stable.
+
+The `codex/journey-scroll-progress` slice reserves the floating-navigation
+clearance in the detail viewport itself, so both the final skill legend card
+and the bottom rank card can be brought fully above the navigation glass. The
+rank rail now renders the rating policy's continuous balanced progress from
+the current dot toward the next dot, including an accessible percentage.
+
+The `codex/rank-titles-animation` slice replaces the XP-only ladder with
+`rating_model_dev_v1` and `rank_config_dev_v2`. Rating changes in both
+directions from outcome, felt difficulty, route, intensity, and repeat
+dampening; XP and trait XP remain permanent. Sixteen family/tier identities now
+render as unique named titles from ИСКРА through MAYHEM. Legacy local and v1
+server projections migrate without resetting the equivalent rank. Promotion
+only is celebrated by a 2.3-second deterministic full-screen scene with
+previous/new title, rating gain, particle field, final-state golden, and an
+instant Reduce Motion path. Rank-owned themes, routes, screens, code, tests,
+and obsolete goldens are removed. Forward migration
+`202607220012_dynamic_rating_titles.sql` adds server-owned rating, peak rating,
+v2 rank resolution, a canonical-event trigger, projection fields, and explicit
+helper revokes; live from-zero acceptance of migration `012` is still open.
+
 ## Device-feedback iteration audit
 
 | User feedback | Status | Evidence and boundary |
@@ -176,10 +213,17 @@ does not add runtime font downloads or generated raster artwork.
 | Challenge sometimes reports a local save error | Closed in software | PR #31 recovers lost UI acknowledgement and stale local client sequence without duplicate reward; controller/coordinator tests cover both paths. |
 | Fonts look generic | Closed | PR #37 ships Unbounded for display/rank moments and Manrope for interface copy, buttons, and navigation. |
 | Backgrounds lack depth | Closed for the reported vNext surfaces | PR #37 adds deterministic shared atmosphere and a richer trait-colored Feed scene; macOS and Linux goldens cover the result. |
-| Existing ratings cannot be browsed | Closed | PR #33 exposes all sixteen frozen ranks from SPARK I through MAYHEM, including XP and weakest-trait requirements. |
+| Feed backgrounds repeat | Closed in the current local slice | Five deterministic field compositions are selected from immutable content identity without network artwork or rank-owned themes. |
+| Scenario options cannot be selected | Closed in the current local slice | Every option is an accessible press target; SQLite metadata and the canonical event are atomic and idempotent, and the resolved card leaves the Feed. |
+| Completed challenges remain in Feed | Closed in the current local slice | A committed terminal result removes the card immediately, and session restoration filters every terminal assignment. |
+| Skill map and rating path bottoms are obscured | Closed in the current local slice | Both detail viewports reserve 132 logical pixels above floating navigation; widget geometry asserts the final cards end above it at 390x844 and 1.6x text. |
+| Rating rail does not show current progress | Closed in the current local slice | The current-to-next segment fills continuously from the dynamic rating plus balanced-trait `rankProgress` and exposes the same percentage to accessibility. |
+| Existing ratings cannot be browsed | Closed in the current local slice | The path exposes all sixteen unique named titles from ИСКРА through MAYHEM, numeric rating thresholds, and weakest-trait requirements. |
+| Rating is only a static XP level | Closed in the current local slice | `rating_model_dev_v1` can promote or demote after a terminal result; XP remains permanent and repeat farming is dampened. Migration `012` mirrors the policy server-side, with live acceptance still open. |
+| Rank-up feedback is weak | Closed in the current local slice | A deterministic 2.3-second promotion ceremony shows old/new title, score gain, badge, rays and particles; Reduce Motion reveals the complete final frame immediately. |
 | Skill map has no legend | Closed | PR #35 explains stable color, shape, side, XP, and normalized signal for all four traits. |
-| Journey is visually weak | Closed for the requested local slice | PRs #33, #35, and #37 add the arena scene, vertical rank path, style entry, richer atmosphere, and updated typography. |
-| Earned arena styles cannot be collected/switched | Closed | PR #35 provides sixteen cumulative styles, locked previews, persisted selection, and cold-restart recovery. |
+| Journey is visually weak | Closed for the requested local slice | The current-title scene, vertical rating path, fixed Mayhem atmosphere, richer typography, exact score and balanced progression replace the experimental style entry. |
+| Rank-owned themes/designs should be abandoned | Closed in the current local slice | The style collection, navigation, unlock policy, surfaces, tests and goldens are removed. The legacy stored field is read-compatible and ignored. |
 | Clash-Royale-like upward arena path and recent actions | Closed | PR #33 orders future arenas upward, restores the current position, and shows real local actions without fabricated social data. |
 | Leaderboard for every arena | Intentionally not implemented | The current specification lists public profiles/rank sharing as non-goals. A real leaderboard requires a later authorized identity, privacy, moderation/abuse, deletion, and server-ordering contract; fake users or positions are forbidden. |
 
@@ -209,6 +253,9 @@ hidden implementation debt.
   grant-hardening migration
   `202607200011_explicit_function_execute_grants.sql` both passed from-zero
   live acceptance against the authorized staging project.
+- Forward migration `202607220012_dynamic_rating_titles.sql` is source- and
+  contract-tested only. It must pass the protected disposable from-zero run
+  before migration `012` or remote dynamic rating is called live-accepted.
 - No production Supabase environment has been configured or authorized.
 
 ## Open device gates
@@ -235,6 +282,81 @@ The broad clean-clone verification was completed on 2026-07-18. Repository
 contracts, Flutter static/runtime checks, and generated-data checks were
 repeated on 2026-07-21; the latest live-backend evidence remains dated
 2026-07-20. Commands and latest applicable results:
+
+The local `codex/rank-titles-animation` software gate passed on 2026-07-22:
+
+```sh
+/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node --test tests/*.test.mjs
+# 67 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 286 passed; 2 protected live-only tests skipped
+```
+
+The suite covers positive/negative rating vectors, repeat dampening,
+low-pressure loss protection, all sixteen unique titles, legacy local and v1
+server migration, v2 projection validation, promotion-only detection,
+demotion checkpointing, 390x844/1.6x overflow safety, Reduce Motion, animation
+timing, scroll geometry, continuous rail semantics, and the final promotion
+frame. macOS goldens are current. Hosted Ubuntu
+[run 29960728382](https://github.com/DanilaMasov/Mayhem/actions/runs/29960728382)
+generated the updated Linux Journey/rank-path baselines and the new promotion
+golden successfully; those exact artifacts are committed in the product
+branch. Migration `012` has source contracts but not protected live Supabase
+acceptance; no physical-device claim is made.
+
+The local `codex/journey-scroll-progress` software gate passed on 2026-07-22:
+
+```sh
+/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 280 passed; 2 protected live-only tests skipped
+```
+
+The suite now checks actual last-card screen coordinates above the floating
+navigation and a 50-percent current-to-next rail state. macOS visual baselines
+cover the new viewport and rail; the corresponding Linux baselines were
+generated successfully by hosted Ubuntu run 29960728382. Physical-device
+acceptance remains open.
+
+The local `codex/feed-scenario-lifecycle` software gate passed on 2026-07-22:
+
+```sh
+/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 278 passed; 2 protected live-only tests skipped
+```
+
+The suite covers scenario tap behavior at 390x844 and 1.6x text, atomic
+rollback, idempotence, immediate terminal-card removal, and cold-runtime
+filtering. Existing macOS and Linux visual baselines remain unchanged because
+the established first Feed card retains its composition; physical-device
+interaction and visual acceptance remain open.
 
 The 2026-07-22 device-feedback blocker slice passed its complete local software
 gate:
@@ -681,8 +803,8 @@ R2 harness evidence:
   of argv, logs, diagnostics, and reports;
 - refuses a target containing existing Mayhem tables unless a separately
   confirmed reset is requested, binds API and DB URLs to the same project ref,
-  and applies eleven migrations from zero in deterministic order through
-  `psql`;
+  and applies twelve migrations from zero in deterministic order through
+  `psql`; migration `012` has not yet received protected live evidence;
 - prepares two-user auth/refresh, ownership/RLS, grants, direct-write denial,
   exact/duplicate/partial ACK, private-note rejection, and auth recovery;
 - covers Season join/day/closed-window rules, concurrent Boss submission,
@@ -696,6 +818,7 @@ R2 harness evidence:
   repair recursive private-note validation, migration `010` for
   account-scoped Season participation, and migration `011` to revoke implicit
   Data API function grants before restoring the authenticated RPC allowlist;
+  migration `012` adds dynamic rating and named-title server projection;
 - decomposes PostgreSQL credentials into libpq environment fields and sends
   parameterized verification SQL through stdin instead of argv;
 - the latest protected staging run passed all nine probes and eight Flutter
@@ -865,13 +988,15 @@ Production backend values, production telemetry, and release flags remain
 unset.
 
 The readable local rating path is merged through PR #33 (`632e136`) and handed
-off in preview 4. The skill-map legend plus persistent per-rank visual style
-collection is merged through PR #35 (`68ebc3c`) and handed off in preview 5;
+off in preview 4. The skill-map legend and now-retired per-rank visual style
+experiment were merged through PR #35 (`68ebc3c`) and handed off in preview 5;
 the typography/background slice is merged through PR #37 (`7d140a8`) and
-handed off in preview 6. A real public leaderboard per rank is not a local-only
-UI feature and is also outside the current specification; it remains gated on
-a later explicit server, privacy, abuse, deletion, and account-identity design
-instead of being simulated with fake users.
+handed off in preview 6. The current local feedback stack replaces that style
+experiment with dynamic named titles, a promotion ceremony, and content-owned
+Feed background variants. A real public leaderboard per rank is not a
+local-only UI feature and is also outside the current specification; it remains
+gated on a later explicit server, privacy, abuse, deletion, and account-identity
+design instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR

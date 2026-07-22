@@ -7,6 +7,7 @@ import 'package:mayhem_mobile/features/challenge/domain/reward_policy.dart';
 import 'package:mayhem_mobile/features/progress/domain/development_rank_config.dart';
 import 'package:mayhem_mobile/features/progress/domain/difficulty_update_policy.dart';
 import 'package:mayhem_mobile/features/progress/domain/progress_models.dart';
+import 'package:mayhem_mobile/features/progress/domain/rating_update_policy.dart';
 import 'package:mayhem_mobile/features/streak/domain/momentum_policy.dart';
 import 'package:mayhem_mobile/features/streak/domain/momentum_state.dart';
 
@@ -28,6 +29,7 @@ void main() {
       revisions['difficulty'],
       const DifficultyUpdatePolicy().algorithmRevision,
     );
+    expect(revisions['rating'], const RatingUpdatePolicy().algorithmRevision);
     expect(revisions['rank'], DevelopmentRankConfig.revision);
     expect(revisions['momentum'], MomentumPolicy.revision);
   });
@@ -100,10 +102,28 @@ void main() {
   test('rank ladder matches the shared golden contract', () {
     expect(
       DevelopmentRankConfig.policy().thresholds
-          .map((item) => [item.rank.label, item.totalXp, item.minimumTraitXp])
+          .map(
+            (item) => [item.rank.label, item.ratingScore, item.minimumTraitXp],
+          )
           .toList(),
       golden['rankThresholds'],
     );
+  });
+
+  test('rating policy matches every shared golden vector', () {
+    const policy = RatingUpdatePolicy();
+    for (final source in golden['ratingCases'] as List<dynamic>) {
+      final item = source as Map<String, dynamic>;
+      final update = policy.update(
+        currentScore: (item['score'] as num).toInt(),
+        outcome: AttemptOutcome.values.byName(item['outcome'] as String),
+        felt: FeltComparedToExpected.values.byName(item['felt'] as String),
+        route: ChallengeRouteType.values.byName(item['route'] as String),
+        intensity: (item['intensity'] as num).toInt(),
+        repeatMultiplierPercent: (item['repeatPercent'] as num).toInt(),
+      );
+      expect(update.delta, item['expectedDelta'], reason: item['id'] as String);
+    }
   });
 
   test('Momentum policy matches every shared golden scenario', () {

@@ -38,6 +38,7 @@ class _VNextFeedScreenState extends State<VNextFeedScreen>
   final Map<String, ChallengeRouteType> _selectedRoutes = {};
   Timer? _impressionTimer;
   String? _visibleAssignmentId;
+  String? _scenarioSubmittingAssignmentId;
 
   @override
   void initState() {
@@ -61,7 +62,7 @@ class _VNextFeedScreenState extends State<VNextFeedScreen>
       return;
     }
     final snapshot = widget.controller.snapshot;
-    if (snapshot != null) {
+    if (snapshot != null && snapshot.items.isNotEmpty) {
       _scheduleImpression(
         snapshot.items[widget.controller.currentIndex],
         widget.controller.currentIndex,
@@ -88,9 +89,15 @@ class _VNextFeedScreenState extends State<VNextFeedScreen>
             onAction: widget.controller.initialize,
           );
         }
+        if (snapshot.items.isEmpty) {
+          _impressionTimer?.cancel();
+          _visibleAssignmentId = null;
+          return _FeedStatus(message: context.strings.feedComplete);
+        }
         _pageController ??= PageController(
           initialPage: widget.controller.currentIndex,
         );
+        _synchronizePageController();
         final action = widget.challengeController;
         final currentItem = snapshot.items[widget.controller.currentIndex];
         _scheduleImpression(currentItem, widget.controller.currentIndex);
@@ -121,6 +128,16 @@ class _VNextFeedScreenState extends State<VNextFeedScreen>
                     ? null
                     : () => _showPreparation(snapshot.items[index], index),
                 onSkip: action.busy ? null : () => _showSkipReasons(index),
+                scenarioBusy:
+                    _scenarioSubmittingAssignmentId ==
+                    snapshot.items[index].assignment.assignmentId,
+                onScenarioChoice:
+                    snapshot.items[index].revision.type ==
+                        ContentItemType.scenarioPoll
+                    ? (choiceIndex) => unawaited(
+                        _answerScenario(snapshot.items[index], choiceIndex),
+                      )
+                    : null,
               ),
             ),
             if (!action.hasActiveChallenge && currentItem.challenge != null)
@@ -204,6 +221,44 @@ class _VNextFeedScreenState extends State<VNextFeedScreen>
       }
       unawaited(widget.controller.impress(index));
     });
+  }
+
+  void _synchronizePageController() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = _pageController;
+      final items = widget.controller.snapshot?.items;
+      if (controller == null ||
+          !controller.hasClients ||
+          items == null ||
+          items.isEmpty ||
+          !controller.position.hasPixels) {
+        return;
+      }
+      final target = widget.controller.currentIndex;
+      final page = controller.page?.round();
+      if (page != target) controller.jumpToPage(target);
+    });
+  }
+
+  Future<void> _answerScenario(FeedSessionItem item, int choiceIndex) async {
+    final assignmentId = item.assignment.assignmentId;
+    if (_scenarioSubmittingAssignmentId != null) return;
+    setState(() => _scenarioSubmittingAssignmentId = assignmentId);
+    try {
+      final index =
+          widget.controller.snapshot?.items.indexWhere(
+            (candidate) => candidate.assignment.assignmentId == assignmentId,
+          ) ??
+          -1;
+      if (index >= 0) {
+        await widget.controller.answerScenario(index, choiceIndex);
+      }
+    } finally {
+      if (mounted && _scenarioSubmittingAssignmentId == assignmentId) {
+        setState(() => _scenarioSubmittingAssignmentId = null);
+      }
+    }
   }
 
   Future<bool> _accept(FeedSessionItem item, ChallengeRouteType route) async {
@@ -328,6 +383,8 @@ class _FeedItemScene extends StatelessWidget {
     required this.total,
     required this.onPreparation,
     required this.onSkip,
+    required this.onScenarioChoice,
+    required this.scenarioBusy,
   });
 
   final FeedSessionItem item;
@@ -335,6 +392,8 @@ class _FeedItemScene extends StatelessWidget {
   final int total;
   final VoidCallback? onPreparation;
   final VoidCallback? onSkip;
+  final ValueChanged<int>? onScenarioChoice;
+  final bool scenarioBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -366,120 +425,125 @@ class _FeedItemScene extends StatelessWidget {
         Semantics(
           container: true,
           label: semantic,
-          child: ExcludeSemantics(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CustomPaint(painter: _FeedFieldPainter(energy: energy)),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      MayhemSpacing.x5,
-                      MayhemSpacing.x5,
-                      MayhemSpacing.x5,
-                      236,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.only(
-                            right: onPreparation == null ? 48 : 96,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: MayhemText(
-                                  typeLabel,
-                                  variant: MayhemTextVariant.labelMicro,
-                                  color: energy,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.cloud_off_outlined,
-                                size: 16,
-                                color: MayhemColors.textTertiary,
-                              ),
-                              const SizedBox(width: MayhemSpacing.x2),
-                              Flexible(
-                                child: MayhemText(
-                                  strings.offlineReady,
-                                  variant: MayhemTextVariant.labelMicro,
-                                  textAlign: TextAlign.end,
-                                  maxLines: 2,
-                                ),
-                              ),
-                            ],
-                          ),
+          explicitChildNodes: true,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CustomPaint(
+                painter: _FeedFieldPainter(
+                  energy: energy,
+                  variant: _fieldVariant(revision),
+                ),
+              ),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    MayhemSpacing.x5,
+                    MayhemSpacing.x5,
+                    MayhemSpacing.x5,
+                    236,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(
+                          right: onPreparation == null ? 48 : 96,
                         ),
-                        const SizedBox(height: MayhemSpacing.x4),
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomLeft,
-                            child: SingleChildScrollView(
-                              primary: false,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  MayhemText(
-                                    title,
-                                    variant: MayhemTextVariant.displayMedium,
-                                    maxLines: 5,
-                                  ),
-                                  if (detail.isNotEmpty) ...[
-                                    const SizedBox(height: MayhemSpacing.x4),
-                                    MayhemText(
-                                      detail,
-                                      variant: MayhemTextVariant.bodyLarge,
-                                      maxLines: 3,
-                                    ),
-                                  ],
-                                  const SizedBox(height: MayhemSpacing.x6),
-                                  if (item.challenge != null)
-                                    _LowPressureRoute(
-                                      copy:
-                                          item.challenge!.lowPressureRoute.copy,
-                                    )
-                                  else if (revision.type ==
-                                      ContentItemType.microTraining)
-                                    MayhemText(
-                                      revision.payload['instruction']
-                                              as String? ??
-                                          '',
-                                      variant: MayhemTextVariant.bodyMedium,
-                                      color: MayhemColors.textPrimary,
-                                      maxLines: 4,
-                                    )
-                                  else if (revision.type ==
-                                      ContentItemType.scenarioPoll)
-                                    _ScenarioOptions(
-                                      options:
-                                          (revision.payload['options']
-                                                      as List<dynamic>? ??
-                                                  const [])
-                                              .whereType<String>()
-                                              .take(3)
-                                              .toList(growable: false),
-                                    ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: MayhemText(
+                                typeLabel,
+                                variant: MayhemTextVariant.labelMicro,
+                                color: energy,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.cloud_off_outlined,
+                              size: 16,
+                              color: MayhemColors.textTertiary,
+                            ),
+                            const SizedBox(width: MayhemSpacing.x2),
+                            Flexible(
+                              child: MayhemText(
+                                strings.offlineReady,
+                                variant: MayhemTextVariant.labelMicro,
+                                textAlign: TextAlign.end,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: MayhemSpacing.x4),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomLeft,
+                          child: SingleChildScrollView(
+                            primary: false,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                MayhemText(
+                                  title,
+                                  variant: MayhemTextVariant.displayMedium,
+                                  maxLines: 5,
+                                ),
+                                if (detail.isNotEmpty) ...[
                                   const SizedBox(height: MayhemSpacing.x4),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: MayhemText(
-                                      strings.feedPosition(current, total),
-                                      variant: MayhemTextVariant.labelMicro,
-                                    ),
+                                  MayhemText(
+                                    detail,
+                                    variant: MayhemTextVariant.bodyLarge,
+                                    maxLines: 3,
                                   ),
                                 ],
-                              ),
+                                const SizedBox(height: MayhemSpacing.x6),
+                                if (item.challenge != null)
+                                  _LowPressureRoute(
+                                    copy: item.challenge!.lowPressureRoute.copy,
+                                  )
+                                else if (revision.type ==
+                                    ContentItemType.microTraining)
+                                  MayhemText(
+                                    revision.payload['instruction']
+                                            as String? ??
+                                        '',
+                                    variant: MayhemTextVariant.bodyMedium,
+                                    color: MayhemColors.textPrimary,
+                                    maxLines: 4,
+                                  )
+                                else if (revision.type ==
+                                    ContentItemType.scenarioPoll)
+                                  _ScenarioOptions(
+                                    options:
+                                        (revision.payload['options']
+                                                    as List<dynamic>? ??
+                                                const [])
+                                            .whereType<String>()
+                                            .take(3)
+                                            .toList(growable: false),
+                                    busy: scenarioBusy,
+                                    onSelected: onScenarioChoice,
+                                  ),
+                                const SizedBox(height: MayhemSpacing.x4),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: MayhemText(
+                                    strings.feedPosition(current, total),
+                                    variant: MayhemTextVariant.labelMicro,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         SafeArea(
@@ -525,6 +589,15 @@ class _FeedItemScene extends StatelessWidget {
     Trait.presence => MayhemColors.traitPresence,
     null => MayhemColors.brandSignalSoft,
   };
+
+  _FeedFieldVariant _fieldVariant(ContentItemRevision revision) {
+    var hash = 0x811C9DC5;
+    for (final codeUnit
+        in '${revision.contentId}@${revision.revision}'.codeUnits) {
+      hash = ((hash ^ codeUnit) * 0x01000193) & 0x7FFFFFFF;
+    }
+    return _FeedFieldVariant.values[hash % _FeedFieldVariant.values.length];
+  }
 }
 
 class _LowPressureRoute extends StatelessWidget {
@@ -565,32 +638,78 @@ class _LowPressureRoute extends StatelessWidget {
 }
 
 class _ScenarioOptions extends StatelessWidget {
-  const _ScenarioOptions({required this.options});
+  const _ScenarioOptions({
+    required this.options,
+    required this.onSelected,
+    required this.busy,
+  });
 
   final List<String> options;
+  final ValueChanged<int>? onSelected;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        MayhemText(
+          context.strings.scenarioChoose,
+          variant: MayhemTextVariant.labelMicro,
+          color: MayhemColors.textSecondary,
+        ),
+        const SizedBox(height: MayhemSpacing.x2),
         for (var index = 0; index < options.length; index++)
           Padding(
             padding: const EdgeInsets.only(bottom: MayhemSpacing.x2),
-            child: Row(
-              children: [
-                MayhemText(
-                  String.fromCharCode(65 + index),
-                  variant: MayhemTextVariant.labelLarge,
-                  color: MayhemColors.brandSignalSoft,
-                ),
-                const SizedBox(width: MayhemSpacing.x3),
-                Expanded(
-                  child: MayhemText(
-                    options[index],
-                    variant: MayhemTextVariant.bodyMedium,
+            child: MayhemPressable(
+              key: ValueKey('scenario-option-$index'),
+              semanticLabel:
+                  '${String.fromCharCode(65 + index)}. ${options[index]}',
+              enabled: onSelected != null,
+              loading: busy,
+              onPressed: onSelected == null ? null : () => onSelected!(index),
+              borderRadius: MayhemRadii.medium,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: MayhemColors.surfaceRaised.withValues(alpha: 0.88),
+                  borderRadius: MayhemRadii.medium,
+                  border: Border.all(
+                    color: MayhemColors.lineStrong.withValues(alpha: 0.9),
                   ),
                 ),
-              ],
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 56),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MayhemSpacing.x4,
+                      vertical: MayhemSpacing.x3,
+                    ),
+                    child: Row(
+                      children: [
+                        MayhemText(
+                          String.fromCharCode(65 + index),
+                          variant: MayhemTextVariant.labelLarge,
+                          color: MayhemColors.brandSignalSoft,
+                        ),
+                        const SizedBox(width: MayhemSpacing.x3),
+                        Expanded(
+                          child: MayhemText(
+                            options[index],
+                            variant: MayhemTextVariant.bodyMedium,
+                            color: MayhemColors.textPrimary,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 18,
+                          color: MayhemColors.textTertiary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
       ],
@@ -1434,10 +1553,13 @@ class _RewardDialog extends StatelessWidget {
   }
 }
 
+enum _FeedFieldVariant { orbit, classic, horizon, shards, pulse }
+
 class _FeedFieldPainter extends CustomPainter {
-  const _FeedFieldPainter({required this.energy});
+  const _FeedFieldPainter({required this.energy, required this.variant});
 
   final Color energy;
+  final _FeedFieldVariant variant;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1477,6 +1599,56 @@ class _FeedFieldPainter extends CustomPainter {
         ).createShader(glowBounds),
     );
 
+    switch (variant) {
+      case _FeedFieldVariant.orbit:
+        _paintOrbit(canvas, size);
+      case _FeedFieldVariant.classic:
+        _paintClassic(canvas, size);
+      case _FeedFieldVariant.horizon:
+        _paintHorizon(canvas, size);
+      case _FeedFieldVariant.shards:
+        _paintShards(canvas, size);
+      case _FeedFieldVariant.pulse:
+        _paintPulse(canvas, size);
+    }
+
+    final dust = Paint()..color = energy.withValues(alpha: 0.34);
+    for (var index = 0; index < 24; index += 1) {
+      final x = ((index * 67 + 13) % 101) / 101 * size.width;
+      final y = ((index * 43 + 17) % 97) / 97 * size.height * 0.74;
+      canvas.drawCircle(Offset(x, y), index % 3 == 0 ? 1.4 : 0.7, dust);
+    }
+
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x00050608), Color(0xE6050608)],
+          stops: [0.48, 1],
+        ).createShader(bounds),
+    );
+  }
+
+  void _paintOrbit(Canvas canvas, Size size) {
+    final ring = Paint()
+      ..color = energy.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final center = Offset(size.width * 0.83, size.height * 0.18);
+    for (final radius in [0.18, 0.28, 0.4]) {
+      canvas.drawCircle(center, size.width * radius, ring);
+      ring.color = energy.withValues(alpha: ring.color.a * 0.64);
+    }
+    canvas.drawLine(
+      Offset(size.width * 0.08, size.height * 0.74),
+      Offset(size.width * 0.92, size.height * 0.18),
+      ring..color = energy.withValues(alpha: 0.18),
+    );
+  }
+
+  void _paintClassic(Canvas canvas, Size size) {
     final monolith = Path()
       ..moveTo(size.width * 0.58, -size.height * 0.04)
       ..lineTo(size.width * 1.04, size.height * 0.08)
@@ -1518,27 +1690,67 @@ class _FeedFieldPainter extends CustomPainter {
       size.width * 0.31,
       ring..color = energy.withValues(alpha: 0.08),
     );
+  }
 
-    final dust = Paint()..color = energy.withValues(alpha: 0.34);
-    for (var index = 0; index < 24; index += 1) {
-      final x = ((index * 67 + 13) % 101) / 101 * size.width;
-      final y = ((index * 43 + 17) % 97) / 97 * size.height * 0.74;
-      canvas.drawCircle(Offset(x, y), index % 3 == 0 ? 1.4 : 0.7, dust);
+  void _paintHorizon(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = energy.withValues(alpha: 0.16)
+      ..strokeWidth = 1;
+    for (var index = 0; index < 9; index += 1) {
+      final y = size.height * (0.14 + index * 0.065);
+      final inset = size.width * (index * 0.035);
+      canvas.drawLine(Offset(inset, y), Offset(size.width - inset, y), line);
     }
-
     canvas.drawRect(
-      bounds,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x00050608), Color(0xE6050608)],
-          stops: [0.48, 1],
-        ).createShader(bounds),
+      Rect.fromLTWH(0, size.height * 0.38, size.width, 2),
+      Paint()..color = energy.withValues(alpha: 0.48),
     );
+  }
+
+  void _paintShards(Canvas canvas, Size size) {
+    for (var index = 0; index < 5; index += 1) {
+      final x = size.width * (0.18 + index * 0.17);
+      final shard = Path()
+        ..moveTo(x, -size.height * 0.04)
+        ..lineTo(x + size.width * 0.22, size.height * 0.05)
+        ..lineTo(x - size.width * 0.08, size.height * (0.56 + index * 0.025))
+        ..close();
+      canvas.drawPath(
+        shard,
+        Paint()..color = energy.withValues(alpha: index.isEven ? 0.07 : 0.035),
+      );
+      canvas.drawPath(
+        shard,
+        Paint()
+          ..color = energy.withValues(alpha: 0.14)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    }
+  }
+
+  void _paintPulse(Canvas canvas, Size size) {
+    final center = Offset(size.width * 0.16, size.height * 0.34);
+    final pulse = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+    for (var index = 1; index <= 5; index += 1) {
+      pulse.color = energy.withValues(alpha: 0.25 / index);
+      canvas.drawCircle(center, size.width * 0.12 * index, pulse);
+    }
+    for (var index = 0; index < 7; index += 1) {
+      final angle = index * math.pi / 3.5;
+      final end =
+          center + Offset(math.cos(angle), math.sin(angle)) * size.width;
+      canvas.drawLine(
+        center,
+        end,
+        pulse..color = energy.withValues(alpha: 0.08),
+      );
+    }
   }
 
   @override
   bool shouldRepaint(_FeedFieldPainter oldDelegate) =>
-      oldDelegate.energy != energy;
+      oldDelegate.energy != energy || oldDelegate.variant != variant;
 }

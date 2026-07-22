@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 
 import '../../../content/data/bundled_vnext_content_adapter.dart';
+import '../../../content/domain/content_item_revision.dart';
 import '../../../core/clock/mayhem_clock.dart';
 import '../../../core/metadata/local_metadata_repository.dart';
 import '../../challenge/domain/challenge_models.dart';
@@ -127,6 +128,65 @@ class FeedViewController extends ChangeNotifier {
     );
   }
 
+  Future<bool> answerScenario(int index, int choiceIndex) async {
+    final items = _snapshot?.items;
+    if (items == null || index < 0 || index >= items.length) return false;
+    final item = items[index];
+    final options = item.revision.payload['options'];
+    if (item.revision.type != ContentItemType.scenarioPoll ||
+        options is! List ||
+        choiceIndex < 0 ||
+        choiceIndex >= options.whereType<String>().take(3).length) {
+      return false;
+    }
+    if (!await open(index)) return false;
+    final saved = await _runInteraction(
+      operation: 'answer scenario',
+      index: index,
+      commit: (assignment, now) => interactions.answerScenario(
+        assignment: assignment,
+        choiceIndex: choiceIndex,
+        atUtc: now,
+        timezoneId: interactionClock.timezoneId,
+        timezoneOffsetMinutes: _offsetMinutes(),
+      ),
+    );
+    if (!saved) return false;
+    await removeAssignment(item.assignment.assignmentId);
+    return true;
+  }
+
+  Future<void> removeAssignment(String assignmentId) async {
+    final current = _snapshot;
+    if (current == null) return;
+    final removedIndex = current.items.indexWhere(
+      (item) => item.assignment.assignmentId == assignmentId,
+    );
+    if (removedIndex < 0) return;
+    final remaining = [...current.items]..removeAt(removedIndex);
+    _currentIndex = remaining.isEmpty
+        ? 0
+        : _currentIndex.clamp(0, remaining.length - 1);
+    _snapshot = FeedSessionSnapshot(
+      batch: current.batch,
+      items: remaining,
+      generatedLocally: current.generatedLocally,
+      activeAttempt: current.activeAttempt,
+      activeChallenge: current.activeChallenge,
+    );
+    notifyListeners();
+    try {
+      await _persistCurrentAssignment();
+    } catch (error, stackTrace) {
+      developer.log(
+        'Feed assignment was resolved but cursor persistence failed',
+        name: 'mayhem.feed',
+        error: error.runtimeType,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   void clearInteractionError() {
     if (_interactionError == null) return;
     _interactionError = null;
@@ -151,7 +211,10 @@ class FeedViewController extends ChangeNotifier {
 
   Future<void> _persistCurrentAssignment() async {
     final items = _snapshot?.items;
-    if (items == null || items.isEmpty) return;
+    if (items == null || items.isEmpty) {
+      await metadata.delete(currentAssignmentKey);
+      return;
+    }
     await metadata.write(
       currentAssignmentKey,
       items[_currentIndex].assignment.assignmentId,

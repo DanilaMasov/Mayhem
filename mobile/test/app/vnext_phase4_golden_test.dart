@@ -7,6 +7,9 @@ import 'package:mayhem_mobile/core/design_system/components/components.dart';
 import 'package:mayhem_mobile/core/debug/debug_visual_overlays.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
 import 'package:mayhem_mobile/features/challenge/domain/challenge_models.dart';
+import 'package:mayhem_mobile/features/progress/domain/development_rank_config.dart';
+import 'package:mayhem_mobile/features/progress/domain/progress_models.dart';
+import 'package:mayhem_mobile/features/progress/presentation/rank_promotion_scene.dart';
 import 'package:mayhem_mobile/presentation/theme/mayhem_theme.dart';
 
 import '../support/golden_test_fonts.dart';
@@ -62,15 +65,6 @@ void main() {
     await expectLater(
       find.byType(VNextShell),
       matchesGoldenFile(goldenTestPath('phase7_trait_legend_390x844.png')),
-    );
-
-    await tester.tap(find.byTooltip('Назад'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('rank-style-preview')));
-    await tester.pumpAndSettle();
-    await expectLater(
-      find.byType(VNextShell),
-      matchesGoldenFile(goldenTestPath('phase7_style_collection_390x844.png')),
     );
 
     await tester.tap(find.byTooltip('Назад'));
@@ -154,6 +148,47 @@ void main() {
     await expectLater(
       find.byType(MayhemSheet),
       matchesGoldenFile(goldenTestPath('feed_skip_sheet_390x844.png')),
+    );
+  });
+
+  testWidgets('Rank promotion final frame mobile golden', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final previous = PrestigeRank(
+      family: RankFamily.spark,
+      tier: 1,
+      configRevision: DevelopmentRankConfig.revision,
+    );
+    final current = PrestigeRank(
+      family: RankFamily.spark,
+      tier: 2,
+      configRevision: DevelopmentRankConfig.revision,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MayhemTheme.dark,
+        home: MayhemStringsScope(
+          strings: const MayhemStringsRu(),
+          child: MayhemAccessibility(
+            preferences: const MayhemMotionPreferences(reduceMotion: true),
+            child: RankPromotionScene(
+              previousRank: previous,
+              currentRank: current,
+              ratingScore: 1130,
+              ratingDelta: 30,
+              onDismiss: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await expectLater(
+      find.byType(RankPromotionScene),
+      matchesGoldenFile(goldenTestPath('rank_promotion_390x844.png')),
     );
   });
 }

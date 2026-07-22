@@ -360,7 +360,7 @@ class _ProfileRevealScene extends StatelessWidget {
           const Center(child: RankSigil(tier: RankSigilTier.spark, size: 104)),
           const Center(
             child: MayhemText(
-              'SPARK I',
+              'ИСКРА',
               variant: MayhemTextVariant.headlineMedium,
             ),
           ),

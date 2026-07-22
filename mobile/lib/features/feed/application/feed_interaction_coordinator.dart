@@ -67,6 +67,26 @@ class FeedInteractionCoordinator {
     ),
   );
 
+  Future<bool> answerScenario({
+    required FeedAssignment assignment,
+    required int choiceIndex,
+    required DateTime atUtc,
+    required String timezoneId,
+    required int timezoneOffsetMinutes,
+  }) => repository.commitScenarioChoice(
+    assignmentId: assignment.assignmentId,
+    choiceIndex: choiceIndex,
+    answeredAtUtc: atUtc,
+    event: _event(
+      assignment: assignment,
+      type: CanonicalEventTypeV2.feedItemSaved,
+      atUtc: atUtc,
+      timezoneId: timezoneId,
+      timezoneOffsetMinutes: timezoneOffsetMinutes,
+      payload: {'kind': 'scenarioPollResponse', 'choiceIndex': choiceIndex},
+    ),
+  );
+
   EventDraftV2 _event({
     required FeedAssignment assignment,
     required CanonicalEventTypeV2 type,
