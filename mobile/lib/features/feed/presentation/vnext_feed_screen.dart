@@ -1441,25 +1441,101 @@ class _FeedFieldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final bounds = Offset.zero & size;
     canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = MayhemColors.canvasDeep,
+      bounds,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(
+              energy.withValues(alpha: 0.16),
+              MayhemColors.canvasDeep,
+            ),
+            MayhemColors.canvasDeep,
+            MayhemColors.canvasBase,
+          ],
+          stops: const [0, 0.52, 1],
+        ).createShader(bounds),
+    );
+
+    final glowBounds = Rect.fromCircle(
+      center: Offset(size.width * 0.83, size.height * 0.18),
+      radius: size.longestSide * 0.48,
     );
     canvas.drawRect(
-      Rect.fromLTWH(size.width * 0.62, 0, size.width * 0.38, size.height),
-      Paint()..color = energy.withValues(alpha: 0.12),
+      bounds,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            energy.withValues(alpha: 0.38),
+            energy.withValues(alpha: 0.08),
+            const Color(0x00000000),
+          ],
+          stops: const [0, 0.46, 1],
+        ).createShader(glowBounds),
     );
+
+    final monolith = Path()
+      ..moveTo(size.width * 0.58, -size.height * 0.04)
+      ..lineTo(size.width * 1.04, size.height * 0.08)
+      ..lineTo(size.width * 0.84, size.height * 0.62)
+      ..lineTo(size.width * 0.48, size.height * 0.48)
+      ..close();
+    canvas.drawPath(monolith, Paint()..color = energy.withValues(alpha: 0.055));
+    canvas.drawPath(
+      monolith,
+      Paint()
+        ..color = energy.withValues(alpha: 0.18)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
     final line = Paint()
-      ..color = energy.withValues(alpha: 0.32)
+      ..color = energy.withValues(alpha: 0.18)
       ..strokeWidth = 1;
-    for (var index = 0; index < 6; index++) {
-      final x = size.width * (0.12 + index * 0.14);
+    for (var index = -2; index < 8; index += 1) {
+      final x = size.width * (index * 0.16);
       canvas.drawLine(
-        Offset(x, size.height * 0.18),
-        Offset(x + size.width * 0.2, size.height * 0.62),
+        Offset(x, size.height * 0.78),
+        Offset(x + size.width * 0.52, size.height * 0.08),
         line,
       );
     }
+
+    final ring = Paint()
+      ..color = energy.withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawCircle(
+      Offset(size.width * 0.83, size.height * 0.18),
+      size.width * 0.23,
+      ring,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.83, size.height * 0.18),
+      size.width * 0.31,
+      ring..color = energy.withValues(alpha: 0.08),
+    );
+
+    final dust = Paint()..color = energy.withValues(alpha: 0.34);
+    for (var index = 0; index < 24; index += 1) {
+      final x = ((index * 67 + 13) % 101) / 101 * size.width;
+      final y = ((index * 43 + 17) % 97) / 97 * size.height * 0.74;
+      canvas.drawCircle(Offset(x, y), index % 3 == 0 ? 1.4 : 0.7, dust);
+    }
+
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x00050608), Color(0xE6050608)],
+          stops: [0.48, 1],
+        ).createShader(bounds),
+    );
   }
 
   @override

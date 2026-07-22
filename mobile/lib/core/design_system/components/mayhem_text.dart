@@ -24,15 +24,11 @@ class MayhemText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themedStyle = Theme.of(context).textTheme.bodyMedium;
     return Text(
       data,
-      style: MayhemTypography.resolve(variant).copyWith(
-        inherit: false,
-        color: color,
-        fontFamily: themedStyle?.fontFamily,
-        fontFamilyFallback: themedStyle?.fontFamilyFallback,
-      ),
+      style: MayhemTypography.resolve(
+        variant,
+      ).copyWith(inherit: false, color: color),
       textAlign: textAlign,
       maxLines: maxLines,
       overflow: overflow,
