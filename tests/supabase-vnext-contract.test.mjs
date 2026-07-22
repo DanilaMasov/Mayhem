@@ -20,6 +20,9 @@ const seasonParticipationPath = migration(
 const functionGrantHardeningPath = migration(
   "202607200011_explicit_function_execute_grants.sql"
 );
+const dynamicRatingPath = migration(
+  "202607220012_dynamic_rating_titles.sql"
+);
 const eventPath = new URL("../mobile/lib/core/sync/event_envelope_v2.dart", import.meta.url);
 const goldenPath = new URL("../contracts/v1/policy_golden.json", import.meta.url);
 
@@ -109,26 +112,61 @@ test("vNext RPC accepts the exact canonical mobile event vocabulary", async () =
 });
 
 test("server algorithms expose every frozen local policy revision", async () => {
-  const [sql, source] = await Promise.all([
+  const [rpcSql, ratingSql, source] = await Promise.all([
     readFile(rpcPath, "utf8"),
+    readFile(dynamicRatingPath, "utf8"),
     readFile(goldenPath, "utf8")
   ]);
+  const sql = `${rpcSql}\n${ratingSql}`;
   const golden = JSON.parse(source);
   for (const revision of Object.values(golden.revisions)) {
     assert.match(sql, new RegExp(`'${revision}'`));
   }
-  for (const [label, totalXp, minimumTraitXp] of golden.rankThresholds) {
-    const [family, roman] = label.split(" ");
-    const tier = roman === "I" ? 1 : roman === "II" ? 2 : roman === "III" ? 3 : 1;
+  const rankIdentities = [
+    ["spark", 1], ["spark", 2], ["spark", 3],
+    ["mover", 1], ["mover", 2], ["mover", 3],
+    ["catalyst", 1], ["catalyst", 2], ["catalyst", 3],
+    ["maverick", 1], ["maverick", 2], ["maverick", 3],
+    ["icon", 1], ["icon", 2], ["icon", 3], ["mayhem", 1]
+  ];
+  for (const [[family, tier], [, ratingScore, minimumTraitXp]] of
+    rankIdentities.map((identity, index) => [identity, golden.rankThresholds[index]])) {
     assert.match(
-      sql,
-      new RegExp(`\\('${family.toLowerCase()}', ${tier}, ${totalXp}, ${minimumTraitXp}\\)`)
+      ratingSql,
+      new RegExp(`\\('${family}', ${tier}, ${ratingScore}, ${minimumTraitXp}\\)`)
     );
   }
   assert.match(sql, /then 100 else 60 end/);
   assert.match(sql, /then 75/);
   assert.match(sql, /else 50/);
   assert.match(sql, /interval '20 hours'/);
+  assert.match(ratingSql, /mayhem_rating_delta_dev_v1/);
+  assert.match(ratingSql, /user_events_apply_rating_v1/);
+  assert.match(ratingSql, /'ratingScore', p\.rating_score/);
+  assert.match(ratingSql, /'peakRatingScore', p\.peak_rating_score/);
+});
+
+test("dynamic rating migration stays server-authoritative and private", async () => {
+  const sql = await readFile(dynamicRatingPath, "utf8");
+  assert.match(sql, /add column rating_score integer not null default 1000/);
+  assert.match(sql, /after insert on public\.user_events/);
+  assert.match(sql, /previous\.attempt_id <> attempt\.attempt_id/);
+  assert.match(sql, /previous\.resolved_at >= new\.occurred_at_utc - interval '7 days'/);
+  assert.match(sql, /greatest\(0, least\(5000, rating_score \+ delta\)\)/);
+  assert.match(sql, /rank_config_dev_v2/);
+  for (const helper of [
+    "mayhem_rank_dev_v2",
+    "mayhem_rating_delta_dev_v1",
+    "mayhem_apply_rating_dev_v1",
+    "mayhem_progress_payload"
+  ]) {
+    assert.match(
+      sql,
+      new RegExp(`revoke all on function public\\.${helper}`),
+      `${helper} must not be callable through the Data API`
+    );
+  }
+  assert.doesNotMatch(sql, /grant execute[^;]+ to (?:anon|authenticated)/);
 });
 
 test("bootstrap, content, Feed, and deletion contracts fail closed", async () => {

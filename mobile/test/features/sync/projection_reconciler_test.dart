@@ -13,6 +13,7 @@ void main() {
   test('server base is reconciled with still-pending optimistic rewards', () {
     final local = _localProjection(
       totalXp: 100,
+      ratingScore: 1025,
       currentDays: 2,
       longestDays: 8,
     );
@@ -54,6 +55,7 @@ void main() {
     () {
       final local = _localProjection(
         totalXp: 300,
+        ratingScore: 1250,
         currentDays: 4,
         longestDays: 9,
       );
@@ -95,6 +97,7 @@ void main() {
     () {
       final local = _localProjection(
         totalXp: 300,
+        ratingScore: 1250,
         currentDays: 4,
         longestDays: 9,
       );
@@ -184,12 +187,42 @@ void main() {
     expect(result.ownedArtifacts.single.artifactId, 'founder-1');
     expect(result.ownedArtifacts.single.seasonId, 'season-0');
   });
+
+  test('server projection accepts only the frozen dynamic-rating revision', () {
+    final json = _serverProjectionJson(
+      totalXp: 120,
+      revision: 6,
+      currentDays: 2,
+      longestDays: 2,
+    );
+    json
+      ..['ratingScore'] = 1125
+      ..['peakRatingScore'] = 1180
+      ..['ratingModelRevision'] = 'rating_model_dev_v1'
+      ..['rank'] = {
+        'family': 'spark',
+        'tier': 2,
+        'configRevision': 'rank_config_dev_v2',
+      };
+
+    final snapshot = ServerProjectionSnapshot.fromJson(json);
+    expect(snapshot.projection.ratingScore, 1125);
+    expect(snapshot.projection.peakRatingScore, 1180);
+    expect(snapshot.projection.rank.label, 'ИМПУЛЬС');
+
+    json['ratingModelRevision'] = 'rating_model_unknown';
+    expect(
+      () => ServerProjectionSnapshot.fromJson(json),
+      throwsFormatException,
+    );
+  });
 }
 
 ProgressProjection _localProjection({
   required int totalXp,
   required int currentDays,
   required int longestDays,
+  int ratingScore = DevelopmentRankConfig.startingRating,
 }) {
   final traitXp = {
     Trait.initiation: 0,
@@ -198,7 +231,7 @@ ProgressProjection _localProjection({
     Trait.presence: totalXp,
   };
   final rank = DevelopmentRankConfig.policy().resolve(
-    totalXp: totalXp,
+    ratingScore: ratingScore,
     traitXp: traitXp,
   );
   final momentum = MomentumState(
@@ -212,6 +245,8 @@ ProgressProjection _localProjection({
   );
   return ProgressProjection(
     totalXp: totalXp,
+    ratingScore: ratingScore,
+    peakRatingScore: ratingScore,
     traitXp: traitXp,
     rank: rank.rank,
     rankProgress: rank.progressToNext,
@@ -247,7 +282,12 @@ EventEnvelopeV2 _terminalEvent({required int rewardXp}) => EventEnvelopeV2(
   attemptId: 'attempt-id',
   contentId: 'challenge',
   contentRevision: 1,
-  payload: {'rewardXp': rewardXp, 'felt': 'aboutAsExpected'},
+  payload: {
+    'rewardXp': rewardXp,
+    'felt': 'aboutAsExpected',
+    'route': 'normal',
+    'rewardRepeatMultiplierPercent': 100,
+  },
 );
 
 Map<String, dynamic> _serverProjectionJson({

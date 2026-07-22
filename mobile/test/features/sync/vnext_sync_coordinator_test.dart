@@ -568,7 +568,12 @@ EventEnvelopeV2 _event() => EventEnvelopeV2(
   attemptId: 'attempt-id',
   contentId: 'challenge',
   contentRevision: 1,
-  payload: const {'rewardXp': 100, 'felt': 'aboutAsExpected'},
+  payload: const {
+    'rewardXp': 100,
+    'felt': 'aboutAsExpected',
+    'route': 'normal',
+    'rewardRepeatMultiplierPercent': 100,
+  },
 );
 
 ServerProjectionSnapshot _serverProjection(int totalXp, int revision) =>
@@ -609,11 +614,13 @@ ProgressProjection _projection(int totalXp, int completedCount) {
     Trait.presence: totalXp,
   };
   final rank = DevelopmentRankConfig.policy().resolve(
-    totalXp: totalXp,
+    ratingScore: DevelopmentRankConfig.startingRating,
     traitXp: traitXp,
   );
   return ProgressProjection(
     totalXp: totalXp,
+    ratingScore: DevelopmentRankConfig.startingRating,
+    peakRatingScore: DevelopmentRankConfig.startingRating,
     traitXp: traitXp,
     rank: rank.rank,
     rankProgress: rank.progressToNext,

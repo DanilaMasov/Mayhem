@@ -15,6 +15,7 @@ import '../../features/onboarding/application/onboarding_controller.dart';
 import '../../features/onboarding/data/local_onboarding_repository.dart';
 import '../../features/progress/application/journey_controller.dart';
 import '../../features/progress/domain/development_rank_config.dart';
+import '../../features/progress/domain/progress_models.dart';
 import '../../features/season/application/artifact_ownership_controller.dart';
 import '../../features/season/application/season_bootstrap_activator.dart';
 import '../../features/season/application/season_experience_controller.dart';
@@ -25,7 +26,8 @@ import '../../features/settings/data/local_user_preferences_repository.dart';
 import '../../infrastructure/sqlite/sqlite_vnext_store.dart';
 
 class VNextRuntime extends ChangeNotifier {
-  static const _lastSeenRankKey = 'last_seen_rank_v1';
+  static const _lastSeenRankKey = 'last_seen_rank_v2';
+  static const _lastSeenRatingKey = 'last_seen_rating_v1';
   factory VNextRuntime({
     required SqliteVNextStore store,
     required BundledVNextContent bundled,
@@ -160,7 +162,7 @@ class VNextRuntime extends ChangeNotifier {
   final SeasonParticipationCoordinator seasonParticipation;
 
   LocalIdentity? _identity;
-  String? _pendingRankUp;
+  RankPromotion? _pendingRankUp;
   RemoteAccountController? _remoteAccount;
   void Function()? _terminalSyncTrigger;
 
@@ -169,7 +171,7 @@ class VNextRuntime extends ChangeNotifier {
   LocalIdentity get identity =>
       _identity ?? (throw StateError('vNext identity is not initialized'));
 
-  String? get pendingRankUp => _pendingRankUp;
+  RankPromotion? get pendingRankUp => _pendingRankUp;
 
   String get anonymousHandle {
     final compact = identity.localUserId
@@ -253,23 +255,64 @@ class VNextRuntime extends ChangeNotifier {
       season.completeRemoteRefresh(succeeded: succeeded);
 
   Future<void> _detectRankUp() async {
-    final rankLabel = journey.snapshot?.projection.rank.label;
-    if (rankLabel == null) return;
+    final projection = journey.snapshot?.projection;
+    if (projection == null) return;
+    final currentRank = projection.rank;
     final previous = await store.metadata.read(_lastSeenRankKey);
+    final previousRating = int.tryParse(
+      await store.metadata.read(_lastSeenRatingKey) ?? '',
+    );
     if (previous == null) {
-      await store.metadata.write(_lastSeenRankKey, rankLabel);
-    } else if (previous != rankLabel) {
-      if (_pendingRankUp != rankLabel) {
-        _pendingRankUp = rankLabel;
+      await Future.wait([
+        store.metadata.write(_lastSeenRankKey, currentRank.stableId),
+        store.metadata.write(_lastSeenRatingKey, '${projection.ratingScore}'),
+      ]);
+      return;
+    }
+    if (previous == currentRank.stableId) {
+      await store.metadata.write(
+        _lastSeenRatingKey,
+        '${projection.ratingScore}',
+      );
+      return;
+    }
+    final thresholds = DevelopmentRankConfig.policy().thresholds;
+    final previousIndex = thresholds.indexWhere(
+      (threshold) => threshold.rank.stableId == previous,
+    );
+    final currentIndex = thresholds.indexWhere(
+      (threshold) => threshold.rank.stableId == currentRank.stableId,
+    );
+    if (previousIndex >= 0 && currentIndex > previousIndex) {
+      final promotion = RankPromotion(
+        previousRank: thresholds[previousIndex].rank,
+        currentRank: currentRank,
+        previousRatingScore:
+            previousRating ?? thresholds[previousIndex].ratingScore,
+        ratingScore: projection.ratingScore,
+      );
+      if (_pendingRankUp?.currentRank.stableId != currentRank.stableId) {
+        _pendingRankUp = promotion;
         notifyListeners();
       }
+      return;
     }
+    // Demotions and unknown legacy identities are checkpoints, not promotion
+    // moments. Persist them immediately so a later recovery is measured from
+    // the real current title.
+    await Future.wait([
+      store.metadata.write(_lastSeenRankKey, currentRank.stableId),
+      store.metadata.write(_lastSeenRatingKey, '${projection.ratingScore}'),
+    ]);
   }
 
   Future<void> consumeRankUp() async {
-    final rankLabel = _pendingRankUp;
-    if (rankLabel == null) return;
-    await store.metadata.write(_lastSeenRankKey, rankLabel);
+    final promotion = _pendingRankUp;
+    if (promotion == null) return;
+    await Future.wait([
+      store.metadata.write(_lastSeenRankKey, promotion.currentRank.stableId),
+      store.metadata.write(_lastSeenRatingKey, '${promotion.ratingScore}'),
+    ]);
     _pendingRankUp = null;
     notifyListeners();
   }
@@ -299,4 +342,20 @@ class VNextRuntime extends ChangeNotifier {
     _remoteAccount?.dispose();
     super.dispose();
   }
+}
+
+class RankPromotion {
+  const RankPromotion({
+    required this.previousRank,
+    required this.currentRank,
+    required this.previousRatingScore,
+    required this.ratingScore,
+  });
+
+  final PrestigeRank previousRank;
+  final PrestigeRank currentRank;
+  final int previousRatingScore;
+  final int ratingScore;
+
+  int get ratingDelta => ratingScore - previousRatingScore;
 }

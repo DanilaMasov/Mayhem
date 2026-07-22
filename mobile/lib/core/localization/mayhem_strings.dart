@@ -81,23 +81,16 @@ abstract interface class MayhemStrings {
   String get currentArena;
   String get unlockedArena;
   String get lockedArena;
-  String rankXpRequirement(int value);
+  String currentRating(int value);
+  String rankRatingRequirement(int value);
   String rankTraitRequirement(int value);
-  String rankXpRemaining(int value);
+  String rankRatingRemaining(int value);
   String rankTraitRemaining(int value);
   String rankNext(String label);
   String rankProgressToNext(int percent);
   String get rankRecentActions;
   String get rankNoRecentActions;
   String rankRecentActionCount(int shown, int total);
-  String get rankStylesTitle;
-  String get rankStylesOpen;
-  String get rankStylesBody;
-  String rankStylesUnlocked(int unlocked, int total);
-  String get rankStyleSelected;
-  String get rankStyleAvailable;
-  String rankStyleLocked(String rankLabel);
-  String get rankStyleApplyError;
   String get journeyInsightEmpty;
   String journeyInsightStrongest(String trait);
   String get traitsTitle;
@@ -226,6 +219,9 @@ abstract interface class MayhemStrings {
   String get devicePerformanceOpen;
   String get rankUp;
   String rankUnlocked(String label);
+  String rankPrevious(String label);
+  String rankRatingGain(int value);
+  String get rankPromotionBody;
 }
 
 class MayhemStringsRu implements MayhemStrings {
@@ -429,21 +425,23 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get rankPathTitle => 'РЕЙТИНГОВЫЙ ПУТЬ';
   @override
-  String get rankPathHint => 'Листай вверх к новым аренам';
+  String get rankPathHint => 'Листай вверх по званиям';
   @override
-  String get rankPathOpen => 'ОТКРЫТЬ ВСЕ РЕЙТИНГИ';
+  String get rankPathOpen => 'ОТКРЫТЬ ПУТЬ ЗВАНИЙ';
   @override
-  String get currentArena => 'ТЕКУЩАЯ АРЕНА';
+  String get currentArena => 'ТЕКУЩЕЕ ЗВАНИЕ';
   @override
-  String get unlockedArena => 'ОТКРЫТО';
+  String get unlockedArena => 'ПРОЙДЕНО';
   @override
-  String get lockedArena => 'ЗАКРЫТО';
+  String get lockedArena => 'ВЫШЕ ПО РЕЙТИНГУ';
   @override
-  String rankXpRequirement(int value) => '$value XP';
+  String currentRating(int value) => '$value РЕЙТИНГ';
+  @override
+  String rankRatingRequirement(int value) => 'Рейтинг $value';
   @override
   String rankTraitRequirement(int value) => '$value XP в каждом навыке';
   @override
-  String rankXpRemaining(int value) => 'Ещё $value XP';
+  String rankRatingRemaining(int value) => 'Ещё $value рейтинга';
   @override
   String rankTraitRemaining(int value) => 'Ещё $value XP в слабейшем навыке';
   @override
@@ -459,26 +457,6 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String rankRecentActionCount(int shown, int total) =>
       'Показано: $shown из $total';
-  @override
-  String get rankStylesTitle => 'СТИЛИ АРЕН';
-  @override
-  String get rankStylesOpen => 'ОТКРЫТЬ КОЛЛЕКЦИЮ СТИЛЕЙ';
-  @override
-  String get rankStylesBody =>
-      'Каждый достигнутый ранг навсегда открывает свой стиль. '
-      'Переключайся между открытыми в любой момент.';
-  @override
-  String rankStylesUnlocked(int unlocked, int total) =>
-      '$unlocked из $total открыто';
-  @override
-  String get rankStyleSelected => 'ИСПОЛЬЗУЕТСЯ';
-  @override
-  String get rankStyleAvailable => 'ДОСТУПЕН';
-  @override
-  String rankStyleLocked(String rankLabel) => 'ОТКРОЕТСЯ НА $rankLabel';
-  @override
-  String get rankStyleApplyError =>
-      'Не удалось применить стиль. Текущий стиль не изменён.';
   @override
   String get journeyInsightEmpty =>
       'Первое реальное действие начнёт менять эту карту.';
@@ -775,7 +753,14 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get rankUp => 'НОВЫЙ РАНГ';
   @override
-  String rankUnlocked(String label) => 'Открыт $label';
+  String rankUnlocked(String label) => 'Твоё новое звание — $label';
+  @override
+  String rankPrevious(String label) => 'Было: $label';
+  @override
+  String rankRatingGain(int value) => '+$value рейтинга';
+  @override
+  String get rankPromotionBody =>
+      'Рейтинг меняется от результатов. Звание можно поднять и потерять.';
 }
 
 class MayhemStringsScope extends InheritedWidget {

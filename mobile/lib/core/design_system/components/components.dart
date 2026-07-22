@@ -1,5 +1,4 @@
 export 'mayhem_bottom_navigation.dart';
-export 'compact_rank_up_scene.dart';
 export 'mayhem_button.dart';
 export 'feed_pager.dart';
 export 'mayhem_feedback.dart';

@@ -298,7 +298,7 @@ class _Harness {
           tier: 1,
           configRevision: 'test_v1',
         ),
-        totalXp: 0,
+        ratingScore: 1000,
         minimumTraitXp: 0,
       ),
       RankThreshold(
@@ -307,7 +307,7 @@ class _Harness {
           tier: 2,
           configRevision: 'test_v1',
         ),
-        totalXp: 100,
+        ratingScore: 1125,
         minimumTraitXp: 10,
       ),
     ],

@@ -3,7 +3,8 @@
   "revisions": {
     "reward": "reward_policy_dev_v1",
     "difficulty": "difficulty_model_dev_v1",
-    "rank": "rank_config_dev_v1",
+    "rating": "rating_model_dev_v1",
+    "rank": "rank_config_dev_v2",
     "momentum": "momentum_policy_dev_v1"
   },
   "rewardCases": [
@@ -111,23 +112,75 @@
     { "skipReason": "notInterested", "delta": 0.0 },
     { "skipReason": "unsafeOrUncomfortable", "delta": 0.0 }
   ],
+  "ratingCases": [
+    {
+      "id": "completed_expected",
+      "score": 1200,
+      "outcome": "completed",
+      "felt": "aboutAsExpected",
+      "route": "normal",
+      "intensity": 3,
+      "repeatPercent": 100,
+      "expectedDelta": 25
+    },
+    {
+      "id": "advanced_hard_win",
+      "score": 1200,
+      "outcome": "completed",
+      "felt": "harderThanExpected",
+      "route": "advanced",
+      "intensity": 5,
+      "repeatPercent": 100,
+      "expectedDelta": 41
+    },
+    {
+      "id": "repeat_dampening",
+      "score": 1200,
+      "outcome": "completed",
+      "felt": "easierThanExpected",
+      "route": "normal",
+      "intensity": 3,
+      "repeatPercent": 50,
+      "expectedDelta": 9
+    },
+    {
+      "id": "attempt_loss",
+      "score": 1200,
+      "outcome": "attempted",
+      "felt": "harderThanExpected",
+      "route": "normal",
+      "intensity": 4,
+      "repeatPercent": 100,
+      "expectedDelta": -12
+    },
+    {
+      "id": "low_pressure_loss_protection",
+      "score": 1200,
+      "outcome": "attempted",
+      "felt": "stoppedEarly",
+      "route": "lowPressure",
+      "intensity": 5,
+      "repeatPercent": 100,
+      "expectedDelta": -11
+    }
+  ],
   "rankThresholds": [
-    ["SPARK I", 0, 0],
-    ["SPARK II", 250, 0],
-    ["SPARK III", 600, 0],
-    ["MOVER I", 1000, 100],
-    ["MOVER II", 1500, 150],
-    ["MOVER III", 2200, 200],
-    ["CATALYST I", 3000, 300],
-    ["CATALYST II", 4000, 400],
-    ["CATALYST III", 5200, 500],
-    ["MAVERICK I", 6700, 650],
-    ["MAVERICK II", 8500, 800],
-    ["MAVERICK III", 10500, 1000],
-    ["ICON I", 13000, 1200],
-    ["ICON II", 16000, 1500],
-    ["ICON III", 20000, 1800],
-    ["MAYHEM", 25000, 2200]
+    ["ИСКРА", 1000, 0],
+    ["ИМПУЛЬС", 1125, 0],
+    ["РАЗРЯД", 1250, 0],
+    ["ВЕКТОР", 1400, 100],
+    ["ДРАЙВЕР", 1550, 150],
+    ["ПРОРЫВ", 1700, 200],
+    ["КАТАЛИЗАТОР", 1875, 300],
+    ["РЕЗОНАНС", 2050, 400],
+    ["СИНЕРГИЯ", 2250, 500],
+    ["МАВЕРИК", 2475, 650],
+    ["АВАНГАРД", 2700, 800],
+    ["ПЕРВОПРОХОДЕЦ", 2950, 1000],
+    ["МАГНИТ", 3225, 1200],
+    ["ИКОНА", 3525, 1500],
+    ["ЛЕГЕНДА", 3850, 1800],
+    ["MAYHEM", 4200, 2200]
   ],
   "momentumCases": [
     {

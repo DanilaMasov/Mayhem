@@ -321,6 +321,8 @@ MomentumState _momentum() => MomentumState(
 ProgressProjection _projection(DateTime at, MomentumState momentum) =>
     ProgressProjection(
       totalXp: 75,
+      ratingScore: 1075,
+      peakRatingScore: 1075,
       traitXp: const {
         Trait.initiation: 75,
         Trait.expression: 0,

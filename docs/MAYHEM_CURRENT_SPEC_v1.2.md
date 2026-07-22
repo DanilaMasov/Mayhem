@@ -675,6 +675,35 @@ Do not mask missing product states with animation. Do not begin a wholesale desi
 
 Kira is not a design asset and must not appear in this phase.
 
+### 10.1 User-directed rank and visual amendment — 2026-07-22
+
+This amendment supersedes the local XP-only arena ladder and the experimental
+rank-owned style collection introduced after this specification was written.
+
+- XP and per-trait XP remain permanent evidence of completed work.
+- A separate competitive rating must react to each terminal challenge result
+  and may move both upward and downward. Low-pressure routes soften losses and
+  repeated content cannot be farmed at full positive value.
+- Prestige is presented as sixteen unique named titles rather than three Roman
+  numeral levels inside each family. Balanced minimum trait XP may still gate
+  promotion so one-trait farming cannot reach the top ladder.
+- Promotion celebration is shown only for an actual upward title change.
+  Demotion is checkpointed without a false celebration. Reduce Motion must
+  reveal the complete final state immediately.
+- The rating path must expose the current numeric rating, exact title
+  thresholds, the weakest-trait requirement, continuous current-to-next fill,
+  and real recent actions. It must remain fully scrollable above floating
+  navigation at 1.6x text.
+- Rank-owned themes, interface skins, and the selectable style collection are
+  retired. Legacy preference fields remain read-compatible but have no release
+  UI effect.
+- Visual variety belongs to Feed content backgrounds and is selected
+  deterministically by immutable content identity; it is not an unlockable
+  rank reward.
+- Server projections must calculate rating from accepted canonical events and
+  return the frozen rating/rank revisions. Client-provided rating totals are
+  never authoritative.
+
 ---
 
 ## 11. Explicit non-goals for the current cycle

@@ -9,7 +9,7 @@ import '../../core/design_system/motion/mayhem_durations.dart';
 import '../../core/design_system/tokens/tokens.dart';
 import '../../core/localization/mayhem_strings.dart';
 import '../../features/onboarding/presentation/vnext_onboarding_flow.dart';
-import '../../features/progress/domain/progress_models.dart';
+import '../../features/progress/presentation/rank_promotion_scene.dart';
 import 'vnext_runtime.dart';
 import 'vnext_shell.dart';
 import '../composition/remote_runtime_diagnostics.dart';
@@ -80,9 +80,9 @@ class _VNextAppRootState extends State<VNextAppRoot> {
                   onResetLocalData: _resetLocalData,
                   remoteDiagnostics: widget.remoteDiagnostics,
                 ),
-                if (widget.runtime.pendingRankUp case final rankLabel?)
+                if (widget.runtime.pendingRankUp case final promotion?)
                   _RankUpOverlay(
-                    rankLabel: rankLabel,
+                    promotion: promotion,
                     onDismiss: _dismissRankUp,
                   ),
               ],
@@ -198,30 +198,17 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _RankUpOverlay extends StatelessWidget {
-  const _RankUpOverlay({required this.rankLabel, required this.onDismiss});
+  const _RankUpOverlay({required this.promotion, required this.onDismiss});
 
-  final String rankLabel;
+  final RankPromotion promotion;
   final VoidCallback onDismiss;
 
   @override
-  Widget build(BuildContext context) {
-    final mover = !rankLabel.startsWith(RankFamily.spark.name.toUpperCase());
-    return ColoredBox(
-      color: MayhemColors.overlayDeep,
-      child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(MayhemSpacing.x6),
-            child: CompactRankUpScene(
-              eyebrow: context.strings.rankUp,
-              title: context.strings.rankUnlocked(rankLabel),
-              dismissLabel: context.strings.continueLabel,
-              tier: mover ? RankSigilTier.mover : RankSigilTier.spark,
-              onDismiss: onDismiss,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => RankPromotionScene(
+    previousRank: promotion.previousRank,
+    currentRank: promotion.currentRank,
+    ratingScore: promotion.ratingScore,
+    ratingDelta: promotion.ratingDelta,
+    onDismiss: onDismiss,
+  );
 }

@@ -2,6 +2,7 @@ import '../../../core/sync/event_envelope_v2.dart';
 import '../../feed/domain/feed_models.dart';
 import '../../progress/domain/difficulty_update_policy.dart';
 import '../../progress/domain/progress_models.dart';
+import '../../progress/domain/rating_update_policy.dart';
 import '../../progress/domain/progress_repository.dart';
 import '../../progress/domain/rank_policy.dart';
 import '../../reflection/domain/private_reflection.dart';
@@ -70,6 +71,7 @@ class ChallengeFlowCoordinator {
     this.transitions = const ChallengeTransitionService(),
     this.momentumPolicy = const MomentumPolicy(),
     this.difficultyPolicy = const DifficultyUpdatePolicy(),
+    this.ratingPolicy = const RatingUpdatePolicy(),
   });
 
   final ChallengeAttemptRepository attempts;
@@ -82,6 +84,7 @@ class ChallengeFlowCoordinator {
   final ChallengeTransitionService transitions;
   final MomentumPolicy momentumPolicy;
   final DifficultyUpdatePolicy difficultyPolicy;
+  final RatingUpdatePolicy ratingPolicy;
 
   Future<ChallengeAttempt?> restoreActiveAttempt() => attempts.activeAttempt();
 
@@ -222,6 +225,7 @@ class ChallengeFlowCoordinator {
     final projection = _applyProgress(
       current: currentProjection,
       definition: definition,
+      route: currentAttempt.selectedRoute,
       result: rewardedResult,
       reward: reward,
       momentum: momentumUpdate.state,
@@ -270,6 +274,7 @@ class ChallengeFlowCoordinator {
   ProgressProjection _applyProgress({
     required ProgressProjection current,
     required ChallengeDefinition definition,
+    required ChallengeRouteType route,
     required AttemptResult result,
     required ChallengeReward reward,
     required MomentumState momentum,
@@ -296,9 +301,24 @@ class ChallengeFlowCoordinator {
       updatedAt,
     );
     final totalXp = current.totalXp + reward.xp;
-    final rank = rankPolicy.resolve(totalXp: totalXp, traitXp: traitXp);
+    final rating = ratingPolicy.update(
+      currentScore: current.ratingScore,
+      outcome: result.outcome,
+      felt: result.felt,
+      route: route,
+      intensity: definition.intensity,
+      repeatMultiplierPercent: reward.repeatMultiplierPercent,
+    );
+    final rank = rankPolicy.resolve(
+      ratingScore: rating.score,
+      traitXp: traitXp,
+    );
     return ProgressProjection(
       totalXp: totalXp,
+      ratingScore: rating.score,
+      peakRatingScore: rating.score > current.peakRatingScore
+          ? rating.score
+          : current.peakRatingScore,
       traitXp: traitXp,
       rank: rank.rank,
       rankProgress: rank.progressToNext,
@@ -317,9 +337,15 @@ class ChallengeFlowCoordinator {
 
   ProgressProjection _emptyProjection(DateTime at, MomentumState momentum) {
     final traitXp = {for (final trait in Trait.values) trait: 0};
-    final rank = rankPolicy.resolve(totalXp: 0, traitXp: traitXp);
+    final startingRating = rankPolicy.thresholds.first.ratingScore;
+    final rank = rankPolicy.resolve(
+      ratingScore: startingRating,
+      traitXp: traitXp,
+    );
     return ProgressProjection(
       totalXp: 0,
+      ratingScore: startingRating,
+      peakRatingScore: startingRating,
       traitXp: traitXp,
       rank: rank.rank,
       rankProgress: rank.progressToNext,
@@ -374,6 +400,10 @@ class ChallengeFlowCoordinator {
           'rewardRepeatMultiplierPercent': rewardRepeatMultiplierPercent,
           'rewardXp': result.earnedXp,
           'difficultyModelRevision': difficultyModelRevision,
+          'ratingModelRevision': ratingPolicy.algorithmRevision,
+          'ratingDelta':
+              projection.ratingScore - previousProjection.ratingScore,
+          'ratingScore': projection.ratingScore,
           'momentumPolicyRevision': momentumUpdate.state.policyRevision,
           'momentumPendingTimezoneReview':
               momentumUpdate.state.pendingTimezoneReview,
@@ -412,7 +442,14 @@ class ChallengeFlowCoordinator {
         ),
       );
     }
-    if (projection.rank.label != previousProjection.rank.label) {
+    final previousRankIndex = rankPolicy.thresholds.indexWhere(
+      (threshold) =>
+          threshold.rank.stableId == previousProjection.rank.stableId,
+    );
+    final nextRankIndex = rankPolicy.thresholds.indexWhere(
+      (threshold) => threshold.rank.stableId == projection.rank.stableId,
+    );
+    if (nextRankIndex > previousRankIndex) {
       events.add(
         _event(
           eventType: CanonicalEventTypeV2.rankUnlocked,
@@ -423,6 +460,8 @@ class ChallengeFlowCoordinator {
             'rankFamily': projection.rank.family.name,
             'rankTier': projection.rank.tier,
             'rankConfigRevision': projection.rank.configRevision,
+            'ratingScore': projection.ratingScore,
+            'ratingModelRevision': ratingPolicy.algorithmRevision,
           },
         ),
       );

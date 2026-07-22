@@ -169,6 +169,8 @@ void main() {
     await runtime.store.progress.saveProjection(
       ProgressProjection(
         totalXp: 240,
+        ratingScore: 1110,
+        peakRatingScore: 1110,
         traitXp: current.traitXp,
         rank: current.rank,
         rankProgress: current.rankProgress,
@@ -193,7 +195,7 @@ void main() {
       felt: FeltComparedToExpected.aboutAsExpected,
     );
 
-    expect(runtime.pendingRankUp, 'SPARK II');
+    expect(runtime.pendingRankUp?.currentRank.label, 'ИМПУЛЬС');
     expect(notifications, greaterThan(0));
   });
 }
