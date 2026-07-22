@@ -6,6 +6,7 @@ class UserPreferences {
     this.soundEnabled = true,
     this.ceremoniesEnabled = true,
     this.locale = 'ru-RU',
+    this.rankStyleId,
   });
 
   final bool reduceMotion;
@@ -16,6 +17,7 @@ class UserPreferences {
   final bool soundEnabled;
   final bool ceremoniesEnabled;
   final String locale;
+  final String? rankStyleId;
 
   UserPreferences copyWith({
     bool? reduceMotion,
@@ -23,6 +25,7 @@ class UserPreferences {
     bool? hapticsEnabled,
     bool? soundEnabled,
     bool? ceremoniesEnabled,
+    String? rankStyleId,
   }) => UserPreferences(
     reduceMotion: reduceMotion ?? this.reduceMotion,
     reduceTransparency: reduceTransparency ?? this.reduceTransparency,
@@ -30,6 +33,7 @@ class UserPreferences {
     soundEnabled: soundEnabled ?? this.soundEnabled,
     ceremoniesEnabled: ceremoniesEnabled ?? this.ceremoniesEnabled,
     locale: locale,
+    rankStyleId: rankStyleId ?? this.rankStyleId,
   );
 
   Map<String, Object?> toJson() => {
@@ -39,6 +43,7 @@ class UserPreferences {
     'soundEnabled': soundEnabled,
     'ceremoniesEnabled': ceremoniesEnabled,
     'locale': locale,
+    if (rankStyleId != null) 'rankStyleId': rankStyleId,
   };
 
   factory UserPreferences.fromJson(Map<String, dynamic> json) =>
@@ -49,5 +54,9 @@ class UserPreferences {
         soundEnabled: json['soundEnabled'] != false,
         ceremoniesEnabled: json['ceremoniesEnabled'] != false,
         locale: json['locale'] as String? ?? 'ru-RU',
+        rankStyleId: switch (json['rankStyleId']) {
+          final String value when value.trim().isNotEmpty => value,
+          _ => null,
+        },
       );
 }

@@ -6,13 +6,17 @@ import '../../../core/localization/mayhem_strings.dart';
 import '../../challenge/domain/challenge_models.dart';
 import '../../season/application/season_experience_controller.dart';
 import '../../season/domain/season_experience_state.dart';
+import '../../settings/application/settings_controller.dart';
 import '../../streak/domain/momentum_state.dart';
 import '../application/journey_controller.dart';
 import '../domain/progress_models.dart';
+import '../domain/rank_visual_style.dart';
+import 'rank_style_surface.dart';
 
 abstract final class JourneyRoutes {
   static const root = '/journey';
   static const ranks = '/journey/ranks';
+  static const styles = '/journey/styles';
   static const traits = '/journey/traits';
   static const momentum = '/journey/momentum';
   static const history = '/journey/history';
@@ -24,15 +28,17 @@ class VNextJourneyScreen extends StatelessWidget {
     super.key,
     required this.controller,
     required this.season,
+    required this.settings,
   });
 
   final JourneyController controller;
   final SeasonExperienceController season;
+  final SettingsController settings;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([controller, season]),
+      animation: Listenable.merge([controller, season, settings]),
       builder: (context, child) {
         if (controller.loading) {
           return Center(
@@ -55,17 +61,30 @@ class VNextJourneyScreen extends StatelessWidget {
             ),
           );
         }
-        return _JourneyContent(snapshot: snapshot, season: season.state);
+        final style = RankVisualStyleCatalog.resolveSelected(
+          selectedId: settings.preferences.rankStyleId,
+          currentRank: snapshot.projection.rank,
+        );
+        return _JourneyContent(
+          snapshot: snapshot,
+          season: season.state,
+          style: style,
+        );
       },
     );
   }
 }
 
 class _JourneyContent extends StatelessWidget {
-  const _JourneyContent({required this.snapshot, required this.season});
+  const _JourneyContent({
+    required this.snapshot,
+    required this.season,
+    required this.style,
+  });
 
   final JourneySnapshot snapshot;
   final SeasonExperienceState season;
+  final RankVisualStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +109,16 @@ class _JourneyContent extends StatelessWidget {
               variant: MayhemTextVariant.labelMicro,
             ),
           ),
-          _JourneyTopScene(snapshot: snapshot),
+          _JourneyTopScene(snapshot: snapshot, style: style),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              MayhemSpacing.x5,
+              MayhemSpacing.x4,
+              MayhemSpacing.x5,
+              0,
+            ),
+            child: _RankStylePreview(snapshot: snapshot, style: style),
+          ),
           if (season.visible)
             Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -240,9 +268,10 @@ class _SeasonSummary extends StatelessWidget {
 }
 
 class _JourneyTopScene extends StatelessWidget {
-  const _JourneyTopScene({required this.snapshot});
+  const _JourneyTopScene({required this.snapshot, required this.style});
 
   final JourneySnapshot snapshot;
+  final RankVisualStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -256,14 +285,9 @@ class _JourneyTopScene extends StatelessWidget {
       semanticLabel: strings.rankPathOpen,
       onPressed: () => Navigator.of(context).pushNamed(JourneyRoutes.ranks),
       borderRadius: BorderRadius.zero,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [MayhemColors.brandVoid, MayhemColors.canvasRaised],
-          ),
-        ),
+      child: RankStyleSurface(
+        key: const ValueKey('journey-top-scene'),
+        style: style,
         child: SizedBox(
           height: 284,
           child: Padding(
@@ -341,6 +365,71 @@ class _JourneyTopScene extends StatelessWidget {
                     },
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RankStylePreview extends StatelessWidget {
+  const _RankStylePreview({required this.snapshot, required this.style});
+
+  final JourneySnapshot snapshot;
+  final RankVisualStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    final palette = rankStylePalette(style);
+    final unlocked = RankVisualStyleCatalog.unlockedFor(
+      snapshot.projection.rank,
+    ).length;
+    final total = RankVisualStyleCatalog.styles.length;
+    return MayhemPressable(
+      key: const ValueKey('rank-style-preview'),
+      semanticLabel: strings.rankStylesOpen,
+      onPressed: () => Navigator.of(context).pushNamed(JourneyRoutes.styles),
+      borderRadius: MayhemRadii.medium,
+      child: RankStyleSurface(
+        style: style,
+        borderRadius: MayhemRadii.medium,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: MayhemRadii.medium,
+            border: Border.all(color: palette.accent.withValues(alpha: 0.45)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MayhemSpacing.x4,
+              vertical: MayhemSpacing.x3,
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.palette_outlined, color: palette.accent),
+                const SizedBox(width: MayhemSpacing.x3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      MayhemText(
+                        strings.rankStylesTitle,
+                        variant: MayhemTextVariant.labelLarge,
+                      ),
+                      const SizedBox(height: MayhemSpacing.x1),
+                      MayhemText(
+                        '${style.unlockRank.label} · '
+                        '${strings.rankStylesUnlocked(unlocked, total)}',
+                        variant: MayhemTextVariant.bodySmall,
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: MayhemSpacing.x2),
+                const Icon(Icons.arrow_forward, size: 20),
               ],
             ),
           ),
@@ -475,6 +564,7 @@ class VNextTraitsDetailScreen extends StatelessWidget {
     return _DetailScaffold(
       title: strings.traitsTitle,
       child: ListView(
+        key: const PageStorageKey('traits-detail-scroll'),
         padding: const EdgeInsets.all(MayhemSpacing.x5),
         children: [
           Center(
@@ -485,36 +575,90 @@ class VNextTraitsDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: MayhemSpacing.x8),
+          MayhemText(
+            strings.traitsLegendTitle,
+            variant: MayhemTextVariant.labelLarge,
+          ),
+          const SizedBox(height: MayhemSpacing.x2),
+          MayhemText(strings.traitsLegendBody),
+          const SizedBox(height: MayhemSpacing.x4),
           for (final trait in Trait.values)
             Padding(
-              padding: const EdgeInsets.only(bottom: MayhemSpacing.x5),
-              child: Row(
+              padding: const EdgeInsets.only(bottom: MayhemSpacing.x3),
+              child: _TraitLegendRow(
+                trait: trait,
+                xp: snapshot.projection.traitXp[trait] ?? 0,
+                signal: signals[trait] ?? 0,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TraitLegendRow extends StatelessWidget {
+  const _TraitLegendRow({
+    required this.trait,
+    required this.xp,
+    required this.signal,
+  });
+
+  final Trait trait;
+  final int xp;
+  final int signal;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.strings;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: MayhemColors.surfaceBase,
+        borderRadius: MayhemRadii.medium,
+        border: Border.all(color: traitColor(trait).withValues(alpha: 0.4)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(MayhemSpacing.x4),
+        child: Row(
+          children: [
+            TraitMarker(trait: trait, size: 30),
+            const SizedBox(width: MayhemSpacing.x4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        MayhemText(
-                          strings.traitName(trait),
-                          variant: MayhemTextVariant.labelLarge,
-                          color: MayhemColors.textPrimary,
-                        ),
-                        const SizedBox(height: MayhemSpacing.x1),
-                        MayhemText(
-                          '${snapshot.projection.traitXp[trait] ?? 0} XP',
-                          variant: MayhemTextVariant.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
                   MayhemText(
-                    '${signals[trait]}',
-                    variant: MayhemTextVariant.numberStatus,
+                    strings.traitName(trait),
+                    variant: MayhemTextVariant.labelLarge,
+                    color: MayhemColors.textPrimary,
+                  ),
+                  const SizedBox(height: MayhemSpacing.x1),
+                  MayhemText(
+                    '${strings.traitPosition(trait)} · $xp XP',
+                    variant: MayhemTextVariant.bodySmall,
+                    maxLines: 3,
                   ),
                 ],
               ),
             ),
-        ],
+            const SizedBox(width: MayhemSpacing.x3),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                MayhemText(
+                  '$signal',
+                  variant: MayhemTextVariant.numberStatus,
+                  color: traitColor(trait),
+                ),
+                const SizedBox(height: MayhemSpacing.x1),
+                MayhemText(
+                  strings.traitSignalScale,
+                  variant: MayhemTextVariant.labelMicro,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

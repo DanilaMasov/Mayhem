@@ -4,6 +4,7 @@ import 'package:mayhem_mobile/features/progress/domain/difficulty_update_policy.
 import 'package:mayhem_mobile/features/progress/domain/development_rank_config.dart';
 import 'package:mayhem_mobile/features/progress/domain/progress_models.dart';
 import 'package:mayhem_mobile/features/progress/domain/rank_policy.dart';
+import 'package:mayhem_mobile/features/progress/domain/rank_visual_style.dart';
 import 'package:mayhem_mobile/infrastructure/sqlite/sqlite_vnext_mappers.dart';
 
 void main() {
@@ -131,6 +132,39 @@ void main() {
         ['ICON III', 20000, 1800],
         ['MAYHEM', 25000, 2200],
       ],
+    );
+  });
+
+  test('rank styles unlock cumulatively and reject a locked selection', () {
+    final styles = RankVisualStyleCatalog.styles;
+    final mover = PrestigeRank(
+      family: RankFamily.mover,
+      tier: 1,
+      configRevision: DevelopmentRankConfig.revision,
+    );
+
+    expect(styles, hasLength(16));
+    expect(styles.first.id, 'spark.1');
+    expect(styles.last.id, 'mayhem.1');
+    expect(RankVisualStyleCatalog.unlockedFor(mover).map((style) => style.id), [
+      'spark.1',
+      'spark.2',
+      'spark.3',
+      'mover.1',
+    ]);
+    expect(
+      RankVisualStyleCatalog.resolveSelected(
+        selectedId: 'spark.2',
+        currentRank: mover,
+      ).id,
+      'spark.2',
+    );
+    expect(
+      RankVisualStyleCatalog.resolveSelected(
+        selectedId: 'mayhem.1',
+        currentRank: mover,
+      ).id,
+      'spark.1',
     );
   });
 

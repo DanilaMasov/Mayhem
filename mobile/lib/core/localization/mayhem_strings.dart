@@ -87,10 +87,22 @@ abstract interface class MayhemStrings {
   String get rankRecentActions;
   String get rankNoRecentActions;
   String rankRecentActionCount(int shown, int total);
+  String get rankStylesTitle;
+  String get rankStylesOpen;
+  String get rankStylesBody;
+  String rankStylesUnlocked(int unlocked, int total);
+  String get rankStyleSelected;
+  String get rankStyleAvailable;
+  String rankStyleLocked(String rankLabel);
+  String get rankStyleApplyError;
   String get journeyInsightEmpty;
   String journeyInsightStrongest(String trait);
   String get traitsTitle;
   String get traitsAccessibleHint;
+  String get traitsLegendTitle;
+  String get traitsLegendBody;
+  String traitPosition(Trait trait);
+  String get traitSignalScale;
   String get momentumTitle;
   String get momentumPending;
   String get currentMomentum;
@@ -437,6 +449,26 @@ class MayhemStringsRu implements MayhemStrings {
   String rankRecentActionCount(int shown, int total) =>
       'Показано: $shown из $total';
   @override
+  String get rankStylesTitle => 'СТИЛИ АРЕН';
+  @override
+  String get rankStylesOpen => 'ОТКРЫТЬ КОЛЛЕКЦИЮ СТИЛЕЙ';
+  @override
+  String get rankStylesBody =>
+      'Каждый достигнутый ранг навсегда открывает свой стиль. '
+      'Переключайся между открытыми в любой момент.';
+  @override
+  String rankStylesUnlocked(int unlocked, int total) =>
+      '$unlocked из $total открыто';
+  @override
+  String get rankStyleSelected => 'ИСПОЛЬЗУЕТСЯ';
+  @override
+  String get rankStyleAvailable => 'ДОСТУПЕН';
+  @override
+  String rankStyleLocked(String rankLabel) => 'ОТКРОЕТСЯ НА $rankLabel';
+  @override
+  String get rankStyleApplyError =>
+      'Не удалось применить стиль. Текущий стиль не изменён.';
+  @override
   String get journeyInsightEmpty =>
       'Первое реальное действие начнёт менять эту карту.';
   @override
@@ -447,6 +479,21 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get traitsAccessibleHint =>
       'Нажми на карту, чтобы открыть точные значения.';
+  @override
+  String get traitsLegendTitle => 'ЛЕГЕНДА КАРТЫ';
+  @override
+  String get traitsLegendBody =>
+      'Цвет, фигура и сторона карты всегда относятся к одному навыку. '
+      'Число сигнала нормировано от 0 до 100.';
+  @override
+  String traitPosition(Trait trait) => switch (trait) {
+    Trait.initiation => 'Сверху · круг',
+    Trait.expression => 'Справа · квадрат',
+    Trait.connection => 'Снизу · треугольник',
+    Trait.presence => 'Слева · ромб',
+  };
+  @override
+  String get traitSignalScale => 'ИЗ 100';
   @override
   String get momentumTitle => 'MOMENTUM';
   @override

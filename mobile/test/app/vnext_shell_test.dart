@@ -721,6 +721,119 @@ void main() {
     expect(find.text('Ещё 50 XP в слабейшем навыке'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('skill map legend explains every node at large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.byKey(const PageStorageKey('journey-scroll'))),
+    ).pushNamed('/journey/traits');
+    await tester.pumpAndSettle();
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const PageStorageKey('traits-detail-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      find.text('ЛЕГЕНДА КАРТЫ'),
+      240,
+      scrollable: scrollable,
+    );
+    expect(find.text('ЛЕГЕНДА КАРТЫ'), findsOneWidget);
+    for (final position in const [
+      'Сверху · круг',
+      'Справа · квадрат',
+      'Снизу · треугольник',
+      'Слева · ромб',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.textContaining(position),
+        140,
+        scrollable: scrollable,
+      );
+      expect(find.textContaining(position), findsOneWidget);
+    }
+    expect(find.byType(TraitMarker), findsNWidgets(4));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unlocked arena style persists and locked styles stay gated', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final database = buildVNextTestDatabase();
+    final runtime = (await tester.runAsync(
+      () => buildVNextTestRuntime(database: database),
+    ))!;
+    final current = runtime.journey.snapshot!.projection;
+    await tester.runAsync(() async {
+      await runtime.store.progress.saveProjection(
+        ProgressProjection(
+          totalXp: 1000,
+          traitXp: {for (final trait in Trait.values) trait: 100},
+          rank: current.rank,
+          rankProgress: current.rankProgress,
+          momentum: current.momentum,
+          difficulty: current.difficulty,
+          completedCount: current.completedCount,
+          attemptedCount: current.attemptedCount,
+          updatedAt: DateTime.utc(2026, 7, 22),
+          source: ProjectionSource.localCheckpoint,
+        ),
+      );
+      await runtime.journey.initialize();
+    });
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('rank-style-preview')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('4 из 16 открыто'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('rank-style-spark.2')));
+    await tester.pumpAndSettle();
+    expect(runtime.settings.preferences.rankStyleId, 'spark.2');
+    expect(find.text('ИСПОЛЬЗУЕТСЯ'), findsOneWidget);
+
+    final scrollable = find
+        .descendant(
+          of: find.byKey(const PageStorageKey('rank-style-collection-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('rank-style-mayhem.1')),
+      320,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.byKey(const ValueKey('rank-style-mayhem.1')));
+    await tester.pump();
+    expect(runtime.settings.preferences.rankStyleId, 'spark.2');
+    expect(find.text('ОТКРОЕТСЯ НА MAYHEM'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final restored = (await tester.runAsync(
+      () => buildVNextTestRuntime(database: database),
+    ))!;
+    expect(restored.settings.preferences.rankStyleId, 'spark.2');
+  });
 }
 
 RemoteSeasonSnapshot _activeSeason() => RemoteSeasonSnapshot(
