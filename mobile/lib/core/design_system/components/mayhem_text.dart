@@ -28,6 +28,7 @@ class MayhemText extends StatelessWidget {
     return Text(
       data,
       style: MayhemTypography.resolve(variant).copyWith(
+        inherit: false,
         color: color,
         fontFamily: themedStyle?.fontFamily,
         fontFamilyFallback: themedStyle?.fontFamilyFallback,

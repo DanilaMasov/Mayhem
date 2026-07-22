@@ -9,6 +9,16 @@ import 'package:mayhem_mobile/core/design_system/tokens/tokens.dart';
 import 'package:mayhem_mobile/dev/motion_lab/motion_lab.dart';
 
 void main() {
+  testWidgets('Mayhem text never inherits the Material fallback underline', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: MayhemText('MAYHEM')));
+
+    final text = tester.widget<Text>(find.text('MAYHEM'));
+    expect(text.style?.inherit, isFalse);
+    expect(text.style?.decoration, isNull);
+  });
+
   group('design tokens', () {
     test('match the master specification', () {
       expect(MayhemColors.canvasDeep, const Color(0xFF050608));

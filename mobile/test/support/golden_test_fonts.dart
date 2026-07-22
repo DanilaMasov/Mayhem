@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import 'package:mayhem_mobile/core/debug/debug_visual_overlays.dart';
+
 String goldenTestPath(String fileName) {
   if (Platform.isLinux) {
     return 'goldens/linux/$fileName';
@@ -10,6 +12,7 @@ String goldenTestPath(String fileName) {
 }
 
 Future<void> loadGoldenTestFonts() async {
+  resetMayhemDebugVisualOverlays();
   final materialFonts = _findMaterialFontsDirectory();
 
   final text = FontLoader('MayhemGoldenRoboto')

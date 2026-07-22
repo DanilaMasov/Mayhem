@@ -73,6 +73,20 @@ abstract interface class MayhemStrings {
   String get rewardAttempted;
   String feedPosition(int current, int total);
   String get journeyTitle;
+  String get rankPathTitle;
+  String get rankPathHint;
+  String get rankPathOpen;
+  String get currentArena;
+  String get unlockedArena;
+  String get lockedArena;
+  String rankXpRequirement(int value);
+  String rankTraitRequirement(int value);
+  String rankXpRemaining(int value);
+  String rankTraitRemaining(int value);
+  String rankNext(String label);
+  String get rankRecentActions;
+  String get rankNoRecentActions;
+  String rankRecentActionCount(int shown, int total);
   String get journeyInsightEmpty;
   String journeyInsightStrongest(String trait);
   String get traitsTitle;
@@ -392,6 +406,36 @@ class MayhemStringsRu implements MayhemStrings {
   String feedPosition(int current, int total) => '$current из $total';
   @override
   String get journeyTitle => 'ТВОЙ ПУТЬ';
+  @override
+  String get rankPathTitle => 'РЕЙТИНГОВЫЙ ПУТЬ';
+  @override
+  String get rankPathHint => 'Листай вверх к новым аренам';
+  @override
+  String get rankPathOpen => 'ОТКРЫТЬ ВСЕ РЕЙТИНГИ';
+  @override
+  String get currentArena => 'ТЕКУЩАЯ АРЕНА';
+  @override
+  String get unlockedArena => 'ОТКРЫТО';
+  @override
+  String get lockedArena => 'ЗАКРЫТО';
+  @override
+  String rankXpRequirement(int value) => '$value XP';
+  @override
+  String rankTraitRequirement(int value) => '$value XP в каждом навыке';
+  @override
+  String rankXpRemaining(int value) => 'Ещё $value XP';
+  @override
+  String rankTraitRemaining(int value) => 'Ещё $value XP в слабейшем навыке';
+  @override
+  String rankNext(String label) => 'ДО $label';
+  @override
+  String get rankRecentActions => 'ПОСЛЕДНИЕ ДЕЙСТВИЯ НА ПУТИ';
+  @override
+  String get rankNoRecentActions =>
+      'Заверши первый вызов — действие появится здесь.';
+  @override
+  String rankRecentActionCount(int shown, int total) =>
+      'Показано: $shown из $total';
   @override
   String get journeyInsightEmpty =>
       'Первое реальное действие начнёт менять эту карту.';

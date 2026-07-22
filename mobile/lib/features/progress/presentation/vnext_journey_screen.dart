@@ -12,6 +12,7 @@ import '../domain/progress_models.dart';
 
 abstract final class JourneyRoutes {
   static const root = '/journey';
+  static const ranks = '/journey/ranks';
   static const traits = '/journey/traits';
   static const momentum = '/journey/momentum';
   static const history = '/journey/history';
@@ -245,59 +246,105 @@ class _JourneyTopScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = context.strings;
     final rank = snapshot.projection.rank;
     final rankTier = rank.family == RankFamily.spark
         ? RankSigilTier.spark
         : RankSigilTier.mover;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 245),
-      color: MayhemColors.canvasRaised,
-      padding: const EdgeInsets.symmetric(
-        horizontal: MayhemSpacing.x5,
-        vertical: MayhemSpacing.x6,
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 370;
-          final rankBlock = Expanded(
+    return MayhemPressable(
+      key: const ValueKey('rank-path-preview'),
+      semanticLabel: strings.rankPathOpen,
+      onPressed: () => Navigator.of(context).pushNamed(JourneyRoutes.ranks),
+      borderRadius: BorderRadius.zero,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [MayhemColors.brandVoid, MayhemColors.canvasRaised],
+          ),
+        ),
+        child: SizedBox(
+          height: 284,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MayhemSpacing.x5,
+              vertical: MayhemSpacing.x5,
+            ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                RankSigil(
-                  tier: rankTier,
-                  size: compact ? 88 : 112,
-                  showLabel: false,
+                Row(
+                  children: [
+                    Expanded(
+                      child: MayhemText(
+                        strings.currentArena,
+                        variant: MayhemTextVariant.labelMicro,
+                        color: MayhemColors.brandSignalSoft,
+                      ),
+                    ),
+                    Flexible(
+                      child: MayhemText(
+                        strings.rankPathOpen,
+                        variant: MayhemTextVariant.labelMicro,
+                        textAlign: TextAlign.end,
+                        maxLines: 2,
+                      ),
+                    ),
+                    const SizedBox(width: MayhemSpacing.x2),
+                    const Icon(Icons.arrow_upward, size: 18),
+                  ],
                 ),
                 const SizedBox(height: MayhemSpacing.x3),
-                MayhemText(
-                  rank.label,
-                  variant: MayhemTextVariant.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: MayhemSpacing.x3),
-                SizedBox(
-                  width: 120,
-                  child: LinearProgressIndicator(
-                    value: snapshot.projection.rankProgress,
-                    minHeight: 3,
-                    backgroundColor: MayhemColors.lineStrong,
-                    color: MayhemColors.brandSignalSoft,
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 370;
+                      final rankBlock = Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            RankSigil(
+                              tier: rankTier,
+                              size: compact ? 82 : 104,
+                              showLabel: false,
+                            ),
+                            const SizedBox(height: MayhemSpacing.x2),
+                            MayhemText(
+                              rank.label,
+                              variant: MayhemTextVariant.headlineMedium,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: MayhemSpacing.x3),
+                            SizedBox(
+                              width: 120,
+                              child: LinearProgressIndicator(
+                                value: snapshot.projection.rankProgress,
+                                minHeight: 4,
+                                borderRadius: MayhemRadii.pill,
+                                backgroundColor: MayhemColors.lineStrong,
+                                color: MayhemColors.brandSignalSoft,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      final momentumBlock = Expanded(
+                        child: Center(
+                          child: MomentumCore(
+                            days: snapshot.momentum.currentDays,
+                            state: momentumCoreState(snapshot.momentum),
+                            size: compact ? 106 : 128,
+                          ),
+                        ),
+                      );
+                      return Row(children: [rankBlock, momentumBlock]);
+                    },
                   ),
                 ),
               ],
             ),
-          );
-          final momentumBlock = Expanded(
-            child: Center(
-              child: MomentumCore(
-                days: snapshot.momentum.currentDays,
-                state: momentumCoreState(snapshot.momentum),
-                size: compact ? 112 : 136,
-              ),
-            ),
-          );
-          return Row(children: [rankBlock, momentumBlock]);
-        },
+          ),
+        ),
       ),
     );
   }
