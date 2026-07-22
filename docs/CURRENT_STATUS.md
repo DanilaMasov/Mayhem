@@ -4,8 +4,8 @@
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
-**Current implementation checkpoint:** `3220f89` (merged by PR #33 as
-`632e136`)
+**Current implementation checkpoint:** `10bb581` (merged by PR #35 as
+`68ebc3c`)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -147,13 +147,14 @@ vertically ordered path from the current rank toward MAYHEM. The path uses only
 the frozen local rank policy and real local history; it does not manufacture
 leaderboard users, positions, or online availability.
 
-The next user-directed slice is implemented on `codex/skill-map-styles`. The
-skill map now explains the stable color, shape, side, XP, and normalized signal
-for all four traits. Every one of the sixteen frozen ranks owns a visual arena
-style; achieved styles remain selectable, future styles stay visibly locked,
-and the selected unlocked style persists locally across restart. The selected
-style changes the Journey arena scene and rank-path atmosphere without adding
-a network dependency or inventing ownership.
+Pull request [#35](https://github.com/DanilaMasov/Mayhem/pull/35) merges the
+user-directed skill-map and arena-style slice as `68ebc3c`. The skill map now
+explains the stable color, shape, side, XP, and normalized signal for all four
+traits. Every one of the sixteen frozen ranks owns a visual arena style;
+achieved styles remain selectable, future styles stay visibly locked, and the
+selected unlocked style persists locally across restart. The selected style
+changes the Journey arena scene and rank-path atmosphere without adding a
+network dependency or inventing ownership.
 
 ## Open software gates
 
@@ -285,6 +286,13 @@ policy, rejection of locked selections, local selection persistence across a
 cold runtime, refreshed Journey/rank-path goldens, and dedicated legend and
 style-collection goldens. Physical-device visual and interaction acceptance
 remains open.
+
+- [push CI run 29941680335](https://github.com/DanilaMasov/Mayhem/actions/runs/29941680335):
+  repository contracts and Flutter passed;
+- [pull-request CI run 29941700613](https://github.com/DanilaMasov/Mayhem/actions/runs/29941700613):
+  repository contracts and Flutter passed, including Linux golden comparison;
+- [pull-request release-smoke run 29941700592](https://github.com/DanilaMasov/Mayhem/actions/runs/29941700592):
+  unsigned Android and iOS staging compilation passed.
 
 ```sh
 node --test tests/*.test.mjs
@@ -789,11 +797,11 @@ unset.
 
 The readable local rating path is merged through PR #33 (`632e136`) and handed
 off in preview 4. The skill-map legend plus persistent per-rank visual style
-collection is implemented on `codex/skill-map-styles`; custom font refinement
-and broader Feed/background art direction follow as their own visually testable
-slice. A real public leaderboard per rank is not a local-only UI feature; it
-remains gated on an explicit server, privacy, abuse, and account-identity design
-instead of being simulated with fake users.
+collection is merged through PR #35 (`68ebc3c`) and handed off in preview 5;
+custom font refinement and broader Feed/background art direction follow as
+their own visually testable slice. A real public leaderboard per rank is not a
+local-only UI feature; it remains gated on an explicit server, privacy, abuse,
+and account-identity design instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR
@@ -829,6 +837,14 @@ commit `632e136`. The downloaded 171,050,505-byte APK matched its generated
 checksum and passed local ZIP integrity verification with SHA-256
 `c75d0d248b6f3c48c75f27e5bd5e609b3f6c671b7e5b0027d985ba4bfed3a209`.
 [Prerelease v0.1.0-preview.4](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.4)
+publishes exactly one `Mayhem-staging-preview.apk` asset with the same digest.
+After PR #35 merged, manual
+[run 29942210365](https://github.com/DanilaMasov/Mayhem/actions/runs/29942210365)
+built, signature-verified, and uploaded `mayhem-staging-preview-5` from merge
+commit `68ebc3c`. The downloaded 171,074,137-byte APK matched its generated
+checksum and passed local ZIP integrity verification with SHA-256
+`27f038998b61cee6fd0f63128a4b071819c2b62988387821419e985c61524f05`.
+[Prerelease v0.1.0-preview.5](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.5)
 publishes exactly one `Mayhem-staging-preview.apk` asset with the same digest.
 The result remains debug-signed and cannot close R4 or any release/store gate.
 
