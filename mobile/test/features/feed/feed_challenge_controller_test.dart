@@ -75,6 +75,7 @@ void main() {
       clock: runtime.feedChallenge.clock,
       timezoneOffsetMinutes: () => 180,
       onActiveChanged: (_, _) {},
+      onAssignmentResolved: (_) async {},
       onProjectionChanged: () => throw StateError('injected refresh failure'),
     )..initialize(runtime.feed.snapshot!);
 

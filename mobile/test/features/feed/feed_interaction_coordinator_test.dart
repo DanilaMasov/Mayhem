@@ -105,6 +105,82 @@ void main() {
     );
     expect(database.executor.rows('event_log_v2'), isEmpty);
   });
+
+  test('scenario choice is private, atomic and idempotent', () async {
+    final database = MemoryVNextDatabase(seed: _seed(at));
+    final store = SqliteVNextStore(database, clock: () => at);
+    var nextId = 0;
+    final coordinator = FeedInteractionCoordinator(
+      repository: store.feed,
+      idGenerator: () => 'scenario-${++nextId}',
+    );
+
+    expect(
+      await coordinator.answerScenario(
+        assignment: _assignment(at),
+        choiceIndex: 1,
+        atUtc: at,
+        timezoneId: 'Europe/Moscow',
+        timezoneOffsetMinutes: 180,
+      ),
+      isTrue,
+    );
+    expect(
+      await coordinator.answerScenario(
+        assignment: _assignment(at),
+        choiceIndex: 2,
+        atUtc: at.add(const Duration(seconds: 1)),
+        timezoneId: 'Europe/Moscow',
+        timezoneOffsetMinutes: 180,
+      ),
+      isFalse,
+    );
+
+    final metadata =
+        jsonDecode(
+              database.executor.rows('feed_assignments').single['metadata_json']
+                  as String,
+            )
+            as Map<String, dynamic>;
+    expect(metadata['_scenarioChoiceIndex'], 1);
+    expect(metadata['_scenarioAnsweredAt'], at.toIso8601String());
+    final event = database.executor.rows('event_log_v2').single;
+    expect(event['event_type'], 'feed_item_saved');
+    expect(jsonDecode(event['payload_json'] as String), {
+      'kind': 'scenarioPollResponse',
+      'choiceIndex': 1,
+    });
+  });
+
+  test('event failure rolls back scenario choice', () async {
+    final database = MemoryVNextDatabase(seed: _seed(at));
+    final store = SqliteVNextStore(database, clock: () => at);
+    final coordinator = FeedInteractionCoordinator(
+      repository: store.feed,
+      idGenerator: () => 'scenario-failure',
+    );
+    database.executor.failNextInsertInto = 'event_log_v2';
+
+    await expectLater(
+      coordinator.answerScenario(
+        assignment: _assignment(at),
+        choiceIndex: 0,
+        atUtc: at,
+        timezoneId: 'Europe/Moscow',
+        timezoneOffsetMinutes: 180,
+      ),
+      throwsStateError,
+    );
+
+    final metadata =
+        jsonDecode(
+              database.executor.rows('feed_assignments').single['metadata_json']
+                  as String,
+            )
+            as Map<String, dynamic>;
+    expect(metadata, isNot(contains('_scenarioChoiceIndex')));
+    expect(database.executor.rows('event_log_v2'), isEmpty);
+  });
 }
 
 FeedAssignment _assignment(DateTime at) => FeedAssignment(

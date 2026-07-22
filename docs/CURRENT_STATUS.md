@@ -4,8 +4,8 @@
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
-**Current implementation checkpoint:** `6006a62` (merged by PR #37 as
-`7d140a8`)
+**Current implementation checkpoint:** `47b8570` (preview-6 feedback audit
+merged by PR #38)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -52,6 +52,9 @@
   Unbounded for display/rank moments, with pinned upstream licenses and hashes.
 - Layered deterministic background atmosphere across the vNext shell plus a
   richer trait-colored Feed scene without network-fetched artwork.
+- Actionable scenario polls with atomic local persistence, terminal challenge
+  removal from the active and restored Feed, and deterministic per-card Feed
+  field variations.
 
 ## Active work item
 
@@ -167,6 +170,14 @@ baselines load the actual shipped fonts, deepens the shared vNext atmosphere
 and trait-colored Feed field, and preserves readable navigation titles. It
 does not add runtime font downloads or generated raster artwork.
 
+The `codex/feed-scenario-lifecycle` slice makes each scenario option a real,
+accessible action. A choice writes one idempotent `feed_item_saved` event and
+bounded assignment metadata in the same SQLite transaction, then removes the
+resolved card. Terminal challenge assignments are also removed immediately
+after the committed result and filtered when a stored batch is restored.
+Five deterministic field compositions vary Feed backgrounds by immutable
+content identity while keeping the existing first-card visual baseline stable.
+
 ## Device-feedback iteration audit
 
 | User feedback | Status | Evidence and boundary |
@@ -176,6 +187,9 @@ does not add runtime font downloads or generated raster artwork.
 | Challenge sometimes reports a local save error | Closed in software | PR #31 recovers lost UI acknowledgement and stale local client sequence without duplicate reward; controller/coordinator tests cover both paths. |
 | Fonts look generic | Closed | PR #37 ships Unbounded for display/rank moments and Manrope for interface copy, buttons, and navigation. |
 | Backgrounds lack depth | Closed for the reported vNext surfaces | PR #37 adds deterministic shared atmosphere and a richer trait-colored Feed scene; macOS and Linux goldens cover the result. |
+| Feed backgrounds repeat | Closed in the current local slice | Five deterministic field compositions are selected from immutable content identity without network artwork or rank-owned themes. |
+| Scenario options cannot be selected | Closed in the current local slice | Every option is an accessible press target; SQLite metadata and the canonical event are atomic and idempotent, and the resolved card leaves the Feed. |
+| Completed challenges remain in Feed | Closed in the current local slice | A committed terminal result removes the card immediately, and session restoration filters every terminal assignment. |
 | Existing ratings cannot be browsed | Closed | PR #33 exposes all sixteen frozen ranks from SPARK I through MAYHEM, including XP and weakest-trait requirements. |
 | Skill map has no legend | Closed | PR #35 explains stable color, shape, side, XP, and normalized signal for all four traits. |
 | Journey is visually weak | Closed for the requested local slice | PRs #33, #35, and #37 add the arena scene, vertical rank path, style entry, richer atmosphere, and updated typography. |
@@ -235,6 +249,29 @@ The broad clean-clone verification was completed on 2026-07-18. Repository
 contracts, Flutter static/runtime checks, and generated-data checks were
 repeated on 2026-07-21; the latest live-backend evidence remains dated
 2026-07-20. Commands and latest applicable results:
+
+The local `codex/feed-scenario-lifecycle` software gate passed on 2026-07-22:
+
+```sh
+/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 278 passed; 2 protected live-only tests skipped
+```
+
+The suite covers scenario tap behavior at 390x844 and 1.6x text, atomic
+rollback, idempotence, immediate terminal-card removal, and cold-runtime
+filtering. Existing macOS and Linux visual baselines remain unchanged because
+the established first Feed card retains its composition; physical-device
+interaction and visual acceptance remain open.
 
 The 2026-07-22 device-feedback blocker slice passed its complete local software
 gate:

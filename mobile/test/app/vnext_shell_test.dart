@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mayhem_mobile/app/vnext/vnext_runtime.dart';
 import 'package:mayhem_mobile/app/vnext/vnext_shell.dart';
+import 'package:mayhem_mobile/content/domain/content_item_revision.dart';
 import 'package:mayhem_mobile/core/design_system/accessibility/mayhem_motion_preferences.dart';
 import 'package:mayhem_mobile/core/design_system/components/components.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
@@ -310,6 +311,61 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('scenario choice persists once and removes its Feed card', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final database = buildVNextTestDatabase();
+    final runtime = (await tester.runAsync(
+      () => buildVNextTestRuntime(database: database),
+    ))!;
+    final items = runtime.feed.snapshot!.items;
+    final scenarioIndex = items.indexWhere(
+      (item) => item.revision.type == ContentItemType.scenarioPoll,
+    );
+    expect(scenarioIndex, greaterThanOrEqualTo(0));
+    final assignmentId = items[scenarioIndex].assignment.assignmentId;
+    final itemCount = items.length;
+    await runtime.feed.setCurrentIndex(scenarioIndex);
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('scenario-option-0')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('scenario-option-0')));
+    await tester.pumpAndSettle();
+
+    expect(runtime.feed.snapshot!.items, hasLength(itemCount - 1));
+    expect(
+      runtime.feed.snapshot!.items.map((item) => item.assignment.assignmentId),
+      isNot(contains(assignmentId)),
+    );
+    final assignment = database.executor
+        .rows('feed_assignments')
+        .singleWhere((row) => row['assignment_id'] == assignmentId);
+    expect(
+      jsonDecode(assignment['metadata_json'] as String),
+      containsPair('_scenarioChoiceIndex', 0),
+    );
+    expect(
+      database.executor
+          .rows('event_log_v2')
+          .where((row) => row['event_type'] == 'feed_item_saved'),
+      hasLength(1),
+    );
+
+    final restored = (await tester.runAsync(
+      () => buildVNextTestRuntime(database: database),
+    ))!;
+    expect(
+      restored.feed.snapshot!.items.map((item) => item.assignment.assignmentId),
+      isNot(contains(assignmentId)),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('settings exposes honest deletion and diagnostics states', (
     tester,
   ) async {
@@ -547,6 +603,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+    final completedAssignmentId =
+        runtime.feed.snapshot!.items.first.assignment.assignmentId;
+    final itemCount = runtime.feed.snapshot!.items.length;
 
     await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
     await tester.pumpAndSettle();
@@ -580,6 +639,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(runtime.feedChallenge.activeAttempt, isNull);
     expect(runtime.journey.snapshot!.projection.totalXp, greaterThan(0));
+    expect(runtime.feed.snapshot!.items, hasLength(itemCount - 1));
+    expect(
+      runtime.feed.snapshot!.items.map((item) => item.assignment.assignmentId),
+      isNot(contains(completedAssignmentId)),
+    );
     expect(find.text('ЗАПИСАТЬ РЕЗУЛЬТАТ'), findsNothing);
     expect(tester.takeException(), isNull);
   });

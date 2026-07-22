@@ -64,6 +64,49 @@ void main() {
       expect(restored.activeAttempt?.attemptId, 'active-attempt-1');
       expect(restored.activeChallenge?.contentId, active.contentId);
 
+      final resolved = const ChallengeTransitionService().resolve(
+        attempt: active,
+        result: const AttemptResult(
+          outcome: AttemptOutcome.completed,
+          felt: FeltComparedToExpected.aboutAsExpected,
+          earnedXp: 50,
+        ),
+        resolvedAt: now.add(const Duration(hours: 2)),
+      );
+      await store.challenge.save(resolved);
+      final scenarioAssignment = first.items
+          .firstWhere(
+            (item) => item.revision.type == ContentItemType.scenarioPoll,
+          )
+          .assignment;
+      final scenarioRow = database.executor
+          .rows('feed_assignments')
+          .singleWhere(
+            (row) => row['assignment_id'] == scenarioAssignment.assignmentId,
+          );
+      final scenarioMetadata = Map<String, Object?>.from(
+        jsonDecode(scenarioRow['metadata_json'] as String) as Map,
+      )..['_scenarioChoiceIndex'] = 0;
+      await database.executor.update(
+        'feed_assignments',
+        {'metadata_json': jsonEncode(scenarioMetadata)},
+        where: 'assignment_id = ?',
+        whereArgs: [scenarioAssignment.assignmentId],
+      );
+      final filtered = await coordinator.initialize(
+        bundled: bundled,
+        nowUtc: now.add(const Duration(hours: 2, minutes: 1)),
+      );
+      expect(
+        filtered.items.map((item) => item.assignment.assignmentId),
+        isNot(contains(active.assignmentId)),
+      );
+      expect(
+        filtered.items.map((item) => item.assignment.assignmentId),
+        isNot(contains(scenarioAssignment.assignmentId)),
+      );
+      expect(filtered.items, hasLength(18));
+
       final staleAssignment = database.executor
           .rows('feed_assignments')
           .firstWhere((row) => row['batch_id'] == first.batch.batchId);

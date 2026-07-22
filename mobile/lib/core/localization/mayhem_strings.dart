@@ -49,6 +49,8 @@ abstract interface class MayhemStrings {
   String get skipWrongContext;
   String get skipNotRelevant;
   String get feedInteractionFailed;
+  String get feedComplete;
+  String get scenarioChoose;
   String get lowPressureRoute;
   String get primaryRoute;
   String get acceptChallenge;
@@ -369,6 +371,11 @@ class MayhemStringsRu implements MayhemStrings {
   @override
   String get feedInteractionFailed =>
       'Не удалось сохранить действие. Попробуй ещё раз.';
+  @override
+  String get feedComplete =>
+      'Все карточки разобраны. Новая подборка появится позже.';
+  @override
+  String get scenarioChoose => 'ВЫБЕРИ ОТВЕТ';
   @override
   String get lowPressureRoute => 'МЯГКИЙ МАРШРУТ';
   @override

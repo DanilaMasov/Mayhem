@@ -30,6 +30,7 @@ class FeedChallengeController extends ChangeNotifier {
     required this.clock,
     required this.onActiveChanged,
     required this.onProjectionChanged,
+    required this.onAssignmentResolved,
     this.timezoneOffsetMinutes,
   });
 
@@ -41,6 +42,7 @@ class FeedChallengeController extends ChangeNotifier {
   )
   onActiveChanged;
   final Future<void> Function() onProjectionChanged;
+  final Future<void> Function(String assignmentId) onAssignmentResolved;
   final int Function()? timezoneOffsetMinutes;
 
   ChallengeAttempt? _activeAttempt;
@@ -153,6 +155,7 @@ class FeedChallengeController extends ChangeNotifier {
           momentumDays: resolution.momentum.currentDays,
         );
       }
+      await _removeAssignmentSafely(attempt.assignmentId);
       await _refreshProjectionSafely();
       return true;
     } catch (error, stackTrace) {
@@ -203,6 +206,19 @@ class FeedChallengeController extends ChangeNotifier {
     } catch (error, stackTrace) {
       developer.log(
         'Challenge committed but local projection refresh failed',
+        name: 'mayhem.feed.action',
+        error: error.runtimeType,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _removeAssignmentSafely(String assignmentId) async {
+    try {
+      await onAssignmentResolved(assignmentId);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Challenge committed but resolved Feed card removal failed',
         name: 'mayhem.feed.action',
         error: error.runtimeType,
         stackTrace: stackTrace,

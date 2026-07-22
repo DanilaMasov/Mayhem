@@ -113,6 +113,7 @@ class VNextRuntime extends ChangeNotifier {
       clock: clock,
       timezoneOffsetMinutes: timezoneOffsetMinutes,
       onActiveChanged: feed.setActiveChallenge,
+      onAssignmentResolved: feed.removeAssignment,
       onProjectionChanged: () => runtime.refreshAfterChallengeAction(),
     );
     runtime = VNextRuntime._(
