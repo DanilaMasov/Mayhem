@@ -83,6 +83,12 @@ suite. It runs only through the manual main-only Sentry acceptance workflow and
 never receives the project API token. See
 [`../docs/R5_LIVE_SENTRY_ACCEPTANCE.md`](../docs/R5_LIVE_SENTRY_ACCEPTANCE.md).
 
+For an installable Android demonstration, the manual `Android Preview APK`
+workflow builds a debug-signed staging APK with the local vNext Feed enabled.
+It consumes no backend, telemetry, signing, or support-contact secret and is
+not release evidence. See
+[`../docs/ANDROID_PREVIEW_APK.md`](../docs/ANDROID_PREVIEW_APK.md).
+
 The root JS catalog is a temporary legacy migration source. `content:export`
 still updates all four mobile JSON assets during the compatibility window;
 `content:check` fails when committed assets differ from a deterministic export.
