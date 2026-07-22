@@ -3,16 +3,24 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system/components/components.dart';
 import '../../../core/design_system/tokens/tokens.dart';
 import '../../../core/localization/mayhem_strings.dart';
+import '../../settings/application/settings_controller.dart';
 import '../application/journey_controller.dart';
 import '../domain/development_rank_config.dart';
 import '../domain/progress_models.dart';
 import '../domain/rank_policy.dart';
+import '../domain/rank_visual_style.dart';
+import 'rank_style_surface.dart';
 import 'vnext_journey_screen.dart';
 
 class VNextRankPathScreen extends StatefulWidget {
-  const VNextRankPathScreen({super.key, required this.snapshot});
+  const VNextRankPathScreen({
+    super.key,
+    required this.snapshot,
+    required this.settings,
+  });
 
   final JourneySnapshot snapshot;
+  final SettingsController settings;
 
   @override
   State<VNextRankPathScreen> createState() => _VNextRankPathScreenState();
@@ -23,8 +31,18 @@ class _VNextRankPathScreenState extends State<VNextRankPathScreen> {
   var _positionedAtCurrentRank = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: widget.settings,
+    builder: (context, child) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
     final strings = context.strings;
+    final selectedStyle = RankVisualStyleCatalog.resolveSelected(
+      selectedId: widget.settings.preferences.rankStyleId,
+      currentRank: widget.snapshot.projection.rank,
+    );
+    final selectedPalette = rankStylePalette(selectedStyle);
     final thresholds = DevelopmentRankConfig.policy().thresholds;
     final currentIndex = thresholds.indexWhere(
       (threshold) =>
@@ -54,13 +72,22 @@ class _VNextRankPathScreenState extends State<VNextRankPathScreen> {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back),
         ),
+        actions: [
+          IconButton(
+            key: const ValueKey('rank-path-styles'),
+            tooltip: strings.rankStylesTitle,
+            onPressed: () =>
+                Navigator.of(context).pushNamed(JourneyRoutes.styles),
+            icon: Icon(Icons.palette_outlined, color: selectedPalette.accent),
+          ),
+        ],
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [MayhemColors.canvasRaised, MayhemColors.canvasDeep],
+            colors: [selectedPalette.backgroundStart, MayhemColors.canvasDeep],
           ),
         ),
         child: SingleChildScrollView(

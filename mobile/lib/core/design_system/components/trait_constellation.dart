@@ -43,6 +43,40 @@ class TraitConstellation extends StatelessWidget {
   }
 }
 
+class TraitMarker extends StatelessWidget {
+  const TraitMarker({super.key, required this.trait, this.size = 24});
+
+  final Trait trait;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: size,
+    child: CustomPaint(painter: _TraitMarkerPainter(trait)),
+  );
+}
+
+class _TraitMarkerPainter extends CustomPainter {
+  const _TraitMarkerPainter(this.trait);
+
+  final Trait trait;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _drawTraitMarker(
+      canvas,
+      size.center(Offset.zero),
+      Trait.values.indexOf(trait),
+      traitColor(trait),
+      size.shortestSide * 0.31,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TraitMarkerPainter oldDelegate) =>
+      oldDelegate.trait != trait;
+}
+
 class _TraitConstellationPainter extends CustomPainter {
   const _TraitConstellationPainter(this.values);
 
@@ -102,49 +136,54 @@ class _TraitConstellationPainter extends CustomPainter {
 
     for (var index = 0; index < Trait.values.length; index += 1) {
       final trait = Trait.values[index];
-      _drawNode(canvas, points[trait]!, index, _color(trait));
+      _drawTraitMarker(canvas, points[trait]!, index, traitColor(trait), 6);
     }
   }
-
-  void _drawNode(Canvas canvas, Offset point, int index, Color color) {
-    final fill = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    const node = 6.0;
-    switch (index) {
-      case 0:
-        canvas.drawCircle(point, node, fill);
-      case 1:
-        canvas.drawRect(
-          Rect.fromCenter(center: point, width: node * 2, height: node * 2),
-          fill,
-        );
-      case 2:
-        final path = Path()
-          ..moveTo(point.dx, point.dy - node)
-          ..lineTo(point.dx + node, point.dy + node)
-          ..lineTo(point.dx - node, point.dy + node)
-          ..close();
-        canvas.drawPath(path, fill);
-      case 3:
-        final path = Path()
-          ..moveTo(point.dx, point.dy - node)
-          ..lineTo(point.dx + node, point.dy)
-          ..lineTo(point.dx, point.dy + node)
-          ..lineTo(point.dx - node, point.dy)
-          ..close();
-        canvas.drawPath(path, fill);
-    }
-  }
-
-  Color _color(Trait trait) => switch (trait) {
-    Trait.initiation => MayhemColors.traitInitiation,
-    Trait.expression => MayhemColors.traitExpression,
-    Trait.connection => MayhemColors.traitConnection,
-    Trait.presence => MayhemColors.traitPresence,
-  };
 
   @override
   bool shouldRepaint(_TraitConstellationPainter oldDelegate) =>
       !mapEquals(oldDelegate.values, values);
 }
+
+void _drawTraitMarker(
+  Canvas canvas,
+  Offset point,
+  int index,
+  Color color,
+  double radius,
+) {
+  final fill = Paint()
+    ..color = color
+    ..style = PaintingStyle.fill;
+  switch (index) {
+    case 0:
+      canvas.drawCircle(point, radius, fill);
+    case 1:
+      canvas.drawRect(
+        Rect.fromCenter(center: point, width: radius * 2, height: radius * 2),
+        fill,
+      );
+    case 2:
+      final path = Path()
+        ..moveTo(point.dx, point.dy - radius)
+        ..lineTo(point.dx + radius, point.dy + radius)
+        ..lineTo(point.dx - radius, point.dy + radius)
+        ..close();
+      canvas.drawPath(path, fill);
+    case 3:
+      final path = Path()
+        ..moveTo(point.dx, point.dy - radius)
+        ..lineTo(point.dx + radius, point.dy)
+        ..lineTo(point.dx, point.dy + radius)
+        ..lineTo(point.dx - radius, point.dy)
+        ..close();
+      canvas.drawPath(path, fill);
+  }
+}
+
+Color traitColor(Trait trait) => switch (trait) {
+  Trait.initiation => MayhemColors.traitInitiation,
+  Trait.expression => MayhemColors.traitExpression,
+  Trait.connection => MayhemColors.traitConnection,
+  Trait.presence => MayhemColors.traitPresence,
+};

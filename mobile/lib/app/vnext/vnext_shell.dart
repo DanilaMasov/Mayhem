@@ -7,6 +7,7 @@ import '../../features/feed/presentation/vnext_feed_screen.dart';
 import '../../features/profile/presentation/vnext_you_screen.dart';
 import '../../features/progress/presentation/vnext_journey_screen.dart';
 import '../../features/progress/presentation/vnext_rank_path_screen.dart';
+import '../../features/progress/presentation/vnext_rank_style_collection_screen.dart';
 import '../../features/settings/presentation/vnext_settings_screen.dart';
 import '../../features/season/presentation/vnext_season_screen.dart';
 import 'vnext_runtime.dart';
@@ -85,7 +86,15 @@ class _VNextShellState extends State<VNextShell> {
       (VNextTab.journey, JourneyRoutes.traits) when snapshot != null =>
         VNextTraitsDetailScreen(snapshot: snapshot),
       (VNextTab.journey, JourneyRoutes.ranks) when snapshot != null =>
-        VNextRankPathScreen(snapshot: snapshot),
+        VNextRankPathScreen(
+          snapshot: snapshot,
+          settings: widget.runtime.settings,
+        ),
+      (VNextTab.journey, JourneyRoutes.styles) when snapshot != null =>
+        VNextRankStyleCollectionScreen(
+          snapshot: snapshot,
+          settings: widget.runtime.settings,
+        ),
       (VNextTab.journey, JourneyRoutes.momentum) when snapshot != null =>
         VNextMomentumDetailScreen(snapshot: snapshot),
       (VNextTab.journey, JourneyRoutes.history) when snapshot != null =>
@@ -96,6 +105,7 @@ class _VNextShellState extends State<VNextShell> {
       (VNextTab.journey, _) => VNextJourneyScreen(
         controller: widget.runtime.journey,
         season: widget.runtime.season,
+        settings: widget.runtime.settings,
       ),
       (VNextTab.you, YouRoutes.settings) ||
       (VNextTab.you, YouRoutes.privacy) ||

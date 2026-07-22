@@ -46,6 +46,8 @@
   underline fallback style when rendered outside a Material ancestor.
 - A local arena-style rank path exposing all sixteen frozen ranks, XP and
   balanced-trait thresholds, current progress, and recent real actions.
+- A readable skill-map legend plus a persistent sixteen-style arena collection
+  that unlocks cumulatively from the frozen local rank ladder.
 
 ## Active work item
 
@@ -144,6 +146,14 @@ decoration), adds a tappable current-arena scene to Journey, and opens a
 vertically ordered path from the current rank toward MAYHEM. The path uses only
 the frozen local rank policy and real local history; it does not manufacture
 leaderboard users, positions, or online availability.
+
+The next user-directed slice is implemented on `codex/skill-map-styles`. The
+skill map now explains the stable color, shape, side, XP, and normalized signal
+for all four traits. Every one of the sixteen frozen ranks owns a visual arena
+style; achieved styles remain selectable, future styles stay visibly locked,
+and the selected unlocked style persists locally across restart. The selected
+style changes the Journey arena scene and rank-path atmosphere without adding
+a network dependency or inventing ownership.
 
 ## Open software gates
 
@@ -252,6 +262,29 @@ acceptance remains open.
   repository contracts and Flutter passed, including Linux golden comparison;
 - [pull-request release-smoke run 29938581810](https://github.com/DanilaMasov/Mayhem/actions/runs/29938581810):
   unsigned Android and iOS staging compilation passed.
+
+The local `codex/skill-map-styles` software gate passed on 2026-07-22:
+
+```sh
+node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 274 passed; 2 protected live-only tests skipped
+```
+
+The suite includes 1.6x skill-legend traversal, cumulative sixteen-style unlock
+policy, rejection of locked selections, local selection persistence across a
+cold runtime, refreshed Journey/rank-path goldens, and dedicated legend and
+style-collection goldens. Physical-device visual and interaction acceptance
+remains open.
 
 ```sh
 node --test tests/*.test.mjs
@@ -755,12 +788,12 @@ Production backend values, production telemetry, and release flags remain
 unset.
 
 The readable local rating path is merged through PR #33 (`632e136`) and handed
-off in preview 4. The next user-authorized software slice is the skill-map
-legend plus per-rank unlocked visual styles that remain selectable; custom font
-and background refinement follows as its own visually testable slice. A real
-public leaderboard per rank is not a local-only UI feature; it remains gated on
-an explicit server, privacy, abuse, and account-identity design instead of being
-simulated with fake users.
+off in preview 4. The skill-map legend plus persistent per-rank visual style
+collection is implemented on `codex/skill-map-styles`; custom font refinement
+and broader Feed/background art direction follow as their own visually testable
+slice. A real public leaderboard per rank is not a local-only UI feature; it
+remains gated on an explicit server, privacy, abuse, and account-identity design
+instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR

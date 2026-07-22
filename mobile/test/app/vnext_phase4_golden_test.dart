@@ -61,6 +61,24 @@ void main() {
       matchesGoldenFile(goldenTestPath('phase4_journey_390x844.png')),
     );
 
+    await tester.tap(find.byTooltip('КАРТА НАВЫКОВ'));
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(VNextShell),
+      matchesGoldenFile(goldenTestPath('phase7_trait_legend_390x844.png')),
+    );
+
+    await tester.tap(find.byTooltip('Назад'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('rank-style-preview')));
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(VNextShell),
+      matchesGoldenFile(goldenTestPath('phase7_style_collection_390x844.png')),
+    );
+
+    await tester.tap(find.byTooltip('Назад'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
     await tester.pumpAndSettle();
     await expectLater(
