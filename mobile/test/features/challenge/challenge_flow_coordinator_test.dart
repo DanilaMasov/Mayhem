@@ -134,6 +134,41 @@ void main() {
     },
   );
 
+  test('stale event sequence metadata heals before result commit', () async {
+    final harness = _Harness(acceptedAt);
+    final acceptance = await harness.accept();
+    await harness.store.metadata.write('client_sequence:installation-1', '0');
+
+    final resolution = await harness.coordinator.resolve(
+      attemptId: acceptance.attempt.attemptId,
+      definition: harness.definition,
+      outcome: AttemptOutcome.completed,
+      felt: FeltComparedToExpected.aboutAsExpected,
+      resolvedAt: resolvedAt,
+      localDate: '2026-07-13',
+      timezoneOffsetMinutes: 180,
+      reflection: const ReflectionInput(
+        fearBefore: 8,
+        feelAfter: 10,
+        wantRepeat: true,
+        privateNote: '',
+      ),
+    );
+
+    expect(resolution.applied, isTrue);
+    final sequences = harness.database.executor
+        .rows('event_log_v2')
+        .map((row) => row['client_sequence'])
+        .toList();
+    expect(sequences, orderedEquals([1, 2, 3, 4]));
+    expect(
+      harness.database.executor
+          .rows('private_reflections')
+          .single['private_note'],
+      isNull,
+    );
+  });
+
   test('same revision repeats diminish across rolling seven days', () async {
     final harness = _Harness(acceptedAt);
     final first = await harness.accept(assignmentId: 'assignment-1');

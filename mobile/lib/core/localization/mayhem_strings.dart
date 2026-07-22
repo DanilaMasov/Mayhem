@@ -383,7 +383,7 @@ class MayhemStringsRu implements MayhemStrings {
   String get saveResult => 'ЗАСЧИТАТЬ';
   @override
   String get challengeActionFailed =>
-      'Не удалось сохранить действие. Локальные данные не изменены.';
+      'Не удалось завершить. Вызов остался активным — повтори сохранение.';
   @override
   String get rewardCompleted => 'ВЫЗОВ ЗАВЕРШЁН';
   @override

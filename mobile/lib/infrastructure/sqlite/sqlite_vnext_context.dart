@@ -87,6 +87,19 @@ class SqliteVNextContext {
     var sequence = sequenceRows.isEmpty
         ? 0
         : int.parse(sequenceRows.single['value'] as String);
+    final eventRows = await db.query(
+      'event_log_v2',
+      columns: ['client_sequence'],
+      where: 'installation_id = ?',
+      whereArgs: [localIdentity.installationId],
+      orderBy: 'client_sequence DESC',
+      limit: 1,
+    );
+    if (eventRows.isNotEmpty) {
+      final highestStoredSequence = (eventRows.single['client_sequence'] as num)
+          .toInt();
+      if (highestStoredSequence > sequence) sequence = highestStoredSequence;
+    }
     for (final draft in drafts) {
       sequence += 1;
       final envelope = EventEnvelopeV2(

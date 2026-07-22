@@ -21,6 +21,7 @@ import 'domain/services/game_engine.dart';
 import 'content/data/bundled_vnext_content_adapter.dart';
 import 'core/clock/mayhem_clock.dart';
 import 'core/clock/platform_timezone_id.dart';
+import 'core/debug/debug_visual_overlays.dart';
 import 'core/feature_flags/feature_flag_runtime.dart';
 import 'core/environment/runtime_environment.dart';
 import 'core/support/support_contact.dart';
@@ -44,6 +45,7 @@ const _appVersion = String.fromEnvironment(
 );
 
 Future<void> main() async {
+  resetMayhemDebugVisualOverlays();
   SentryWidgetsFlutterBinding.ensureInitialized();
   try {
     final runtimeEnvironment = MayhemRuntimeEnvironment.resolve(

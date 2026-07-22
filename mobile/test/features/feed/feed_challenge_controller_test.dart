@@ -94,6 +94,42 @@ void main() {
   });
 
   test(
+    'lost UI acknowledgement recovers an already committed result',
+    () async {
+      final runtime = await buildVNextTestRuntime();
+      final item = runtime.feed.snapshot!.items.first;
+      final controller = runtime.feedChallenge;
+
+      expect(
+        await controller.accept(item: item, route: ChallengeRouteType.normal),
+        isTrue,
+      );
+      final attemptId = controller.activeAttempt!.attemptId;
+      final committed = await controller.flow.resolve(
+        attemptId: attemptId,
+        definition: item.challenge!,
+        outcome: AttemptOutcome.completed,
+        felt: FeltComparedToExpected.aboutAsExpected,
+        resolvedAt: controller.clock.utcNow(),
+        localDate: '2026-07-13',
+        timezoneOffsetMinutes: 180,
+      );
+      expect(committed.applied, isTrue);
+
+      expect(
+        await controller.resolve(
+          outcome: AttemptOutcome.completed,
+          felt: FeltComparedToExpected.aboutAsExpected,
+        ),
+        isTrue,
+      );
+      expect(controller.activeAttempt, isNull);
+      expect(controller.reward?.xp, committed.attempt.result?.earnedXp);
+      expect(controller.error, isNull);
+    },
+  );
+
+  test(
     'missing active content fails closed and blocks a second accept',
     () async {
       final runtime = await buildVNextTestRuntime();

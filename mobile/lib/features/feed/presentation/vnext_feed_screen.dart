@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -1148,108 +1149,136 @@ class _ChallengeResultSheetState extends State<_ChallengeResultSheet> {
   @override
   Widget build(BuildContext context) {
     final strings = context.strings;
+    final viewInsets = MediaQuery.viewInsetsOf(context);
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: MayhemSheet(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.82,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                MayhemText(
-                  strings.challengeResult,
-                  variant: MayhemTextVariant.headlineSmall,
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const sheetChromeHeight = 92.0;
+          final availableContentHeight = math.max(
+            0.0,
+            constraints.maxHeight - sheetChromeHeight,
+          );
+          final preferredContentHeight =
+              MediaQuery.sizeOf(context).height * 0.82;
+          return MayhemSheet(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: math.min(
+                  preferredContentHeight,
+                  availableContentHeight,
                 ),
-                const SizedBox(height: MayhemSpacing.x4),
-                Row(
+              ),
+              child: SingleChildScrollView(
+                key: const ValueKey('challenge-result-scroll'),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: _SelectionButton(
-                        label: strings.attempted,
-                        selected: _outcome == AttemptOutcome.attempted,
-                        onPressed: () =>
-                            setState(() => _outcome = AttemptOutcome.attempted),
-                      ),
+                    MayhemText(
+                      strings.challengeResult,
+                      variant: MayhemTextVariant.headlineSmall,
                     ),
-                    const SizedBox(width: MayhemSpacing.x2),
-                    Expanded(
-                      child: _SelectionButton(
-                        label: strings.completed,
-                        selected: _outcome == AttemptOutcome.completed,
-                        onPressed: () =>
-                            setState(() => _outcome = AttemptOutcome.completed),
+                    const SizedBox(height: MayhemSpacing.x4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SelectionButton(
+                            label: strings.attempted,
+                            selected: _outcome == AttemptOutcome.attempted,
+                            onPressed: () => setState(
+                              () => _outcome = AttemptOutcome.attempted,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: MayhemSpacing.x2),
+                        Expanded(
+                          child: _SelectionButton(
+                            label: strings.completed,
+                            selected: _outcome == AttemptOutcome.completed,
+                            onPressed: () => setState(
+                              () => _outcome = AttemptOutcome.completed,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: MayhemSpacing.x4),
+                    _FeltGrid(
+                      selected: _felt,
+                      onSelected: (felt) => setState(() => _felt = felt),
+                    ),
+                    const SizedBox(height: MayhemSpacing.x4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: MayhemText(
+                            strings.optionalReflection,
+                            variant: MayhemTextVariant.labelMicro,
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: _includeReflection,
+                          onChanged: (value) =>
+                              setState(() => _includeReflection = value),
+                        ),
+                      ],
+                    ),
+                    if (_includeReflection) ...[
+                      _ScaleInput(
+                        label: strings.fearBefore,
+                        value: _fearBefore,
+                        onChanged: (value) =>
+                            setState(() => _fearBefore = value),
                       ),
+                      _ScaleInput(
+                        label: strings.feelAfter,
+                        value: _feelAfter,
+                        onChanged: (value) =>
+                            setState(() => _feelAfter = value),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: MayhemText(
+                              strings.wantRepeat,
+                              variant: MayhemTextVariant.bodyMedium,
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: _wantRepeat,
+                            onChanged: (value) =>
+                                setState(() => _wantRepeat = value),
+                          ),
+                        ],
+                      ),
+                      TextField(
+                        controller: _noteController,
+                        maxLength: 2000,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: strings.privateNoteHint,
+                        ),
+                      ),
+                    ],
+                    if (widget.controller.error != null) ...[
+                      const SizedBox(height: MayhemSpacing.x3),
+                      MayhemToast(message: strings.challengeActionFailed),
+                    ],
+                    const SizedBox(height: MayhemSpacing.x4),
+                    MayhemPrimaryButton(
+                      label: strings.saveResult,
+                      loading: _submitting,
+                      enabled: !_submitting,
+                      onPressed: _submit,
                     ),
                   ],
                 ),
-                const SizedBox(height: MayhemSpacing.x4),
-                _FeltGrid(
-                  selected: _felt,
-                  onSelected: (felt) => setState(() => _felt = felt),
-                ),
-                const SizedBox(height: MayhemSpacing.x4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: MayhemText(
-                        strings.optionalReflection,
-                        variant: MayhemTextVariant.labelMicro,
-                      ),
-                    ),
-                    Switch.adaptive(
-                      value: _includeReflection,
-                      onChanged: (value) =>
-                          setState(() => _includeReflection = value),
-                    ),
-                  ],
-                ),
-                if (_includeReflection) ...[
-                  _ScaleInput(
-                    label: strings.fearBefore,
-                    value: _fearBefore,
-                    onChanged: (value) => setState(() => _fearBefore = value),
-                  ),
-                  _ScaleInput(
-                    label: strings.feelAfter,
-                    value: _feelAfter,
-                    onChanged: (value) => setState(() => _feelAfter = value),
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: MayhemText(
-                      strings.wantRepeat,
-                      variant: MayhemTextVariant.bodyMedium,
-                    ),
-                    value: _wantRepeat,
-                    onChanged: (value) => setState(() => _wantRepeat = value),
-                  ),
-                  TextField(
-                    controller: _noteController,
-                    maxLength: 2000,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: strings.privateNoteHint,
-                    ),
-                  ),
-                ],
-                if (widget.controller.error != null) ...[
-                  const SizedBox(height: MayhemSpacing.x3),
-                  MayhemToast(message: strings.challengeActionFailed),
-                ],
-                const SizedBox(height: MayhemSpacing.x4),
-                MayhemPrimaryButton(
-                  label: strings.saveResult,
-                  loading: _submitting,
-                  enabled: !_submitting,
-                  onPressed: _submit,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
