@@ -134,20 +134,27 @@ class FeedChallengeController extends ChangeNotifier {
         timezoneOffsetMinutes: _offsetMinutes(localNow),
         reflection: reflection,
       );
+      final committed =
+          resolution.applied ||
+          resolution.attempt.isTerminal &&
+              resolution.attempt.rewardAppliedLocally;
+      if (!committed) return false;
       _activeAttempt = null;
       _activeDefinition = null;
       onActiveChanged(null, null);
-      if (resolution.applied && resolution.reward != null) {
+      final earnedXp =
+          resolution.reward?.xp ?? resolution.attempt.result?.earnedXp;
+      if (earnedXp != null) {
         _reward = FeedRewardPresentation(
           attemptId: resolution.attempt.attemptId,
-          outcome: outcome,
-          xp: resolution.reward!.xp,
+          outcome: resolution.attempt.result?.outcome ?? outcome,
+          xp: earnedXp,
           trait: definition.primaryTrait,
           momentumDays: resolution.momentum.currentDays,
         );
       }
       await _refreshProjectionSafely();
-      return resolution.applied;
+      return true;
     } catch (error, stackTrace) {
       _recordFailure('resolve', error, stackTrace);
       return false;

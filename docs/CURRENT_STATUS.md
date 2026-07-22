@@ -4,8 +4,8 @@
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
-**Current implementation checkpoint:** `7eca27a` (merged by PR #26 as
-`1849525`)
+**Current implementation checkpoint:** `9a1e9e1` (merged by PR #30 as
+`bf187dd`)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -38,6 +38,10 @@
   legacy and vNext Settings; no public destination has been approved.
 - Manual Android staging preview workflow with debug-only local Feed override,
   signature verification, bounded artifact retention, and no protected inputs.
+- Device-feedback blocker hardening for the challenge-result sheet: keyboard
+  safe scrolling, debug-paint reset in preview builds, retry-safe terminal
+  result acknowledgement, stale local event-sequence recovery, and honest
+  retry copy.
 
 ## Active work item
 
@@ -119,6 +123,16 @@ widget coverage, and a repository release contract. It is merged into `main`
 as `1849525`. No public support destination is invented or approved by this
 slice.
 
+The user-directed device-feedback blocker slice on
+`codex/device-feedback-blockers` addresses the two supplied Android captures.
+It removes leaked Flutter paint diagnostics from distributed debug previews,
+keeps the result form scrollable above the keyboard at enlarged text, replaces
+the reflection tile that triggered a transparent-material assertion, and
+recovers both a lost UI acknowledgement and a stale local event counter without
+double-paying rewards. The change does not claim physical-device acceptance;
+the next APK still requires installation and reproduction on the reporting
+device.
+
 ## Open software gates
 
 - R5 store registration, signing, store artwork, owner approval/injection and
@@ -166,6 +180,29 @@ The broad clean-clone verification was completed on 2026-07-18. Repository
 contracts, Flutter static/runtime checks, and generated-data checks were
 repeated on 2026-07-21; the latest live-backend evidence remains dated
 2026-07-20. Commands and latest applicable results:
+
+The 2026-07-22 device-feedback blocker slice passed its complete local software
+gate:
+
+```sh
+node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 264 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 268 passed; 2 protected live-only tests skipped
+```
+
+The suite includes a 390x844 result-sheet regression with a 330-pixel keyboard
+inset and 1.6x text, stale local sequence recovery, lost result-acknowledgement
+recovery, and debug-overlay reset. These tests do not substitute for a rerun on
+the physical Android device that produced the captures.
 
 ```sh
 node --test tests/*.test.mjs
@@ -667,6 +704,13 @@ credential, signing, or device gates rather than safe local implementation
 work.
 Production backend values, production telemetry, and release flags remain
 unset.
+
+After publishing the blocker APK, the next user-authorized software slice is a
+readable local rating path: visible rank catalogue and thresholds, skill-map
+legend, per-rank unlocked visual styles that remain selectable, and a vertical
+arena-style progress history. A real public leaderboard per rank is not a
+local-only UI feature; it remains gated on an explicit server, privacy, abuse,
+and account-identity design instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR

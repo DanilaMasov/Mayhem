@@ -7,6 +7,7 @@ import 'package:mayhem_mobile/app/vnext/vnext_shell.dart';
 import 'package:mayhem_mobile/core/design_system/accessibility/mayhem_motion_preferences.dart';
 import 'package:mayhem_mobile/core/design_system/components/components.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
+import 'package:mayhem_mobile/features/challenge/domain/challenge_models.dart';
 import 'package:mayhem_mobile/core/feature_flags/feature_flags.dart';
 import 'package:mayhem_mobile/features/season/domain/artifact_ownership.dart';
 import 'package:mayhem_mobile/features/season/domain/season_experience_state.dart';
@@ -582,6 +583,47 @@ void main() {
     expect(find.text('ЗАПИСАТЬ РЕЗУЛЬТАТ'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'challenge result stays scrollable above keyboard at large text',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 330);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+      final item = runtime.feed.snapshot!.items.first;
+      await tester.runAsync(
+        () => runtime.feedChallenge.accept(
+          item: item,
+          route: ChallengeRouteType.normal,
+        ),
+      );
+
+      await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ЗАПИСАТЬ РЕЗУЛЬТАТ'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('challenge-result-scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.text('ЗАСЧИТАТЬ'),
+        160,
+        scrollable: scrollable,
+      );
+      expect(find.text('ЗАСЧИТАТЬ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 RemoteSeasonSnapshot _activeSeason() => RemoteSeasonSnapshot(

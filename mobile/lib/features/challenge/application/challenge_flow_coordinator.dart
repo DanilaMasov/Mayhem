@@ -170,7 +170,10 @@ class ChallengeFlowCoordinator {
             fearBefore: reflection.fearBefore,
             feelAfter: reflection.feelAfter,
             wantRepeat: reflection.wantRepeat,
-            privateNote: reflection.privateNote?.trim(),
+            privateNote: switch (reflection.privateNote?.trim()) {
+              final note? when note.isNotEmpty => note,
+              _ => null,
+            },
             createdAt: resolvedAt.toUtc(),
             updatedAt: resolvedAt.toUtc(),
           );

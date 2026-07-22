@@ -99,6 +99,14 @@ class MemoryDatabaseExecutor implements DatabaseExecutor {
       invocation.positionalArguments[1] as Map,
     );
     final rows = _tables.putIfAbsent(table, () => []);
+    if (table == 'event_log_v2' &&
+        rows.any(
+          (row) =>
+              row['installation_id'] == values['installation_id'] &&
+              row['client_sequence'] == values['client_sequence'],
+        )) {
+      throw StateError('Duplicate installation sequence for event_log_v2');
+    }
     final key = _rowKey(table, values);
     final existingIndex = key == null
         ? -1
@@ -157,6 +165,7 @@ class MemoryDatabaseExecutor implements DatabaseExecutor {
       'event_id = ?' => row['event_id'] == args[0],
       'event_type = ?' => row['event_type'] == args[0],
       'local_user_id = ?' => row['local_user_id'] == args[0],
+      'installation_id = ?' => row['installation_id'] == args[0],
       'assignment_id = ?' => row['assignment_id'] == args[0],
       'attempt_id = ?' => row['attempt_id'] == args[0],
       'batch_id = ?' => row['batch_id'] == args[0],
