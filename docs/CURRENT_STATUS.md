@@ -4,8 +4,8 @@
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
-**Current implementation checkpoint:** `10bb581` (merged by PR #35 as
-`68ebc3c`)
+**Current implementation checkpoint:** `6006a62` (merged by PR #37 as
+`7d140a8`)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -159,6 +159,34 @@ achieved styles remain selectable, future styles stay visibly locked, and the
 selected unlocked style persists locally across restart. The selected style
 changes the Journey arena scene and rank-path atmosphere without adding a
 network dependency or inventing ownership.
+
+Pull request [#37](https://github.com/DanilaMasov/Mayhem/pull/37) merges the
+user-directed typography and background slice as `7d140a8`. It bundles pinned
+Manrope and Unbounded variable fonts with their OFL licenses, makes visual
+baselines load the actual shipped fonts, deepens the shared vNext atmosphere
+and trait-colored Feed field, and preserves readable navigation titles. It
+does not add runtime font downloads or generated raster artwork.
+
+## Device-feedback iteration audit
+
+| User feedback | Status | Evidence and boundary |
+| --- | --- | --- |
+| Yellow/double underlines throughout UI | Closed | PR #33 removed inherited Material fallback decoration; `design_system_test.dart` locks the invariant. |
+| Challenge result overflow above keyboard | Closed in software | PR #31 adds 390x844, 330-pixel keyboard-inset and 1.6x text coverage; reporting-device confirmation remains part of R4. |
+| Challenge sometimes reports a local save error | Closed in software | PR #31 recovers lost UI acknowledgement and stale local client sequence without duplicate reward; controller/coordinator tests cover both paths. |
+| Fonts look generic | Closed | PR #37 ships Unbounded for display/rank moments and Manrope for interface copy, buttons, and navigation. |
+| Backgrounds lack depth | Closed for the reported vNext surfaces | PR #37 adds deterministic shared atmosphere and a richer trait-colored Feed scene; macOS and Linux goldens cover the result. |
+| Existing ratings cannot be browsed | Closed | PR #33 exposes all sixteen frozen ranks from SPARK I through MAYHEM, including XP and weakest-trait requirements. |
+| Skill map has no legend | Closed | PR #35 explains stable color, shape, side, XP, and normalized signal for all four traits. |
+| Journey is visually weak | Closed for the requested local slice | PRs #33, #35, and #37 add the arena scene, vertical rank path, style entry, richer atmosphere, and updated typography. |
+| Earned arena styles cannot be collected/switched | Closed | PR #35 provides sixteen cumulative styles, locked previews, persisted selection, and cold-restart recovery. |
+| Clash-Royale-like upward arena path and recent actions | Closed | PR #33 orders future arenas upward, restores the current position, and shows real local actions without fabricated social data. |
+| Leaderboard for every arena | Intentionally not implemented | The current specification lists public profiles/rank sharing as non-goals. A real leaderboard requires a later authorized identity, privacy, moderation/abuse, deletion, and server-ordering contract; fake users or positions are forbidden. |
+
+All safe local items in the supplied device-feedback iteration are therefore
+closed in software. Physical-device acceptance remains open, and the public
+leaderboard request remains outside the authorized product cycle rather than a
+hidden implementation debt.
 
 ## Open software gates
 
@@ -328,6 +356,12 @@ at 390x844; physical-device visual and interaction acceptance remains open.
 - [Linux baseline generation run 29947144700](https://github.com/DanilaMasov/Mayhem/actions/runs/29947144700):
   both visual suites regenerated successfully on Flutter 3.44.6; the
   one-off workflow remains isolated from the product branch.
+- [push CI run 29947296816](https://github.com/DanilaMasov/Mayhem/actions/runs/29947296816):
+  repository contracts and Flutter passed;
+- [pull-request CI run 29947326031](https://github.com/DanilaMasov/Mayhem/actions/runs/29947326031):
+  repository contracts and Flutter passed, including Linux golden comparison;
+- [pull-request release-smoke run 29947326028](https://github.com/DanilaMasov/Mayhem/actions/runs/29947326028):
+  unsigned Android and iOS staging compilation passed.
 
 ```sh
 node --test tests/*.test.mjs
@@ -833,11 +867,11 @@ unset.
 The readable local rating path is merged through PR #33 (`632e136`) and handed
 off in preview 4. The skill-map legend plus persistent per-rank visual style
 collection is merged through PR #35 (`68ebc3c`) and handed off in preview 5;
-the current typography/background slice bundles pinned Cyrillic fonts and
-refreshes vNext/Feed atmosphere as its own visually testable change. A real
-public leaderboard per rank is not a local-only UI feature; it remains gated
-on an explicit server, privacy, abuse, and account-identity design instead of
-being simulated with fake users.
+the typography/background slice is merged through PR #37 (`7d140a8`) and
+handed off in preview 6. A real public leaderboard per rank is not a local-only
+UI feature and is also outside the current specification; it remains gated on
+a later explicit server, privacy, abuse, deletion, and account-identity design
+instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR
@@ -882,6 +916,15 @@ checksum and passed local ZIP integrity verification with SHA-256
 `27f038998b61cee6fd0f63128a4b071819c2b62988387821419e985c61524f05`.
 [Prerelease v0.1.0-preview.5](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.5)
 publishes exactly one `Mayhem-staging-preview.apk` asset with the same digest.
+After PR #37 merged, manual
+[run 29948719115](https://github.com/DanilaMasov/Mayhem/actions/runs/29948719115)
+built, signature-verified, and uploaded `mayhem-staging-preview-6` from merge
+commit `7d140a8`. The downloaded 171,556,737-byte APK matched its generated
+checksum and passed local ZIP integrity verification with SHA-256
+`978a090101262e8a9a3f078d761e1feeda749fce3bc2953b93c8e361cf57aa2f`.
+[Prerelease v0.1.0-preview.6](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.6)
+publishes exactly one `Mayhem-staging-preview.apk` asset, and GitHub reports the
+same digest.
 The result remains debug-signed and cannot close R4 or any release/store gate.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
