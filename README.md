@@ -18,6 +18,8 @@ functionality.
   gates.
 - [R5 live Sentry acceptance](docs/R5_LIVE_SENTRY_ACCEPTANCE.md) - protected
   staging ingestion/privacy runbook and bounded evidence contract.
+- [Android preview APK](docs/ANDROID_PREVIEW_APK.md) - manual installable
+  staging preview build and its explicit non-release boundary.
 
 Kira and `.hatch-pets/` are not part of Mayhem. They must remain untracked and
 must never be imported into the product or used as product/design requirements.

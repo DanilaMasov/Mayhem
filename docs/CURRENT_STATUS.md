@@ -1,6 +1,6 @@
 # Mayhem Current Status
 
-**Status date:** 2026-07-21
+**Status date:** 2026-07-22
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
@@ -36,6 +36,8 @@
   secret-free evidence; no live run has been claimed.
 - Owner-configurable support contact parsing and platform handoff shared by
   legacy and vNext Settings; no public destination has been approved.
+- Manual Android staging preview workflow with debug-only local Feed override,
+  signature verification, bounded artifact retention, and no protected inputs.
 
 ## Active work item
 
@@ -125,6 +127,8 @@ slice.
   launcher-appearance acceptance, and release records.
 - R6 visual refinement, gated behind a signed staging candidate and a
   preliminary two-device R4 defect-finding pass.
+- The Android preview APK is an installable demonstration only; it does not
+  replace a signed release candidate or any physical-device acceptance report.
 
 ## Live-backend gates
 
@@ -165,7 +169,7 @@ repeated on 2026-07-21; the latest live-backend evidence remains dated
 
 ```sh
 node --test tests/*.test.mjs
-# 62 passed
+# 66 passed
 
 node scripts/export_mobile_content.mjs --check
 # 50 quests, 5 bosses, 55 guides, 29 dialogs, 5 modifiers
@@ -663,6 +667,12 @@ credential, signing, or device gates rather than safe local implementation
 work.
 Production backend values, production telemetry, and release flags remain
 unset.
+
+The current autonomous slice prepares a manual, secret-free Android staging
+preview APK so the local product can be inspected before signing credentials
+exist. Its GitHub run, checksum, and downloaded artifact must be recorded after
+the workflow is merged and executed. The result remains debug-signed and cannot
+close R4 or any release/store gate.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to
