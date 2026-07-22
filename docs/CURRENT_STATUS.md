@@ -42,6 +42,10 @@
   safe scrolling, debug-paint reset in preview builds, retry-safe terminal
   result acknowledgement, stale local event-sequence recovery, and honest
   retry copy.
+- Invariant Mayhem typography that cannot inherit Flutter's yellow double-
+  underline fallback style when rendered outside a Material ancestor.
+- A local arena-style rank path exposing all sixteen frozen ranks, XP and
+  balanced-trait thresholds, current progress, and recent real actions.
 
 ## Active work item
 
@@ -133,6 +137,13 @@ and a stale local event counter without double-paying rewards. The change does
 not claim physical-device acceptance; preview 3 still requires installation and
 reproduction on the reporting device.
 
+The next user-directed slice is implemented on `codex/rank-path`. It fixes the
+actual source of the yellow text lines (`MayhemText` inherited Flutter's
+debug-only Material fallback decoration), adds a tappable current-arena scene
+to Journey, and opens a vertically ordered path from the current rank toward
+MAYHEM. The path uses only the frozen local rank policy and real local history;
+it does not manufacture leaderboard users, positions, or online availability.
+
 ## Open software gates
 
 - R5 store registration, signing, store artwork, owner approval/injection and
@@ -210,6 +221,29 @@ the physical Android device that produced the captures.
   repository contracts and Flutter passed;
 - [pull-request release-smoke run 29932468063](https://github.com/DanilaMasov/Mayhem/actions/runs/29932468063):
   unsigned Android and iOS staging compilation passed.
+
+The local `codex/rank-path` software gate passed on 2026-07-22:
+
+```sh
+node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 265 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 271 passed; 2 protected live-only tests skipped
+```
+
+The suite includes a 390x844/1.6x arena-path traversal from SPARK I to MAYHEM,
+explicit MOVER XP and weakest-trait deficits, a no-fallback-underline
+typography contract, refreshed Feed/Journey/You and Motion Lab goldens, and a
+dedicated current-rank path golden. Physical-device visual and interaction
+acceptance remains open.
 
 ```sh
 node --test tests/*.test.mjs
@@ -712,12 +746,13 @@ work.
 Production backend values, production telemetry, and release flags remain
 unset.
 
-With the blocker APK published, the next user-authorized software slice is a
-readable local rating path: visible rank catalogue and thresholds, skill-map
-legend, per-rank unlocked visual styles that remain selectable, and a vertical
-arena-style progress history. A real public leaderboard per rank is not a
-local-only UI feature; it remains gated on an explicit server, privacy, abuse,
-and account-identity design instead of being simulated with fake users.
+The readable local rating path is implemented on `codex/rank-path`. After its
+merge and preview handoff, the next user-authorized software slice is the
+skill-map legend plus per-rank unlocked visual styles that remain selectable;
+custom font and background refinement follows as its own visually testable
+slice. A real public leaderboard per rank is not a local-only UI feature; it
+remains gated on an explicit server, privacy, abuse, and account-identity
+design instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR

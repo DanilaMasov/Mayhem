@@ -624,6 +624,103 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'rank path exposes future arenas and recent actions at large text',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+      final item = runtime.feed.snapshot!.items.first;
+      await tester.runAsync(() async {
+        expect(
+          await runtime.feedChallenge.accept(
+            item: item,
+            route: ChallengeRouteType.normal,
+          ),
+          isTrue,
+        );
+        expect(
+          await runtime.feedChallenge.resolve(
+            outcome: AttemptOutcome.completed,
+            felt: FeltComparedToExpected.aboutAsExpected,
+          ),
+          isTrue,
+        );
+      });
+
+      await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Путь'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('РЕЙТИНГОВЫЙ ПУТЬ'), findsOneWidget);
+      expect(find.text('ПОСЛЕДНИЕ ДЕЙСТВИЯ НА ПУТИ'), findsOneWidget);
+      expect(find.text(item.challenge!.title), findsOneWidget);
+      expect(find.text('SPARK I'), findsWidgets);
+
+      final scrollable = find
+          .descendant(
+            of: find.byKey(const PageStorageKey('rank-path-scroll')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.text('MAYHEM'),
+        -320,
+        scrollable: scrollable,
+      );
+      expect(find.text('MAYHEM'), findsOneWidget);
+      expect(find.text('25000 XP'), findsOneWidget);
+      expect(find.text('2200 XP в каждом навыке'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('rank path names both XP and weakest-trait deficits', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+    final current = runtime.journey.snapshot!.projection;
+    await tester.runAsync(() async {
+      await runtime.store.progress.saveProjection(
+        ProgressProjection(
+          totalXp: 1000,
+          traitXp: {for (final trait in Trait.values) trait: 100},
+          rank: current.rank,
+          rankProgress: current.rankProgress,
+          momentum: current.momentum,
+          difficulty: current.difficulty,
+          completedCount: current.completedCount,
+          attemptedCount: current.attemptedCount,
+          updatedAt: DateTime.utc(2026, 7, 22),
+          source: ProjectionSource.localCheckpoint,
+        ),
+      );
+      await runtime.journey.initialize();
+    });
+
+    expect(runtime.journey.snapshot!.projection.rank.label, 'MOVER I');
+    await tester.pumpWidget(_TestApp(runtime: runtime));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ДО MOVER II'), findsOneWidget);
+    expect(find.text('Ещё 500 XP'), findsOneWidget);
+    expect(find.text('Ещё 50 XP в слабейшем навыке'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 RemoteSeasonSnapshot _activeSeason() => RemoteSeasonSnapshot(

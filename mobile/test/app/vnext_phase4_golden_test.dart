@@ -4,6 +4,7 @@ import 'package:mayhem_mobile/app/vnext/vnext_runtime.dart';
 import 'package:mayhem_mobile/app/vnext/vnext_shell.dart';
 import 'package:mayhem_mobile/core/design_system/accessibility/mayhem_motion_preferences.dart';
 import 'package:mayhem_mobile/core/design_system/components/components.dart';
+import 'package:mayhem_mobile/core/debug/debug_visual_overlays.dart';
 import 'package:mayhem_mobile/core/localization/mayhem_strings.dart';
 import 'package:mayhem_mobile/features/challenge/domain/challenge_models.dart';
 import 'package:mayhem_mobile/presentation/theme/mayhem_theme.dart';
@@ -47,6 +48,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(mayhemDebugVisualOverlaysDisabled, isTrue);
     await expectLater(
       find.byType(VNextShell),
       matchesGoldenFile(goldenTestPath('phase4_feed_390x844.png')),
@@ -57,6 +59,13 @@ void main() {
     await expectLater(
       find.byType(VNextShell),
       matchesGoldenFile(goldenTestPath('phase4_journey_390x844.png')),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(VNextShell),
+      matchesGoldenFile(goldenTestPath('phase6_rank_path_390x844.png')),
     );
 
     await tester.tap(find.text('Ты'));
