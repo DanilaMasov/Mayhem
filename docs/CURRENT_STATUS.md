@@ -4,8 +4,8 @@
 **Authoritative specification:** `docs/MAYHEM_CURRENT_SPEC_v1.2.md`
 **Production target:** Flutter application under `mobile/`
 **Status handoff branch:** `main`
-**Current implementation checkpoint:** `9a1e9e1` (merged by PR #30 as
-`bf187dd`)
+**Current implementation checkpoint:** `e33bda0` (merged by PR #31 as
+`d813e31`)
 **Clean-tree import commit:** `3c338d4 chore: import clean Mayhem baseline`
 **Imported source checkpoint:** `9a61caa feat(season): present server-owned artifacts`
 
@@ -123,15 +123,15 @@ widget coverage, and a repository release contract. It is merged into `main`
 as `1849525`. No public support destination is invented or approved by this
 slice.
 
-The user-directed device-feedback blocker slice on
-`codex/device-feedback-blockers` addresses the two supplied Android captures.
-It removes leaked Flutter paint diagnostics from distributed debug previews,
-keeps the result form scrollable above the keyboard at enlarged text, replaces
-the reflection tile that triggered a transparent-material assertion, and
-recovers both a lost UI acknowledgement and a stale local event counter without
-double-paying rewards. The change does not claim physical-device acceptance;
-the next APK still requires installation and reproduction on the reporting
-device.
+Pull request [#31](https://github.com/DanilaMasov/Mayhem/pull/31) merges the
+user-directed device-feedback blocker slice as `d813e31`. It addresses the two
+supplied Android captures by removing leaked Flutter paint diagnostics from
+distributed debug previews, keeping the result form scrollable above the
+keyboard at enlarged text, replacing the reflection tile that triggered a
+transparent-material assertion, and recovering both a lost UI acknowledgement
+and a stale local event counter without double-paying rewards. The change does
+not claim physical-device acceptance; preview 3 still requires installation and
+reproduction on the reporting device.
 
 ## Open software gates
 
@@ -203,6 +203,13 @@ The suite includes a 390x844 result-sheet regression with a 330-pixel keyboard
 inset and 1.6x text, stale local sequence recovery, lost result-acknowledgement
 recovery, and debug-overlay reset. These tests do not substitute for a rerun on
 the physical Android device that produced the captures.
+
+- [push CI run 29932406124](https://github.com/DanilaMasov/Mayhem/actions/runs/29932406124):
+  repository contracts and Flutter passed;
+- [pull-request CI run 29932468034](https://github.com/DanilaMasov/Mayhem/actions/runs/29932468034):
+  repository contracts and Flutter passed;
+- [pull-request release-smoke run 29932468063](https://github.com/DanilaMasov/Mayhem/actions/runs/29932468063):
+  unsigned Android and iOS staging compilation passed.
 
 ```sh
 node --test tests/*.test.mjs
@@ -705,7 +712,7 @@ work.
 Production backend values, production telemetry, and release flags remain
 unset.
 
-After publishing the blocker APK, the next user-authorized software slice is a
+With the blocker APK published, the next user-authorized software slice is a
 readable local rating path: visible rank catalogue and thresholds, skill-map
 legend, per-rank unlocked visual styles that remain selectable, and a vertical
 arena-style progress history. A real public leaderboard per rank is not a
@@ -731,6 +738,14 @@ then passed build, `apksigner` verification, packaging, and upload. Its
 The downloaded checksum passed the documented standard verification command,
 and the APK passed local ZIP integrity verification. The artifact expires on
 2026-07-29, while an ignored local copy remains under `mobile/build/previews/`.
+After PR #31 merged, manual
+[run 29933014496](https://github.com/DanilaMasov/Mayhem/actions/runs/29933014496)
+built and signature-verified `mayhem-staging-preview-3` from merge commit
+`d813e31`. The downloaded 171,030,897-byte APK passed checksum and ZIP integrity
+verification with SHA-256
+`3da7d3c96aea6ecdb2a6b6b701dfe900119d01175ee8e9e8d699496d216da9d0`.
+[Prerelease v0.1.0-preview.3](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.3)
+publishes exactly one `Mayhem-staging-preview.apk` asset with the same digest.
 The result remains debug-signed and cannot close R4 or any release/store gate.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
