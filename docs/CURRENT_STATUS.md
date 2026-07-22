@@ -991,12 +991,15 @@ The readable local rating path is merged through PR #33 (`632e136`) and handed
 off in preview 4. The skill-map legend and now-retired per-rank visual style
 experiment were merged through PR #35 (`68ebc3c`) and handed off in preview 5;
 the typography/background slice is merged through PR #37 (`7d140a8`) and
-handed off in preview 6. The current local feedback stack replaces that style
-experiment with dynamic named titles, a promotion ceremony, and content-owned
-Feed background variants. A real public leaderboard per rank is not a
-local-only UI feature and is also outside the current specification; it remains
-gated on a later explicit server, privacy, abuse, deletion, and account-identity
-design instead of being simulated with fake users.
+handed off in preview 6. The device-feedback stack was merged through
+[PR #39](https://github.com/DanilaMasov/Mayhem/pull/39) as `2c95d46` after all
+six push, pull-request, Android, and iOS checks passed. It replaces that style
+experiment with dynamic named titles, a promotion ceremony, content-owned Feed
+background variants, functional scenario choices, terminal-card removal, and
+reachable skill/rating-path bottoms. A real public leaderboard per rank is not
+a local-only UI feature and is also outside the current specification; it
+remains gated on a later explicit server, privacy, abuse, deletion, and
+account-identity design instead of being simulated with fake users.
 
 The manual, secret-free Android staging preview workflow was merged through
 [PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR
@@ -1050,6 +1053,15 @@ checksum and passed local ZIP integrity verification with SHA-256
 [Prerelease v0.1.0-preview.6](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.6)
 publishes exactly one `Mayhem-staging-preview.apk` asset, and GitHub reports the
 same digest.
+After PR #39 merged, manual
+[run 29961968548](https://github.com/DanilaMasov/Mayhem/actions/runs/29961968548)
+built, signature-verified, and uploaded `mayhem-staging-preview-7` from merge
+commit `2c95d46`. The downloaded 171,580,445-byte APK matched its generated
+checksum and passed local ZIP integrity verification with SHA-256
+`eb2c34f83c82e6cf074cea48d8dc661ff1a879fd877a7677bb1f570fac9a5d05`.
+[Prerelease v0.1.0-preview.7](https://github.com/DanilaMasov/Mayhem/releases/tag/v0.1.0-preview.7)
+publishes exactly one attached `Mayhem-staging-preview.apk` binary, and GitHub
+reports the same digest.
 The result remains debug-signed and cannot close R4 or any release/store gate.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
