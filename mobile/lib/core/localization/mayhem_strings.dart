@@ -86,6 +86,7 @@ abstract interface class MayhemStrings {
   String rankXpRemaining(int value);
   String rankTraitRemaining(int value);
   String rankNext(String label);
+  String rankProgressToNext(int percent);
   String get rankRecentActions;
   String get rankNoRecentActions;
   String rankRecentActionCount(int shown, int total);
@@ -447,6 +448,9 @@ class MayhemStringsRu implements MayhemStrings {
   String rankTraitRemaining(int value) => 'Ещё $value XP в слабейшем навыке';
   @override
   String rankNext(String label) => 'ДО $label';
+  @override
+  String rankProgressToNext(int percent) =>
+      'Прогресс до следующего звания: $percent%';
   @override
   String get rankRecentActions => 'ПОСЛЕДНИЕ ДЕЙСТВИЯ НА ПУТИ';
   @override

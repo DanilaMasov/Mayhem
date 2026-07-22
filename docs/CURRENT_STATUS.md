@@ -55,6 +55,8 @@ merged by PR #38)
 - Actionable scenario polls with atomic local persistence, terminal challenge
   removal from the active and restored Feed, and deterministic per-card Feed
   field variations.
+- Journey detail viewports that stop above floating navigation plus a rating
+  rail that fills continuously from the current rank toward the next one.
 
 ## Active work item
 
@@ -178,6 +180,12 @@ after the committed result and filtered when a stored batch is restored.
 Five deterministic field compositions vary Feed backgrounds by immutable
 content identity while keeping the existing first-card visual baseline stable.
 
+The `codex/journey-scroll-progress` slice reserves the floating-navigation
+clearance in the detail viewport itself, so both the final skill legend card
+and the bottom rank card can be brought fully above the navigation glass. The
+rank rail now renders the frozen policy's continuous balanced progress from
+the current dot toward the next dot, including an accessible percentage.
+
 ## Device-feedback iteration audit
 
 | User feedback | Status | Evidence and boundary |
@@ -190,6 +198,8 @@ content identity while keeping the existing first-card visual baseline stable.
 | Feed backgrounds repeat | Closed in the current local slice | Five deterministic field compositions are selected from immutable content identity without network artwork or rank-owned themes. |
 | Scenario options cannot be selected | Closed in the current local slice | Every option is an accessible press target; SQLite metadata and the canonical event are atomic and idempotent, and the resolved card leaves the Feed. |
 | Completed challenges remain in Feed | Closed in the current local slice | A committed terminal result removes the card immediately, and session restoration filters every terminal assignment. |
+| Skill map and rating path bottoms are obscured | Closed in the current local slice | Both detail viewports reserve 132 logical pixels above floating navigation; widget geometry asserts the final cards end above it at 390x844 and 1.6x text. |
+| Rating rail does not show current progress | Closed in the current local slice | The current-to-next segment fills continuously from the existing balanced `rankProgress` value and exposes the same percentage to accessibility. |
 | Existing ratings cannot be browsed | Closed | PR #33 exposes all sixteen frozen ranks from SPARK I through MAYHEM, including XP and weakest-trait requirements. |
 | Skill map has no legend | Closed | PR #35 explains stable color, shape, side, XP, and normalized signal for all four traits. |
 | Journey is visually weak | Closed for the requested local slice | PRs #33, #35, and #37 add the arena scene, vertical rank path, style entry, richer atmosphere, and updated typography. |
@@ -249,6 +259,29 @@ The broad clean-clone verification was completed on 2026-07-18. Repository
 contracts, Flutter static/runtime checks, and generated-data checks were
 repeated on 2026-07-21; the latest live-backend evidence remains dated
 2026-07-20. Commands and latest applicable results:
+
+The local `codex/journey-scroll-progress` software gate passed on 2026-07-22:
+
+```sh
+/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node --test tests/*.test.mjs
+# 66 passed
+
+cd mobile
+dart format --output=none --set-exit-if-changed lib test tool
+# 268 files, 0 changed
+
+flutter analyze --no-pub
+# no issues
+
+flutter test --no-pub --no-test-assets -j 1
+# 280 passed; 2 protected live-only tests skipped
+```
+
+The suite now checks actual last-card screen coordinates above the floating
+navigation and a 50-percent current-to-next rail state. macOS visual baselines
+cover the new viewport and rail; the corresponding Linux baselines are
+generated and verified in hosted CI before merge. Physical-device acceptance
+remains open.
 
 The local `codex/feed-scenario-lifecycle` software gate passed on 2026-07-22:
 

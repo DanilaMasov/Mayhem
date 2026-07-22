@@ -23,6 +23,8 @@ abstract final class JourneyRoutes {
   static const season = '/journey/season';
 }
 
+const journeyBottomNavigationClearance = 132.0;
+
 class VNextJourneyScreen extends StatelessWidget {
   const VNextJourneyScreen({
     super.key,
@@ -586,6 +588,7 @@ class VNextTraitsDetailScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: MayhemSpacing.x3),
               child: _TraitLegendRow(
+                key: ValueKey('trait-legend-${trait.name}'),
                 trait: trait,
                 xp: snapshot.projection.traitXp[trait] ?? 0,
                 signal: signals[trait] ?? 0,
@@ -599,6 +602,7 @@ class VNextTraitsDetailScreen extends StatelessWidget {
 
 class _TraitLegendRow extends StatelessWidget {
   const _TraitLegendRow({
+    super.key,
     required this.trait,
     required this.xp,
     required this.signal,
@@ -1077,7 +1081,12 @@ class _DetailScaffold extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
         ),
       ),
-      body: child,
+      body: Padding(
+        padding: const EdgeInsets.only(
+          bottom: journeyBottomNavigationClearance,
+        ),
+        child: child,
+      ),
     );
   }
 }

@@ -833,6 +833,107 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Journey detail bottoms stay above floating navigation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+
+    await tester.pumpWidget(_TestApp(runtime: runtime, textScale: 1.6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.text('ТВОЙ ПУТЬ')),
+    ).pushNamed('/journey/traits');
+    await tester.pumpAndSettle();
+
+    final traitsScroll = find
+        .descendant(
+          of: find.byKey(const PageStorageKey('traits-detail-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    for (var step = 0; step < 6; step += 1) {
+      await tester.drag(traitsScroll, const Offset(0, -260));
+      await tester.pump();
+    }
+    final traitsState = tester.state<ScrollableState>(traitsScroll);
+    traitsState.position.jumpTo(traitsState.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final lastTrait = find.byKey(const ValueKey('trait-legend-presence'));
+    expect(lastTrait, findsOneWidget);
+    expect(tester.getBottomRight(lastTrait).dy, lessThan(744));
+
+    await tester.tap(find.byTooltip('Назад'));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.text('ТВОЙ ПУТЬ')),
+    ).pushNamed('/journey/ranks');
+    await tester.pumpAndSettle();
+    final rankScroll = find
+        .descendant(
+          of: find.byKey(const PageStorageKey('rank-path-scroll')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    final rankState = tester.state<ScrollableState>(rankScroll);
+    rankState.position.jumpTo(rankState.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final bottomRank = find.byKey(const ValueKey('rank-card-SPARK I'));
+    expect(bottomRank, findsOneWidget);
+    expect(tester.getBottomRight(bottomRank).dy, lessThan(744));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('rank rail exposes continuous progress to the next title', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final runtime = (await tester.runAsync(buildVNextTestRuntime))!;
+    final current = runtime.journey.snapshot!.projection;
+    await tester.runAsync(() async {
+      await runtime.store.progress.saveProjection(
+        ProgressProjection(
+          totalXp: 125,
+          traitXp: current.traitXp,
+          rank: current.rank,
+          rankProgress: current.rankProgress,
+          momentum: current.momentum,
+          difficulty: current.difficulty,
+          completedCount: current.completedCount,
+          attemptedCount: current.attemptedCount,
+          updatedAt: DateTime.utc(2026, 7, 13, 10),
+          source: ProjectionSource.localCheckpoint,
+        ),
+      );
+      await runtime.journey.initialize();
+    });
+
+    await tester.pumpWidget(_TestApp(runtime: runtime));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Путь'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('rank-path-preview')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.bySemanticsLabel('Прогресс до следующего звания: 50%'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('rank-progress-rail-current')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('unlocked arena style persists and locked styles stay gated', (
     tester,
   ) async {

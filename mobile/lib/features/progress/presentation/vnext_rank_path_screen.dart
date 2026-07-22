@@ -82,54 +82,67 @@ class _VNextRankPathScreenState extends State<VNextRankPathScreen> {
           ),
         ],
       ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [selectedPalette.backgroundStart, MayhemColors.canvasDeep],
-          ),
+      body: Padding(
+        padding: const EdgeInsets.only(
+          bottom: journeyBottomNavigationClearance,
         ),
-        child: SingleChildScrollView(
-          key: const PageStorageKey('rank-path-scroll'),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MayhemSpacing.x4,
-              MayhemSpacing.x5,
-              MayhemSpacing.x4,
-              MayhemSpacing.x10,
-            ),
-            child: Column(
-              children: [
-                _RankPathHeader(
-                  currentRank: widget.snapshot.projection.rank,
-                  totalXp: widget.snapshot.projection.totalXp,
-                ),
-                const SizedBox(height: MayhemSpacing.x8),
-                for (
-                  var displayIndex = 0;
-                  displayIndex < ordered.length;
-                  displayIndex += 1
-                )
-                  _RankArenaNode(
-                    key:
-                        thresholds.indexOf(ordered[displayIndex]) ==
-                            resolvedCurrentIndex
-                        ? _currentRankKey
-                        : ValueKey(
-                            'rank-node-${ordered[displayIndex].rank.label}',
-                          ),
-                    threshold: ordered[displayIndex],
-                    thresholdIndex: thresholds.indexOf(ordered[displayIndex]),
-                    currentIndex: resolvedCurrentIndex,
-                    isFirst: displayIndex == 0,
-                    isLast: displayIndex == ordered.length - 1,
-                    snapshot: widget.snapshot,
-                    nextThreshold: resolvedCurrentIndex + 1 < thresholds.length
-                        ? thresholds[resolvedCurrentIndex + 1]
-                        : null,
-                  ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                selectedPalette.backgroundStart,
+                MayhemColors.canvasDeep,
               ],
+            ),
+          ),
+          child: SingleChildScrollView(
+            key: const PageStorageKey('rank-path-scroll'),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                MayhemSpacing.x4,
+                MayhemSpacing.x5,
+                MayhemSpacing.x4,
+                MayhemSpacing.x10,
+              ),
+              child: Column(
+                children: [
+                  _RankPathHeader(
+                    currentRank: widget.snapshot.projection.rank,
+                    totalXp: widget.snapshot.projection.totalXp,
+                  ),
+                  const SizedBox(height: MayhemSpacing.x8),
+                  for (
+                    var displayIndex = 0;
+                    displayIndex < ordered.length;
+                    displayIndex += 1
+                  )
+                    _RankArenaNode(
+                      key:
+                          thresholds.indexOf(ordered[displayIndex]) ==
+                              resolvedCurrentIndex
+                          ? _currentRankKey
+                          : ValueKey(
+                              'rank-node-${ordered[displayIndex].rank.label}',
+                            ),
+                      threshold: ordered[displayIndex],
+                      thresholdIndex: thresholds.indexOf(ordered[displayIndex]),
+                      currentIndex: resolvedCurrentIndex,
+                      rankProgress: widget.snapshot.projection.rankProgress,
+                      progressAccent: rankFamilyColor(
+                        thresholds[resolvedCurrentIndex].rank.family,
+                      ),
+                      isFirst: displayIndex == 0,
+                      isLast: displayIndex == ordered.length - 1,
+                      snapshot: widget.snapshot,
+                      nextThreshold:
+                          resolvedCurrentIndex + 1 < thresholds.length
+                          ? thresholds[resolvedCurrentIndex + 1]
+                          : null,
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -198,6 +211,8 @@ class _RankArenaNode extends StatelessWidget {
     required this.threshold,
     required this.thresholdIndex,
     required this.currentIndex,
+    required this.rankProgress,
+    required this.progressAccent,
     required this.isFirst,
     required this.isLast,
     required this.snapshot,
@@ -207,6 +222,8 @@ class _RankArenaNode extends StatelessWidget {
   final RankThreshold threshold;
   final int thresholdIndex;
   final int currentIndex;
+  final double rankProgress;
+  final Color progressAccent;
   final bool isFirst;
   final bool isLast;
   final JourneySnapshot snapshot;
@@ -214,6 +231,20 @@ class _RankArenaNode extends StatelessWidget {
 
   bool get _isCurrent => thresholdIndex == currentIndex;
   bool get _isUnlocked => thresholdIndex < currentIndex;
+
+  double get _upperRailProgress {
+    if (thresholdIndex < currentIndex) return 1;
+    if (_isCurrent) return (rankProgress * 2).clamp(0, 1);
+    return 0;
+  }
+
+  double get _lowerRailProgress {
+    if (thresholdIndex <= currentIndex) return 1;
+    if (thresholdIndex == currentIndex + 1) {
+      return ((rankProgress - 0.5) * 2).clamp(0, 1);
+    }
+    return 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -228,13 +259,18 @@ class _RankArenaNode extends StatelessWidget {
             child: Column(
               children: [
                 Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isFirst
-                        ? Colors.transparent
-                        : activeRail
-                        ? accent.withValues(alpha: 0.7)
-                        : MayhemColors.lineStrong,
+                  child: _RankRailSegment(
+                    key: _isCurrent
+                        ? const ValueKey('rank-progress-rail-current')
+                        : null,
+                    hidden: isFirst,
+                    progress: _upperRailProgress,
+                    accent: progressAccent,
+                    semanticLabel: _isCurrent
+                        ? context.strings.rankProgressToNext(
+                            (rankProgress * 100).round(),
+                          )
+                        : null,
                   ),
                 ),
                 Container(
@@ -261,13 +297,10 @@ class _RankArenaNode extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isLast
-                        ? Colors.transparent
-                        : thresholdIndex <= currentIndex
-                        ? accent.withValues(alpha: 0.7)
-                        : MayhemColors.lineStrong,
+                  child: _RankRailSegment(
+                    hidden: isLast,
+                    progress: _lowerRailProgress,
+                    accent: progressAccent,
                   ),
                 ),
               ],
@@ -280,6 +313,7 @@ class _RankArenaNode extends StatelessWidget {
                 bottom: MayhemSpacing.x4,
               ),
               child: _RankArenaCard(
+                key: ValueKey('rank-card-${threshold.rank.label}'),
                 threshold: threshold,
                 current: _isCurrent,
                 unlocked: _isUnlocked,
@@ -297,6 +331,7 @@ class _RankArenaNode extends StatelessWidget {
 
 class _RankArenaCard extends StatelessWidget {
   const _RankArenaCard({
+    super.key,
     required this.threshold,
     required this.current,
     required this.unlocked,
@@ -515,6 +550,86 @@ class _RankArenaCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RankRailSegment extends StatelessWidget {
+  const _RankRailSegment({
+    super.key,
+    required this.hidden,
+    required this.progress,
+    required this.accent,
+    this.semanticLabel,
+  });
+
+  final bool hidden;
+  final double progress;
+  final Color accent;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final rail = CustomPaint(
+      painter: _RankRailPainter(
+        hidden: hidden,
+        progress: progress,
+        accent: accent,
+      ),
+      child: const SizedBox.expand(),
+    );
+    final label = semanticLabel;
+    return label == null
+        ? ExcludeSemantics(child: rail)
+        : Semantics(label: label, readOnly: true, child: rail);
+  }
+}
+
+class _RankRailPainter extends CustomPainter {
+  const _RankRailPainter({
+    required this.hidden,
+    required this.progress,
+    required this.accent,
+  });
+
+  final bool hidden;
+  final double progress;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (hidden || size.isEmpty) return;
+    final x = size.width / 2;
+    canvas.drawLine(
+      Offset(x, 0),
+      Offset(x, size.height),
+      Paint()
+        ..color = MayhemColors.lineStrong
+        ..strokeWidth = 2,
+    );
+    if (progress <= 0) return;
+    final startY = size.height * (1 - progress.clamp(0, 1));
+    canvas.drawLine(
+      Offset(x, startY),
+      Offset(x, size.height),
+      Paint()
+        ..color = accent.withValues(alpha: 0.22)
+        ..strokeWidth = 9
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawLine(
+      Offset(x, startY),
+      Offset(x, size.height),
+      Paint()
+        ..color = accent.withValues(alpha: 0.88)
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 4,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RankRailPainter oldDelegate) =>
+      oldDelegate.hidden != hidden ||
+      oldDelegate.progress != progress ||
+      oldDelegate.accent != accent;
 }
 
 class _RequirementChip extends StatelessWidget {
