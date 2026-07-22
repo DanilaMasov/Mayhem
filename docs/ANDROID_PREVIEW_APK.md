@@ -24,8 +24,11 @@ physical-device acceptance.
 1. Open GitHub Actions and select `Android Preview APK`.
 2. Select `Run workflow` on `main`.
 3. Open the completed run and download the `mayhem-staging-preview-*` artifact.
-4. Extract `Mayhem-staging-preview.apk` on an Android device.
-5. Allow installation from the browser or file manager when Android asks, then
+4. Extract the artifact and verify it from that directory with
+   `shasum -a 256 -c Mayhem-staging-preview.apk.sha256` (macOS) or
+   `sha256sum --check Mayhem-staging-preview.apk.sha256` (Linux).
+5. Transfer `Mayhem-staging-preview.apk` to an Android device.
+6. Allow installation from the browser or file manager when Android asks, then
    open `MAYHEM STAGING`.
 
 The preview is local-first and can be explored without an account or backend.

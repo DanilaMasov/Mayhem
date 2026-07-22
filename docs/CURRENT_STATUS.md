@@ -668,10 +668,17 @@ work.
 Production backend values, production telemetry, and release flags remain
 unset.
 
-The current autonomous slice prepares a manual, secret-free Android staging
-preview APK so the local product can be inspected before signing credentials
-exist. Its GitHub run, checksum, and downloaded artifact must be recorded after
-the workflow is merged and executed. The result remains debug-signed and cannot
+The manual, secret-free Android staging preview workflow was merged through
+[PR #28](https://github.com/DanilaMasov/Mayhem/pull/28) as `8c01ced`. All six PR
+checks passed, including Android and iOS staging release smoke builds. Manual
+[run 29919995723](https://github.com/DanilaMasov/Mayhem/actions/runs/29919995723)
+then built, signature-verified, and uploaded artifact
+`mayhem-staging-preview-1`; the downloaded 171,027,777-byte APK passed ZIP
+integrity verification and had SHA-256
+`ffbd4ab09905d310a9df779b7e37516eb2b172f93fed6283da42dfec52754a7a`.
+Download verification exposed that the checksum file retained its runner path,
+so the follow-up checksum portability fix must be merged and the preview rebuilt
+before the artifact is handed off. The result remains debug-signed and cannot
 close R4 or any release/store gate.
 
 The delivery sequence distinguishes closed-alpha requirements from later store

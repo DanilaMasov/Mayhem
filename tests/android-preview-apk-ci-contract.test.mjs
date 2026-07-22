@@ -38,7 +38,11 @@ test("preview consumes no backend or telemetry secret", () => {
 test("preview upload contains APK and checksum with bounded retention", () => {
   assert.match(workflow, /actions\/upload-artifact@v4/);
   assert.match(workflow, /Mayhem-staging-preview\.apk/);
-  assert.match(workflow, /sha256sum/);
+  assert.match(
+    workflow,
+    /sha256sum Mayhem-staging-preview\.apk > Mayhem-staging-preview\.apk\.sha256/
+  );
+  assert.doesNotMatch(workflow, /sha256sum build\/preview\/Mayhem/);
   assert.match(workflow, /if-no-files-found: error/);
   assert.match(workflow, /retention-days: 7/);
 });

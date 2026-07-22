@@ -48,7 +48,9 @@ jobs:
           "$apksigner" verify --verbose "$apk"
           mkdir -p build/preview
           cp "$apk" build/preview/Mayhem-staging-preview.apk
-          sha256sum build/preview/Mayhem-staging-preview.apk > build/preview/Mayhem-staging-preview.apk.sha256
+          pushd build/preview >/dev/null
+          sha256sum Mayhem-staging-preview.apk > Mayhem-staging-preview.apk.sha256
+          popd >/dev/null
       - name: Upload installable preview
         uses: actions/upload-artifact@v4
         with:
