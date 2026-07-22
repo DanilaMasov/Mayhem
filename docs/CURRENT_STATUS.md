@@ -305,10 +305,12 @@ low-pressure loss protection, all sixteen unique titles, legacy local and v1
 server migration, v2 projection validation, promotion-only detection,
 demotion checkpointing, 390x844/1.6x overflow safety, Reduce Motion, animation
 timing, scroll geometry, continuous rail semantics, and the final promotion
-frame. macOS goldens are current. Updated Linux Journey/rank-path goldens and
-the new promotion golden must be generated and verified in hosted Linux CI
-before merge. Migration `012` has source contracts but not protected live
-Supabase acceptance; no physical-device claim is made.
+frame. macOS goldens are current. Hosted Ubuntu
+[run 29960728382](https://github.com/DanilaMasov/Mayhem/actions/runs/29960728382)
+generated the updated Linux Journey/rank-path baselines and the new promotion
+golden successfully; those exact artifacts are committed in the product
+branch. Migration `012` has source contracts but not protected live Supabase
+acceptance; no physical-device claim is made.
 
 The local `codex/journey-scroll-progress` software gate passed on 2026-07-22:
 
@@ -329,9 +331,9 @@ flutter test --no-pub --no-test-assets -j 1
 
 The suite now checks actual last-card screen coordinates above the floating
 navigation and a 50-percent current-to-next rail state. macOS visual baselines
-cover the new viewport and rail; the corresponding Linux baselines are
-generated and verified in hosted CI before merge. Physical-device acceptance
-remains open.
+cover the new viewport and rail; the corresponding Linux baselines were
+generated successfully by hosted Ubuntu run 29960728382. Physical-device
+acceptance remains open.
 
 The local `codex/feed-scenario-lifecycle` software gate passed on 2026-07-22:
 
