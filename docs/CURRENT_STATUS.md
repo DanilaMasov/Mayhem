@@ -677,9 +677,17 @@ then built, signature-verified, and uploaded artifact
 integrity verification and had SHA-256
 `ffbd4ab09905d310a9df779b7e37516eb2b172f93fed6283da42dfec52754a7a`.
 Download verification exposed that the checksum file retained its runner path,
-so the follow-up checksum portability fix must be merged and the preview rebuilt
-before the artifact is handed off. The result remains debug-signed and cannot
-close R4 or any release/store gate.
+so the portability fix was merged through
+[PR #29](https://github.com/DanilaMasov/Mayhem/pull/29) as `e7dc244`; all four
+push and pull-request CI checks passed. Final manual
+[run 29926718883](https://github.com/DanilaMasov/Mayhem/actions/runs/29926718883)
+then passed build, `apksigner` verification, packaging, and upload. Its
+`mayhem-staging-preview-2` artifact produced a 171,027,777-byte APK with SHA-256
+`c3ef4426e7a455d1f5b174ef0d0c0e4c0ef234125f32eb15c9b424696b2bf2f6`.
+The downloaded checksum passed the documented standard verification command,
+and the APK passed local ZIP integrity verification. The artifact expires on
+2026-07-29, while an ignored local copy remains under `mobile/build/previews/`.
+The result remains debug-signed and cannot close R4 or any release/store gate.
 
 The delivery sequence distinguishes closed-alpha requirements from later store
 submission work. A preliminary R4 pass may start on two physical devices to
